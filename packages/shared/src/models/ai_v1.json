@@ -1,0 +1,17 @@
+{
+  "bias": 0.6,
+  "weights": {
+    "ingredient_count": -0.01,
+    "ultra_processed_additive_count": -0.05,
+    "has_artificial_dye": -0.08,
+    "has_hydrogenated_oil": -0.1,
+    "sugar_g": -0.01,
+    "addedSugar_g": -0.015,
+    "sodium_mg": -0.0003,
+    "fiber_g": 0.02,
+    "protein_g": 0.02,
+    "calories": -0.001,
+    "has_uncertain_ingredients": -0.03,
+    "has_animal_derived": -0.02
+  }
+}

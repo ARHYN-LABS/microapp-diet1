@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String        @id @default(cuid())
+  name      String?
+  createdAt DateTime      @default(now())
+  history   ScanHistory[]
+  prefs     UserPrefs?
+}
+
+model ScanHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  createdAt  DateTime @default(now())
+
+  productName       String?
+  extractedText   Json?
+  parsedNutrition Json?
+  parsedIngredients Json?
+  analysisSnapshot Json?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model UserPrefs {
+  userId              String   @id
+  halalCheckEnabled   Boolean  @default(false)
+  lowSodiumMgLimit    Float?
+  lowSugarGlimit      Float?
+  lowCarbGlimit       Float?
+  lowCalorieLimit     Float?
+  highProteinGtarget  Float?
+  vegetarian          Boolean?
+  vegan               Boolean?
+  sensitiveStomach    Boolean?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}

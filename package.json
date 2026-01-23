@@ -1,0 +1,38 @@
+{
+  "name": "whats-in-my-food-monorepo",
+  "version": "0.1.0",
+  "description": "Cross-platform consumer nutrition analysis app",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/mobile",
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "debug": "^2.6.9",
+    "ipaddr.js": "^2.3.0",
+    "merge-descriptors": "^2.0.0",
+    "mime-db": "^1.54.0",
+    "negotiator": "^1.0.0",
+    "openai": "^6.16.0",
+    "type-detect": "^4.1.0",
+    "unpipe": "^1.0.0",
+    "utils-merge": "^1.0.1"
+  },
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  }
+}

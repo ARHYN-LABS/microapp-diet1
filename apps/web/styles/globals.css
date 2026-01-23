@@ -1,0 +1,209 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+:root {
+  color-scheme: dark;
+  --bg: #0b0f12;
+  --bg-elevated: #111820;
+  --panel: #141c25;
+  --panel-2: #19222d;
+  --text: #eef3f7;
+  --muted: #9fb0c0;
+  --accent: #4ad4a2;
+  --accent-2: #47b7ff;
+  --warning: #ffb64a;
+  --danger: #ff6b6b;
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 24px 40px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(71, 183, 255, 0.15), transparent),
+    radial-gradient(900px 500px at 90% 0%, rgba(74, 212, 162, 0.12), transparent),
+    var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+.display-1,
+.display-2,
+.display-3,
+.display-4,
+.display-5,
+.display-6 {
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.page-shell {
+  padding: 80px 0 64px;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgba(20, 28, 37, 0.9), rgba(10, 14, 18, 0.95));
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 48px;
+  box-shadow: var(--shadow);
+}
+
+.hero-kicker {
+  font-size: 0.85rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+.hero-cta {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border: none;
+  color: #001018;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 999px;
+}
+
+.btn-outline-light {
+  border-color: var(--border);
+  color: var(--text);
+  border-radius: 999px;
+}
+
+.glass-card {
+  background: linear-gradient(180deg, rgba(25, 34, 45, 0.9), rgba(16, 22, 30, 0.9));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.metric-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.metric-number {
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.metric-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.flag-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.flag-pass {
+  color: #0bf2a2;
+  border-color: rgba(11, 242, 162, 0.4);
+}
+
+.flag-warn {
+  color: var(--warning);
+  border-color: rgba(255, 182, 74, 0.4);
+}
+
+.flag-fail {
+  color: var(--danger);
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.flag-unknown {
+  color: var(--muted);
+}
+
+.progress-ring {
+  --progress: 0;
+  --ring-color: var(--accent);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(
+      var(--ring-color) calc(var(--progress) * 1%),
+      rgba(255, 255, 255, 0.08) 0
+    ),
+    radial-gradient(circle at center, var(--panel) 58%, transparent 59%);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+}
+
+.ring-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.ring-value {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.scan-step {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+
+.capture-guide {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(10, 14, 18, 0.7);
+}
+
+.footer-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.fade-in {
+  animation: fadeIn 600ms ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}

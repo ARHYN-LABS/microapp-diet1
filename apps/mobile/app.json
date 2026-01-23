@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "What's In My Food",
+    "slug": "whats-in-my-food",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "sdkVersion": "49.0.0",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow camera access to identify products."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    },
+    "extra": {
+      "apiBase": "${EXPO_PUBLIC_API_BASE}",
+      "userId": "${EXPO_PUBLIC_USER_ID}"
+    }
+  }
+}
