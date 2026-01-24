@@ -11,6 +11,9 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Build shared package
+        script: |
+          npm run build --workspace packages/shared
       - name: Install mobile workspace deps
         script: |
           cd apps/mobile
