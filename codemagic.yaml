@@ -14,7 +14,7 @@ workflows:
       - name: Install mobile workspace deps
         script: |
           cd apps/mobile
-          npm install
+          npm install --workspaces=false
       - name: Build debug APK
         script: |
           cd apps/mobile/android
