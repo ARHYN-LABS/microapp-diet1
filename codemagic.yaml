@@ -6,7 +6,7 @@ workflows:
       node: 18.18.2
       java: 17
       vars:
-        EXPO_PUBLIC_API_BASE: "http://localhost:4000"
+        EXPO_PUBLIC_API_BASE: "http://76.13.100.119:4000"
     scripts:
       - name: Install dependencies
         script: |
