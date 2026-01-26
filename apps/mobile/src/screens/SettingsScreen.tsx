@@ -609,24 +609,27 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
     color: theme.colors.text,
-    marginBottom: 6
+    marginBottom: 6,
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted,
-    marginBottom: 16
+    marginBottom: theme.spacing.md
   },
   card: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
     padding: 16,
-    marginBottom: 16
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   sectionTitle: {
     fontSize: 16,
@@ -642,7 +645,7 @@ const styles = StyleSheet.create({
   },
   planButton: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999
@@ -658,11 +661,12 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     borderRadius: theme.radius.md,
     padding: 12,
     marginBottom: 16,
-    color: theme.colors.text
+    color: theme.colors.text,
+    backgroundColor: theme.colors.glassStrong
   },
   readonly: {
     color: theme.colors.muted,
@@ -687,11 +691,12 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     borderRadius: 999,
     alignItems: "center",
-    marginTop: 12
+    marginTop: 12,
+    backgroundColor: theme.colors.glass
   },
   logoutText: {
     color: theme.colors.text,

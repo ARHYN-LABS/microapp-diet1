@@ -29,7 +29,7 @@ type RingProps = {
   color: string
 }
 
-const RingCard = ({ label, value, target, unit, color }: RingProps) => {
+  const RingCard = ({ label, value, target, unit, color }: RingProps) => {
   const size = 88
   const stroke = 8
   const radius = (size - stroke) / 2
@@ -211,7 +211,7 @@ export default function ResultsScreen({ route }: Props) {
           <Text style={styles.sectionTitle}>Suitability</Text>
           <Text style={styles.suitabilityValue}>
             {analysis.suitability?.verdict === "good"
-              ? "Good for you"
+              ? "Suitable"
               : analysis.suitability?.verdict === "not_recommended"
                 ? "Not recommended"
                 : "Unknown"}
@@ -389,32 +389,35 @@ export default function ResultsScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12
+    marginBottom: theme.spacing.md
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    color: theme.colors.text
+    color: theme.colors.text,
+    fontFamily: theme.font.heading
   },
   meta: {
     color: theme.colors.muted,
     marginTop: 4
   },
   scoreChip: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   scoreChipText: {
-    color: theme.colors.muted,
+    color: theme.colors.textSoft,
     fontSize: 12
   },
   metricRow: {
@@ -424,11 +427,14 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: theme.colors.panel,
-    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.glassStrong,
+    borderRadius: theme.radius.xl,
     padding: 16,
     minWidth: 160,
-    marginBottom: 12
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadow.card
   },
   metricCardSpacing: {
     marginRight: 12
@@ -436,24 +442,27 @@ const styles = StyleSheet.create({
   metricLabel: {
     color: theme.colors.muted,
     fontSize: 12,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
+    letterSpacing: 1.1
   },
   metricValue: {
     color: theme.colors.text,
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "700",
-    marginTop: 8
+    marginTop: 8,
+    fontFamily: theme.font.heading
   },
   metricMeta: {
-    color: theme.colors.muted,
+    color: theme.colors.textSoft,
     marginTop: 6
   },
   accordion: {
     borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     padding: 14,
-    marginBottom: 16
+    marginBottom: 16,
+    backgroundColor: theme.colors.glass
   },
   accordionTitle: {
     fontWeight: "700",
@@ -480,11 +489,12 @@ const styles = StyleSheet.create({
   },
   flagChip: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    marginBottom: 8
+    marginBottom: 8,
+    backgroundColor: theme.colors.glass
   },
   flagChipSpacing: {
     marginRight: 8
@@ -501,11 +511,13 @@ const styles = StyleSheet.create({
   ringCard: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     padding: 12,
     borderRadius: theme.radius.lg,
     minWidth: 110,
-    marginBottom: 12
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   ringCardSpacing: {
     marginRight: 12
@@ -527,9 +539,11 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   halalCard: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     padding: 14,
-    borderRadius: theme.radius.lg
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   halalStatus: {
     color: theme.colors.text,
@@ -543,7 +557,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     marginBottom: 8
   },
   ingredientStatus: {
@@ -583,9 +597,11 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: "85%",
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glassStrong,
     borderRadius: theme.radius.lg,
-    padding: 16
+    padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   modalTitle: {
     color: theme.colors.text,
@@ -597,9 +613,11 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   suitabilityCard: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glassStrong,
     padding: 16,
-    borderRadius: theme.radius.lg
+    borderRadius: theme.radius.xl,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   suitabilityValue: {
     color: theme.colors.text,
@@ -607,13 +625,13 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   suitabilityMeta: {
-    color: theme.colors.muted,
+    color: theme.colors.textSoft,
     marginBottom: 12
   },
   primaryButton: {
     backgroundColor: theme.colors.accent,
     paddingVertical: 12,
-    borderRadius: theme.radius.md,
+    borderRadius: 999,
     alignItems: "center"
   },
   primaryButtonText: {
@@ -622,9 +640,9 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     paddingVertical: 10,
-    borderRadius: theme.radius.md,
+    borderRadius: 999,
     alignItems: "center",
     marginTop: 10
   },
@@ -644,7 +662,7 @@ const styles = StyleSheet.create({
   },
   mealChip: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 10,
@@ -664,7 +682,7 @@ const styles = StyleSheet.create({
   },
   mealInput: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     borderRadius: theme.radius.md,
     padding: 10,
     color: theme.colors.text,

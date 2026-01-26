@@ -68,16 +68,31 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>Today at a glance.</Text>
+      <View style={styles.glowTop} />
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.title}>Today</Text>
+          <Text style={styles.subtitle}>Track your day in seconds.</Text>
+        </View>
+        <View style={styles.streakPill}>
+          <Text style={styles.streakLabel}>Streak</Text>
+          <Text style={styles.streakValue}>{streaks.current}d</Text>
+        </View>
+      </View>
 
-      <View style={styles.card}>
+      <View style={[styles.glassCard, styles.heroCard]}>
         <Text style={styles.cardLabel}>Calories</Text>
-        <Text style={styles.cardValue}>
-          {totals.calories} / {goals.caloriesTarget}
+        <Text style={styles.heroValue}>{totals.calories}</Text>
+        <Text style={styles.heroMeta}>
+          of {goals.caloriesTarget} kcal target
         </Text>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${percent(totals.calories, goals.caloriesTarget)}%` }]} />
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${percent(totals.calories, goals.caloriesTarget)}%` }
+            ]}
+          />
         </View>
         <Text style={styles.cardMeta}>
           {totals.calories >= goals.caloriesTarget ? "Limit reached" : "Within your limit"}
@@ -85,27 +100,27 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.cardGrid}>
-        <View style={styles.cardSmall}>
+        <View style={styles.glassTile}>
           <Text style={styles.cardLabel}>Protein</Text>
-          <Text style={styles.cardValue}>
+          <Text style={styles.tileValue}>
             {totals.protein_g}g / {goals.proteinTarget}g
           </Text>
         </View>
-        <View style={styles.cardSmall}>
+        <View style={styles.glassTile}>
           <Text style={styles.cardLabel}>Sodium</Text>
-          <Text style={styles.cardValue}>
+          <Text style={styles.tileValue}>
             {totals.sodium_mg}mg / {goals.sodiumLimit}mg
           </Text>
         </View>
-        <View style={styles.cardSmall}>
+        <View style={styles.glassTile}>
           <Text style={styles.cardLabel}>Sugar</Text>
-          <Text style={styles.cardValue}>
+          <Text style={styles.tileValue}>
             {totals.sugar_g}g / {goals.sugarLimit}g
           </Text>
         </View>
-        <View style={styles.cardSmall}>
-          <Text style={styles.cardLabel}>Activity calories</Text>
-          <Text style={styles.cardValue}>{activityCalories} kcal</Text>
+        <View style={styles.glassTile}>
+          <Text style={styles.cardLabel}>Activity</Text>
+          <Text style={styles.tileValue}>{activityCalories} kcal</Text>
         </View>
       </View>
 
@@ -114,12 +129,6 @@ export default function DashboardScreen() {
           Some items are missing nutrition. Totals may be incomplete.
         </Text>
       )}
-
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Streaks</Text>
-        <Text style={styles.cardValue}>Current: {streaks.current} days</Text>
-        <Text style={styles.cardMeta}>Longest: {streaks.longest} days</Text>
-      </View>
 
       <View style={styles.actions}>
         <Pressable style={styles.primaryButton} onPress={() => navigation.navigate("Journal" as never)}>
@@ -137,45 +146,90 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
+  glowTop: {
+    position: "absolute",
+    top: -120,
+    left: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 999,
+    backgroundColor: "rgba(87, 182, 255, 0.18)"
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing.md
+  },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
     color: theme.colors.text,
-    marginBottom: 4
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted,
-    marginBottom: 16
+    marginTop: 4
   },
-  card: {
-    backgroundColor: theme.colors.panel,
-    borderRadius: theme.radius.lg,
-    padding: 16,
-    marginBottom: 16
+  streakPill: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: theme.colors.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
+  streakLabel: {
+    color: theme.colors.muted,
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 1.2
+  },
+  streakValue: {
+    color: theme.colors.text,
+    fontWeight: "700",
+    marginTop: 2
   },
   cardLabel: {
     color: theme.colors.muted,
     textTransform: "uppercase",
-    fontSize: 12
+    fontSize: 12,
+    letterSpacing: 1.1
   },
-  cardValue: {
-    color: theme.colors.text,
-    fontSize: 18,
+  heroCard: {
+    marginBottom: theme.spacing.md
+  },
+  heroValue: {
+    fontSize: 42,
     fontWeight: "700",
-    marginTop: 6
+    color: theme.colors.text,
+    marginTop: 8,
+    fontFamily: theme.font.heading
+  },
+  heroMeta: {
+    color: theme.colors.textSoft,
+    marginTop: 4
   },
   cardMeta: {
     color: theme.colors.muted,
-    marginTop: 6
+    marginTop: 8
+  },
+  glassCard: {
+    backgroundColor: theme.colors.glassStrong,
+    borderRadius: theme.radius.xl,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadow.card
   },
   progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.panelAlt,
+    height: 10,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 999,
-    marginTop: 10,
+    marginTop: 14,
     overflow: "hidden"
   },
   progressFill: {
@@ -186,23 +240,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
-    marginBottom: 16
+    marginBottom: theme.spacing.md
   },
-  cardSmall: {
+  glassTile: {
     flexGrow: 1,
     minWidth: 140,
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
-    padding: 14
+    padding: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
+  tileValue: {
+    color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 6
   },
   notice: {
     color: theme.colors.warning,
-    marginBottom: 12
+    marginBottom: theme.spacing.md
   },
   actions: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16
+    marginBottom: theme.spacing.md
   },
   primaryButton: {
     flex: 1,
@@ -212,13 +274,13 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
   primaryButtonText: {
-    color: "#04131a",
+    color: "#051018",
     fontWeight: "700"
   },
   secondaryButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     paddingVertical: 12,
     borderRadius: 999,
     alignItems: "center"

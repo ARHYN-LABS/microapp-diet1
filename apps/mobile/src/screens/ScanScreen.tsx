@@ -87,8 +87,8 @@ export default function ScanScreen() {
           <Text style={styles.title}>Scan</Text>
           <Text style={styles.subtitle}>{status}</Text>
         </View>
-        <View style={styles.progressCard}>
-          <Text style={styles.progressLabel}>Progress</Text>
+        <View style={styles.progressPill}>
+          <Text style={styles.progressLabel}>Captured</Text>
           <Text style={styles.progressValue}>{image.label ? "100%" : "0%"}</Text>
         </View>
       </View>
@@ -100,14 +100,16 @@ export default function ScanScreen() {
           <Camera style={styles.camera} type={CameraType.back} ref={cameraRef} />
           <View style={styles.cameraOverlay}>
             <View style={styles.frameBox} />
-            <Text style={styles.overlayText}>Food-only photos work. Labels improve accuracy.</Text>
+            <View style={styles.overlayHint}>
+              <Text style={styles.overlayText}>Fill the frame. Avoid glare.</Text>
+            </View>
           </View>
         </View>
       )}
 
-      <View style={styles.buttonRow}>
-        <Pressable style={styles.scanButton} onPress={capturePhoto}>
-          <Text style={styles.scanButtonText}>Capture photo</Text>
+      <View style={styles.actionRow}>
+        <Pressable style={styles.captureButton} onPress={capturePhoto}>
+          <Text style={styles.captureButtonText}>●</Text>
         </Pressable>
         <Pressable style={styles.primaryAction} onPress={handleAnalyze}>
           <Text style={styles.primaryActionText}>Analyze</Text>
@@ -120,7 +122,9 @@ export default function ScanScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Captured</Text>
-        <Text style={styles.captureLine}>Food or label photo: {image.label ? "Ready" : "Required"}</Text>
+        <Text style={styles.captureLine}>
+          Food or label photo: {image.label ? "Ready" : "Required"}
+        </Text>
       </View>
 
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
@@ -131,30 +135,33 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 16
+    marginBottom: theme.spacing.md
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
     marginBottom: 4,
-    color: theme.colors.text
+    color: theme.colors.text,
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted
   },
-  progressCard: {
-    backgroundColor: theme.colors.panel,
-    borderRadius: theme.radius.md,
-    paddingVertical: 10,
+  progressPill: {
+    backgroundColor: theme.colors.glass,
+    borderRadius: 999,
+    paddingVertical: 8,
     paddingHorizontal: 14,
-    alignItems: "center"
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   progressLabel: {
     color: theme.colors.muted,
@@ -169,13 +176,15 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   cameraWrap: {
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.xl,
     overflow: "hidden",
-    marginBottom: 16
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   camera: {
     width: "100%",
-    height: 260
+    height: 320
   },
   cameraOverlay: {
     position: "absolute",
@@ -185,41 +194,52 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.2)"
+    backgroundColor: "rgba(0,0,0,0.25)"
   },
   frameBox: {
     width: "80%",
     height: "70%",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.5)",
-    borderRadius: theme.radius.md
+    borderColor: "rgba(255,255,255,0.4)",
+    borderRadius: theme.radius.lg
+  },
+  overlayHint: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(0,0,0,0.45)"
   },
   overlayText: {
-    marginTop: 10,
     color: theme.colors.text,
     fontSize: 12
   },
-  buttonRow: {
+  actionRow: {
     flexDirection: "row",
-    marginBottom: 16
-  },
-  scanButton: {
-    flex: 1,
-    backgroundColor: theme.colors.accent2,
-    padding: 12,
-    borderRadius: theme.radius.md,
     alignItems: "center",
-    marginRight: 12
+    gap: 12,
+    marginBottom: theme.spacing.md
   },
-  scanButtonText: {
-    color: "#04131a",
-    fontWeight: "700"
+  captureButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 999,
+    backgroundColor: theme.colors.glassStrong,
+    borderWidth: 2,
+    borderColor: theme.colors.accent2,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  captureButtonText: {
+    color: theme.colors.accent2,
+    fontSize: 24,
+    marginTop: -4
   },
   primaryAction: {
     flex: 1,
     backgroundColor: theme.colors.accent,
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
+    paddingVertical: 14,
+    borderRadius: 999,
     alignItems: "center"
   },
   primaryActionText: {
@@ -227,21 +247,25 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   secondaryButton: {
-    backgroundColor: theme.colors.panel,
-    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.glass,
+    borderRadius: 999,
     paddingVertical: 12,
     alignItems: "center",
-    marginBottom: 16
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   secondaryButtonText: {
     color: theme.colors.text,
     fontWeight: "700"
   },
   section: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     padding: 14,
-    borderRadius: theme.radius.md,
-    marginBottom: 16
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   sectionTitle: {
     fontWeight: "700",

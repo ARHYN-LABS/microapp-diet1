@@ -52,29 +52,32 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   title: {
     fontSize: 26,
     fontWeight: "700",
-    color: theme.colors.text
+    color: theme.colors.text,
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted,
     marginBottom: 24
   },
   input: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     color: theme.colors.text,
     padding: 12,
     borderRadius: theme.radius.md,
-    marginBottom: 12
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   primaryButton: {
     backgroundColor: theme.colors.accent,
     padding: 14,
-    borderRadius: theme.radius.md,
+    borderRadius: 999,
     alignItems: "center"
   },
   primaryButtonText: {

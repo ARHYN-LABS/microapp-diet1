@@ -229,23 +229,26 @@ export default function JournalScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    color: theme.colors.text
+    color: theme.colors.text,
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted,
-    marginBottom: 16
+    marginBottom: theme.spacing.md
   },
   card: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
     padding: 16,
-    marginBottom: 16
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   sectionTitle: {
     fontWeight: "700",
@@ -261,11 +264,13 @@ const styles = StyleSheet.create({
     marginBottom: 8
   },
   input: {
-    backgroundColor: theme.colors.panelAlt,
+    backgroundColor: theme.colors.glassStrong,
     color: theme.colors.text,
     padding: 10,
     borderRadius: theme.radius.md,
-    marginBottom: 10
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   row: {
     flexDirection: "row",
@@ -275,10 +280,11 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
-    borderColor: theme.colors.panelAlt,
+    borderColor: theme.colors.border,
     borderRadius: 999,
     paddingVertical: 6,
-    paddingHorizontal: 12
+    paddingHorizontal: 12,
+    backgroundColor: theme.colors.glass
   },
   chipActive: {
     borderColor: theme.colors.accent2
@@ -290,7 +296,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: theme.colors.accent,
     paddingVertical: 12,
-    borderRadius: theme.radius.md,
+    borderRadius: 999,
     alignItems: "center"
   },
   primaryButtonText: {

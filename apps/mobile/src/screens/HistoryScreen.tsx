@@ -77,14 +77,15 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
     marginBottom: 8,
-    color: theme.colors.text
+    color: theme.colors.text,
+    fontFamily: theme.font.heading
   },
   status: {
     color: theme.colors.muted,
@@ -93,8 +94,10 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.panel,
-    marginBottom: 12
+    backgroundColor: theme.colors.glass,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   cardTitle: {
     fontWeight: "600",

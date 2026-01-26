@@ -59,7 +59,7 @@ export default function HomeScreen() {
         <Text style={styles.cardLabel}>Daily calories</Text>
         <Text style={styles.cardValue}>{calories?.consumed ?? 0}</Text>
         <Text style={styles.cardMeta}>
-          Goal {calories?.goal ?? 2000} • Remaining {calories?.remaining ?? 2000}
+          Goal {calories?.goal ?? 2000} - Remaining {calories?.remaining ?? 2000}
         </Text>
         <Text style={styles.cardMeta}>
           {calories?.status === "reached" ? "Limit reached" : "Within your limit"}
@@ -81,7 +81,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
   kicker: {
@@ -95,7 +95,8 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "700",
     color: theme.colors.text,
-    marginBottom: 8
+    marginBottom: 8,
+    fontFamily: theme.font.heading
   },
   subtitle: {
     color: theme.colors.muted,
@@ -103,10 +104,12 @@ const styles = StyleSheet.create({
     marginBottom: 24
   },
   card: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
     padding: 18,
-    marginBottom: 18
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   cardLabel: {
     color: theme.colors.muted,
