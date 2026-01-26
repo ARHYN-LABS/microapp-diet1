@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Switch, ScrollView } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import * as Notifications from "expo-notifications"
 import {
   fetchConditions,
@@ -10,7 +11,15 @@ import {
   updatePrefs
 } from "../api/client"
 import { clearAuth, getProfile, getUserPrefs, setProfile, setUserPrefs } from "../storage/cache"
-import type { MedicalCondition, UserPrefs, UserProfile } from "@wimf/shared"
+import type {
+  ActivityEntry,
+  MedicalCondition,
+  Plan,
+  TrackingGoals,
+  UserPrefs,
+  UserProfile,
+  WeightEntry
+} from "@wimf/shared"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
 import {
@@ -64,14 +73,19 @@ export default function SettingsScreen() {
   const [profile, setProfileState] = useState<UserProfile | null>(null)
   const [conditions, setConditions] = useState<MedicalCondition[]>([])
   const [prefs, setPrefs] = useState<UserPrefs>(emptyPrefs)
-  const [goals, setGoalsState] = useState(getGoals())
-  const [plans, setPlansState] = useState(getPlans())
-  const [activePlanId, setActivePlanIdState] = useState(getActivePlanId())
+  const [goals, setGoalsState] = useState<TrackingGoals>({
+    caloriesTarget: 2000,
+    proteinTarget: 80,
+    sodiumLimit: 2000,
+    sugarLimit: 50
+  })
+  const [plans, setPlansState] = useState<Plan[]>([])
+  const [activePlanId, setActivePlanIdState] = useState<string | null>(null)
   const [planName, setPlanName] = useState("")
-  const [reminders, setRemindersState] = useState(getReminders())
-  const [weights, setWeightsState] = useState(getWeights())
+  const [reminders, setRemindersState] = useState({ enabled: false, times: [] as string[] })
+  const [weights, setWeightsState] = useState<WeightEntry[]>([])
   const [weightInput, setWeightInput] = useState("")
-  const [activities, setActivitiesState] = useState(getActivities())
+  const [activities, setActivitiesState] = useState<ActivityEntry[]>([])
   const [activityInput, setActivityInput] = useState("")
   const [status, setStatus] = useState("")
 
@@ -99,6 +113,22 @@ export default function SettingsScreen() {
       } catch {
         // keep cached values
       }
+
+      const [storedGoals, storedPlans, storedActivePlan, storedReminders, storedWeights, storedActivities] =
+        await Promise.all([
+          getGoals(),
+          getPlans(),
+          getActivePlanId(),
+          getReminders(),
+          getWeights(),
+          getActivities()
+        ])
+      setGoalsState(storedGoals)
+      setPlansState(storedPlans)
+      setActivePlanIdState(storedActivePlan)
+      setRemindersState(storedReminders)
+      setWeightsState(storedWeights)
+      setActivitiesState(storedActivities)
     }
 
     load()
@@ -122,12 +152,12 @@ export default function SettingsScreen() {
     }
   }
 
-  const handleGoalsSave = () => {
-    setGoals(goals)
-    setStatus("Goals saved.")
+  const handleGoalsSave = async () => {
+    await setGoals(goals)
+    setStatus("Goals saved locally.")
   }
 
-  const handleCreatePlan = () => {
+  const handleCreatePlan = async () => {
     if (!planName.trim()) {
       setStatus("Enter a plan name.")
       return
@@ -139,25 +169,25 @@ export default function SettingsScreen() {
       goals
     }
     const updated = [...plans, newPlan]
-    setPlans(updated)
+    await setPlans(updated)
     setPlansState(updated)
     setPlanName("")
     setStatus("Plan created.")
   }
 
-  const handleActivatePlan = (planId: string) => {
-    setActivePlan(planId)
+  const handleActivatePlan = async (planId: string) => {
+    await setActivePlan(planId)
     setActivePlanIdState(planId)
     const plan = plans.find((item) => item.id === planId)
     if (plan) {
       setGoalsState(plan.goals)
-      setGoals(plan.goals)
+      await setGoals(plan.goals)
       setStatus("Plan activated.")
     }
   }
 
   const handleReminderSave = async () => {
-    setReminders(reminders)
+    await setReminders(reminders)
     if (reminders.enabled) {
       await Notifications.requestPermissionsAsync()
       await Notifications.cancelAllScheduledNotificationsAsync()
@@ -187,10 +217,11 @@ export default function SettingsScreen() {
       return
     }
     const entry = { id: `${Date.now()}`, date: new Date().toISOString().slice(0, 10), weightKg: value }
-    const updated = addWeight(entry)
-    setWeightsState(updated)
-    setWeightInput("")
-    setStatus("Weight logged.")
+    addWeight(entry).then((updated) => {
+      setWeightsState(updated)
+      setWeightInput("")
+      setStatus("Weight logged.")
+    })
   }
 
   const handleAddActivity = () => {
@@ -200,10 +231,11 @@ export default function SettingsScreen() {
       return
     }
     const entry = { id: `${Date.now()}`, date: new Date().toISOString().slice(0, 10), caloriesBurned: value }
-    const updated = addActivity(entry)
-    setActivitiesState(updated)
-    setActivityInput("")
-    setStatus("Activity logged.")
+    addActivity(entry).then((updated) => {
+      setActivitiesState(updated)
+      setActivityInput("")
+      setStatus("Activity logged.")
+    })
   }
 
   const handleLogout = async () => {
@@ -599,6 +631,7 @@ export default function SettingsScreen() {
         <Text style={styles.primaryButtonText}>Save</Text>
       </Pressable>
       <Pressable style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={18} color={theme.colors.text} />
         <Text style={styles.logoutText}>Logout</Text>
       </Pressable>
       {status ? <Text style={styles.status}>{status}</Text> : null}
@@ -696,7 +729,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     marginTop: 12,
-    backgroundColor: theme.colors.glass
+    backgroundColor: theme.colors.glass,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
   },
   logoutText: {
     color: theme.colors.text,

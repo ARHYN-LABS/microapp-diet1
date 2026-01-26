@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { View, Text, StyleSheet, Pressable } from "react-native"
 import { Camera, CameraType } from "expo-camera"
+import { Ionicons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
 import { useNavigation } from "@react-navigation/native"
 import { theme } from "../theme"
@@ -109,14 +110,16 @@ export default function ScanScreen() {
 
       <View style={styles.actionRow}>
         <Pressable style={styles.captureButton} onPress={capturePhoto}>
-          <Text style={styles.captureButtonText}>●</Text>
+          <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
         </Pressable>
         <Pressable style={styles.primaryAction} onPress={handleAnalyze}>
+          <Ionicons name="sparkles" size={18} color="#02130c" />
           <Text style={styles.primaryActionText}>Analyze</Text>
         </Pressable>
       </View>
 
       <Pressable style={styles.secondaryButton} onPress={() => setImage({})}>
+        <Ionicons name="refresh" size={16} color={theme.colors.text} />
         <Text style={styles.secondaryButtonText}>Reupload image</Text>
       </Pressable>
 
@@ -230,17 +233,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  captureButtonText: {
-    color: theme.colors.accent2,
-    fontSize: 24,
-    marginTop: -4
-  },
   primaryAction: {
     flex: 1,
     backgroundColor: theme.colors.accent,
     paddingVertical: 14,
     borderRadius: 999,
-    alignItems: "center"
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
   },
   primaryActionText: {
     color: "#02130c",
@@ -253,7 +254,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.colors.border,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
   },
   secondaryButtonText: {
     color: theme.colors.text,

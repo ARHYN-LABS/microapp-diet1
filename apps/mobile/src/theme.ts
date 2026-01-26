@@ -4,6 +4,8 @@ export const theme = {
   colors: {
     bg: "#0a0f14",
     bgDeep: "#070b10",
+    panel: "#0c1218",
+    panelAlt: "#0f1620",
     glass: "rgba(20, 26, 34, 0.78)",
     glassStrong: "rgba(14, 18, 24, 0.92)",
     border: "rgba(255, 255, 255, 0.08)",
@@ -24,8 +26,8 @@ export const theme = {
     xs: 8
   },
   spacing: {
-    xs: 6,
-    sm: 10,
+    xs: 4,
+    sm: 8,
     md: 16,
     lg: 24,
     xl: 32

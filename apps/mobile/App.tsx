@@ -2,7 +2,9 @@ import { DarkTheme, NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
+import { Pressable } from "react-native"
 import { useEffect, useState } from "react"
+import { Ionicons } from "@expo/vector-icons"
 import DashboardScreen from "./src/screens/DashboardScreen"
 import ScanScreen from "./src/screens/ScanScreen"
 import ResultsScreen from "./src/screens/ResultsScreen"
@@ -48,19 +50,68 @@ function MainTabs() {
       screenOptions={{
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
+        headerTitleStyle: { fontFamily: theme.font.heading },
+        headerLeft: () => (
+          <Pressable style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+            <Ionicons name="menu" size={20} color={theme.colors.text} />
+          </Pressable>
+        ),
         tabBarStyle: {
           backgroundColor: theme.colors.panel,
-          borderTopColor: theme.colors.panelAlt
+          borderTopColor: theme.colors.border
         },
         tabBarActiveTintColor: theme.colors.accent2,
-        tabBarInactiveTintColor: theme.colors.muted
+        tabBarInactiveTintColor: theme.colors.muted,
+        tabBarLabelStyle: { fontSize: 12, marginBottom: 6 },
+        tabBarIconStyle: { marginTop: 6 }
       }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Scan" component={ScanStackScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Journal" component={JournalScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="speedometer-outline" color={color} size={size} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="Scan"
+        component={ScanStackScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="camera-outline" color={color} size={size} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="Journal"
+        component={JournalScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="book-outline" color={color} size={size} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" color={color} size={size} />
+          )
+        }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" color={color} size={size} />
+          )
+        }}
+      />
     </Tab.Navigator>
   )
 }

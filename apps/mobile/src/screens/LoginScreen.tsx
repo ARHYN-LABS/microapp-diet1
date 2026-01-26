@@ -1,5 +1,6 @@
 import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { logInUser } from "../api/client"
 import { setProfile, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
@@ -54,6 +55,7 @@ export default function LoginScreen({ navigation }: Props) {
       />
 
       <Pressable style={styles.primaryButton} onPress={handleLogin}>
+        <Ionicons name="log-in-outline" size={18} color="#02130c" />
         <Text style={styles.primaryButtonText}>Log in</Text>
       </Pressable>
 
@@ -99,6 +101,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 999,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
     marginTop: 8
   },
   primaryButtonText: {
