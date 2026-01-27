@@ -1,5 +1,5 @@
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native"
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import { BottomTabBarProps, createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
@@ -31,6 +31,105 @@ const ScanStack = createNativeStackNavigator()
 const RootStack = createNativeStackNavigator()
 const AuthStack = createNativeStackNavigator()
 const Drawer = createDrawerNavigator()
+
+const tabConfig: Array<{
+  name: string
+  label: string
+  icon: keyof typeof Ionicons.glyphMap
+}> = [
+  { name: "Dashboard", label: "Dashboard", icon: "speedometer-outline" },
+  { name: "Scan", label: "Scan", icon: "camera-outline" },
+  { name: "Journal", label: "Journal", icon: "book-outline" },
+  { name: "History", label: "History", icon: "time-outline" },
+  { name: "Settings", label: "Settings", icon: "settings-outline" }
+]
+
+function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets()
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        paddingBottom: Math.max(insets.bottom, 8),
+        backgroundColor: theme.colors.panel,
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.border
+      }}
+    >
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index
+        const config = tabConfig.find((item) => item.name === route.name)
+        if (!config) return null
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true
+          })
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name)
+          }
+        }
+
+        if (route.name === "Scan") {
+          return (
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 36,
+                backgroundColor: theme.colors.accent,
+                alignItems: "center",
+                justifyContent: "center",
+                marginTop: -24,
+                borderWidth: 4,
+                borderColor: theme.colors.panel,
+                shadowColor: "#000",
+                shadowOpacity: 0.12,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 6
+              }}
+            >
+              <Ionicons name={config.icon} size={28} color="#ffffff" />
+            </Pressable>
+          )
+        }
+
+        return (
+          <Pressable
+            key={route.key}
+            onPress={onPress}
+            style={{ flex: 1, alignItems: "center", paddingVertical: 4 }}
+          >
+            <Ionicons
+              name={config.icon}
+              size={20}
+              color={isFocused ? theme.colors.accent2 : theme.colors.muted}
+            />
+            <Text
+              style={{
+                fontSize: 11,
+                marginTop: 4,
+                color: isFocused ? theme.colors.accent2 : theme.colors.muted
+              }}
+            >
+              {config.label}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
 
 function ScanStackScreen() {
   return (
@@ -91,6 +190,7 @@ function MainTabs() {
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={({ navigation }) => ({
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
@@ -106,58 +206,35 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: theme.colors.panel,
           borderTopColor: theme.colors.border
-        },
-        tabBarActiveTintColor: theme.colors.accent2,
-        tabBarInactiveTintColor: theme.colors.muted,
-        tabBarLabelStyle: { fontSize: 12, marginBottom: 6 },
-        tabBarIconStyle: { marginTop: 6 }
+        }
       })}
     >
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="speedometer-outline" color={color} size={size} />
-          )
-        }}
+        options={{}}
       />
       <Tab.Screen
         name="Scan"
         component={ScanStackScreen}
         options={{
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="camera-outline" color={color} size={size} />
-          )
+          headerShown: false
         }}
       />
       <Tab.Screen
         name="Journal"
         component={JournalScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" color={color} size={size} />
-          )
-        }}
+        options={{}}
       />
       <Tab.Screen
         name="History"
         component={HistoryScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time-outline" color={color} size={size} />
-          )
-        }}
+        options={{}}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" color={color} size={size} />
-          )
-        }}
+        options={{}}
       />
     </Tab.Navigator>
   )
