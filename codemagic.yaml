@@ -19,6 +19,11 @@ workflows:
       - name: Install dependencies
         script: |
           npm ci
+      - name: Install Android SDK/NDK
+        script: |
+          sdkmanager --version
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-33" "build-tools;33.0.0" "ndk;23.1.7779620"
       - name: Build shared package
         script: |
           npm run build --workspace packages/shared
@@ -26,6 +31,10 @@ workflows:
         script: |
           cd apps/mobile/android
           chmod +x gradlew
-          ./gradlew assembleDebug --build-cache
+          ./gradlew assembleDebug --build-cache \
+            -Pandroid.compileSdkVersion=33 \
+            -Pandroid.targetSdkVersion=33 \
+            -Pandroid.buildToolsVersion=33.0.0 \
+            -Pandroid.ndkVersion=23.1.7779620
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
