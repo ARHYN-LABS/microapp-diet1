@@ -524,6 +524,8 @@ const withDb = async <T>(action: () => Promise<T>, context: string): Promise<T |
 
 const visionSchema = z.object({
   productName: z.string().nullable().optional(),
+  isFood: z.boolean().optional(),
+  notFoodReason: z.string().optional(),
   ingredients: z.array(z.string()).optional(),
   nutrition: z
     .object({
@@ -757,6 +759,7 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   const prompt = [
     "You are analyzing a food photo without a label.",
     "Return JSON only.",
+    "First decide if the image is a food item. If not food, set isFood=false and provide a short notFoodReason.",
     "Always provide a best-guess productName with a specific dish name (e.g., crispy chicken burger).",
     "Prefix with 'Likely' if uncertain.",
     "If you cannot infer a field, return null.",
@@ -792,6 +795,9 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   }
 
   const payload = visionSchema.parse(JSON.parse(responseText))
+  if (payload.isFood === false) {
+    throw new OcrError(payload.notFoodReason || "Sorry, this doesn't look like a food item. Please rescan.")
+  }
   return buildVisionParsed(payload)
 }
 
