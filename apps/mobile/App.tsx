@@ -160,12 +160,12 @@ function DrawerContent({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets()
 
   return (
-    <DrawerContentScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 20 }}>
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>
+    <DrawerContentScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 28, paddingBottom: 24 }}>
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ fontSize: 20, fontWeight: "700", color: theme.colors.text }}>
           SafePlate AI
         </Text>
-        <Text style={{ color: theme.colors.muted, marginTop: 4 }}>
+        <Text style={{ color: theme.colors.muted, marginTop: 6 }}>
           I can trust this app with my health.
         </Text>
       </View>
