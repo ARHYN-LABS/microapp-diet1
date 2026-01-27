@@ -5,8 +5,7 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  TextInput,
-  Platform
+  Image
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -14,10 +13,10 @@ import Svg, { Circle } from "react-native-svg"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { theme } from "../theme"
 import { getUserPrefs } from "../storage/cache"
-import { addJournalItem } from "../storage/tracking"
 
 type ResultsParams = {
   analysis: AnalyzeFromImagesResponse
+  imageUri?: string | null
 }
 
 type Props = {
@@ -41,15 +40,6 @@ const SectionHeader = ({ title, icon }: { title: string; icon?: keyof typeof Ion
     <Text style={styles.sectionHeader}>{title}</Text>
     {icon ? <Ionicons name={icon} size={16} color={theme.colors.muted} /> : null}
   </View>
-)
-
-const Chip = ({ label, active, onPress }: { label: string; active?: boolean; onPress?: () => void }) => (
-  <Pressable
-    style={[styles.chip, active ? styles.chipActive : null]}
-    onPress={onPress}
-  >
-    <Text style={[styles.chipText, active ? styles.chipTextActive : null]}>{label}</Text>
-  </Pressable>
 )
 
 const MetricCard = ({
@@ -159,15 +149,12 @@ const IngredientItem = ({
 
 export default function ResultsScreen({ route }: Props) {
   const { analysis } = route.params
+  const imageUri = route.params.imageUri
   const insets = useSafeAreaInsets()
   const [expanded, setExpanded] = useState(false)
   const [activeFlag, setActiveFlag] =
     useState<AnalyzeFromImagesResponse["personalizedFlags"][number] | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
-  const [status, setStatus] = useState("")
-  const [mealType, setMealType] =
-    useState<"breakfast" | "lunch" | "dinner" | "snack">("snack")
-  const [grams, setGrams] = useState("50")
   const scoreColor = useMemo(
     () => categoryColors[analysis.score.category] || theme.colors.text,
     [analysis.score.category]
@@ -198,62 +185,6 @@ export default function ResultsScreen({ route }: Props) {
     return average.toFixed(2)
   }, [analysis.parsing.confidences])
 
-  const handleEat = async () => {
-    if (caloriesPer100g === null) {
-      setStatus("Calories unknown. Try another image.")
-      return
-    }
-    setStatus("Adding to daily intake...")
-    try {
-      await addJournalItem({
-        id: `${Date.now()}`,
-        date: new Date().toISOString().slice(0, 10),
-        mealType,
-        grams: Number(grams) || 50,
-        createdAt: new Date().toISOString(),
-        analysisSnapshot: analysis,
-        name: analysis.productName || "Scan item",
-        nutritionPer100g: {
-          id: "scan",
-          name: analysis.productName || "Scan item",
-          caloriesPer100g,
-          protein_g: analysis.nutritionHighlights?.protein_g ?? null,
-          carbs_g: analysis.nutritionHighlights?.carbs_g ?? null,
-          sugar_g: analysis.nutritionHighlights?.sugar_g ?? null,
-          sodium_mg: analysis.nutritionHighlights?.sodium_mg ?? null
-        }
-      })
-      setStatus("Added to journal.")
-    } catch (error) {
-      setStatus((error as Error).message)
-    }
-  }
-
-  const handleAddToJournal = async () => {
-    if (caloriesPer100g === null) {
-      setStatus("Calories unknown. Try another image.")
-      return
-    }
-    await addJournalItem({
-      id: `${Date.now()}-${mealType}`,
-      date: new Date().toISOString().slice(0, 10),
-      mealType,
-      grams: Number(grams) || 50,
-      createdAt: new Date().toISOString(),
-      analysisSnapshot: analysis,
-      name: analysis.productName || "Scan item",
-      nutritionPer100g: {
-        id: "scan",
-        name: analysis.productName || "Scan item",
-        caloriesPer100g,
-        protein_g: analysis.nutritionHighlights?.protein_g ?? null,
-        carbs_g: analysis.nutritionHighlights?.carbs_g ?? null,
-        sugar_g: analysis.nutritionHighlights?.sugar_g ?? null,
-        sodium_mg: analysis.nutritionHighlights?.sodium_mg ?? null
-      }
-    })
-    setStatus("Added to journal.")
-  }
 
   useEffect(() => {
     const loadPrefs = async () => {
@@ -285,11 +216,18 @@ export default function ResultsScreen({ route }: Props) {
         <Text style={styles.subtitle}>Label read confidence: {labelConfidence}</Text>
       </View>
 
+      {imageUri ? (
+        <Card style={styles.previewCard}>
+          <SectionHeader title="Captured image" icon="image-outline" />
+          <Image source={{ uri: imageUri }} style={styles.previewImage} />
+        </Card>
+      ) : null}
+
       <View style={styles.metricsGrid}>
         <MetricCard
-          label="Calories per 100g"
+          label="Approx calories per 100g"
           value={caloriesPer100g === null ? "Unknown" : caloriesPer100g}
-          helper={caloriesPer100g === null ? "Not detected" : "From nutrition label"}
+          helper={caloriesPer100g === null ? "Estimate unavailable" : "Approximate estimate"}
           icon="flame-outline"
         />
         <MetricCard
@@ -306,40 +244,6 @@ export default function ResultsScreen({ route }: Props) {
           icon="checkmark-circle-outline"
         />
       </View>
-
-      <Card style={styles.ctaCard}>
-        <Pressable style={styles.primaryButton} onPress={handleEat}>
-          <Ionicons name="restaurant-outline" size={18} color="#02130c" />
-          <Text style={styles.primaryButtonText}>I am eating this</Text>
-        </Pressable>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}
-        >
-          {(["breakfast", "lunch", "dinner", "snack"] as const).map((meal) => (
-            <Chip
-              key={meal}
-              label={meal}
-              active={mealType === meal}
-              onPress={() => setMealType(meal)}
-            />
-          ))}
-        </ScrollView>
-        <Text style={styles.inputLabel}>Grams</Text>
-        <TextInput
-          style={styles.input}
-          value={grams}
-          onChangeText={setGrams}
-          keyboardType="numeric"
-          placeholder="50"
-          placeholderTextColor={theme.colors.muted}
-        />
-        <Pressable style={styles.secondaryButton} onPress={handleAddToJournal}>
-          <Text style={styles.secondaryButtonText}>Add to Journal</Text>
-        </Pressable>
-        {status ? <Text style={styles.statusText}>{status}</Text> : null}
-      </Card>
 
       <SectionHeader title="Personalized for you" icon="sparkles-outline" />
       <View style={styles.flagsWrap}>
@@ -438,13 +342,13 @@ export default function ResultsScreen({ route }: Props) {
 
         <View style={styles.divider} />
 
-        <SectionHeader title="Nutrition highlights" icon="fitness-outline" />
+        <SectionHeader title="Approximate calories" icon="fitness-outline" />
         <View style={styles.nutritionRow}>
-          <View style={styles.nutritionChip}><Text style={styles.nutritionText}>Calories {analysis.nutritionHighlights?.calories ?? "Unknown"}</Text></View>
-          <View style={styles.nutritionChip}><Text style={styles.nutritionText}>Protein {analysis.nutritionHighlights?.protein_g ?? "Unknown"}g</Text></View>
-          <View style={styles.nutritionChip}><Text style={styles.nutritionText}>Carbs {analysis.nutritionHighlights?.carbs_g ?? "Unknown"}g</Text></View>
-          <View style={styles.nutritionChip}><Text style={styles.nutritionText}>Sugar {analysis.nutritionHighlights?.sugar_g ?? "Unknown"}g</Text></View>
-          <View style={styles.nutritionChip}><Text style={styles.nutritionText}>Sodium {analysis.nutritionHighlights?.sodium_mg ?? "Unknown"}mg</Text></View>
+          <View style={styles.nutritionChip}>
+            <Text style={styles.nutritionText}>
+              Calories {analysis.nutritionHighlights?.calories ?? "Unknown"}
+            </Text>
+          </View>
         </View>
       </Card>
 
@@ -534,73 +438,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSoft
   },
-  ctaCard: {
-    padding: spacing.md,
-    gap: spacing.sm
+  previewCard: {
+    padding: spacing.md
   },
-  primaryButton: {
-    backgroundColor: theme.colors.accent,
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8
-  },
-  primaryButtonText: {
-    color: "#02130c",
-    fontWeight: "700",
-    fontSize: 16
-  },
-  chipRow: {
-    gap: spacing.sm,
-    paddingVertical: spacing.sm
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.glass
-  },
-  chipActive: {
-    borderColor: theme.colors.accent2,
-    backgroundColor: "rgba(87, 182, 255, 0.14)"
-  },
-  chipText: {
-    fontSize: 13,
-    color: theme.colors.text
-  },
-  chipTextActive: {
-    color: theme.colors.text
-  },
-  inputLabel: {
-    color: theme.colors.muted,
-    fontSize: 13
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  previewImage: {
+    width: "100%",
+    height: 200,
     borderRadius: theme.radius.md,
-    padding: Platform.select({ ios: 12, android: 10 }),
-    color: theme.colors.text,
-    backgroundColor: theme.colors.glassStrong
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: "center"
-  },
-  secondaryButtonText: {
-    color: theme.colors.text,
-    fontWeight: "600"
-  },
-  statusText: {
-    color: theme.colors.muted,
-    fontSize: 12
+    marginTop: spacing.sm
   },
   flagsWrap: {
     flexDirection: "row",

@@ -2,21 +2,21 @@ import { Platform } from "react-native"
 
 export const theme = {
   colors: {
-    bg: "#0a0f14",
-    bgDeep: "#070b10",
-    panel: "#0c1218",
-    panelAlt: "#0f1620",
-    glass: "rgba(20, 26, 34, 0.78)",
-    glassStrong: "rgba(14, 18, 24, 0.92)",
-    border: "rgba(255, 255, 255, 0.08)",
-    text: "#f3f6fb",
-    textSoft: "#c5cfdd",
-    muted: "#8d9bb0",
-    accent: "#62f4c5",
-    accent2: "#57b6ff",
-    warning: "#ffb75a",
-    danger: "#ff6d7a",
-    success: "#48e7a3"
+    bg: "#F8FAFC",
+    bgDeep: "#F1F5F9",
+    panel: "#FFFFFF",
+    panelAlt: "#EEF2F7",
+    glass: "rgba(255, 255, 255, 0.92)",
+    glassStrong: "rgba(255, 255, 255, 0.98)",
+    border: "#E2E8F0",
+    text: "#1F2933",
+    textSoft: "#3E4C59",
+    muted: "#7B8794",
+    accent: "#1ABC9C",
+    accent2: "#2C7BE5",
+    warning: "#E63946",
+    danger: "#E63946",
+    success: "#1ABC9C"
   },
   radius: {
     xl: 28,
@@ -47,10 +47,10 @@ export const theme = {
   shadow: {
     card: {
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.35,
-      shadowRadius: 20,
-      elevation: 8
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
+      elevation: 3
     }
   }
 }

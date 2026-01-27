@@ -28,6 +28,10 @@ export default function Login() {
       <div className="row justify-content-center">
         <div className="col-lg-5">
           <div className="glass-card">
+            <div className="text-center mb-4">
+              <div className="fw-bold fs-4">SafePlate AI</div>
+              <div className="text-muted">I can trust this app with my health.</div>
+            </div>
             <h1 className="mb-3">Log in</h1>
             <div className="mb-3">
               <label className="form-label">Email</label>

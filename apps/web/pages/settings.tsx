@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import {
-  getConditions,
   getPrefs,
   getProfile,
   savePrefs,
-  updateConditions,
   updateProfile
 } from "@wimf/shared"
-import type { MedicalCondition, UserPrefs, UserProfile } from "@wimf/shared"
+import type { UserPrefs, UserProfile } from "@wimf/shared"
 import { getToken } from "../lib/auth"
+import MultiSelect from "../components/MultiSelect"
+import { getHealthPrefs, setHealthPrefs } from "../lib/healthPrefs"
 import {
   addActivity,
   addWeight,
@@ -40,17 +40,6 @@ const emptyPrefs: UserPrefs = {
   sensitiveStomach: false
 }
 
-const conditionLabels = [
-  { type: "diabetes", label: "Diabetes" },
-  { type: "hypertension", label: "High blood pressure" },
-  { type: "heart_disease", label: "Heart disease" },
-  { type: "high_cholesterol", label: "High cholesterol" },
-  { type: "celiac", label: "Celiac / gluten sensitivity" },
-  { type: "kidney_disease", label: "Kidney disease" },
-  { type: "allergy", label: "Allergies" },
-  { type: "other", label: "Other" }
-] as const
-
 const toNumberOrNull = (value: string) => {
   const trimmed = value.trim()
   if (!trimmed) return null
@@ -63,7 +52,8 @@ export default function Settings() {
   const [token, setToken] = useState<string | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs>(emptyPrefs)
-  const [conditions, setConditions] = useState<MedicalCondition[]>([])
+  const [restrictions, setRestrictions] = useState<string[]>([])
+  const [allergens, setAllergens] = useState<string[]>([])
   const [goals, setGoalsState] = useState(getGoals())
   const [plans, setPlansState] = useState(getPlans())
   const [activePlanId, setActivePlanIdState] = useState(getActivePlanId())
@@ -89,15 +79,16 @@ export default function Settings() {
     const load = async () => {
       try {
         const profileData = await getProfile({ baseUrl: apiBase, token })
-        const [prefsData, conditionData] = await Promise.all([
-          getPrefs({ baseUrl: apiBase, token }, profileData.id).catch(() => null),
-          getConditions({ baseUrl: apiBase, token })
+        const [prefsData] = await Promise.all([
+          getPrefs({ baseUrl: apiBase, token }, profileData.id).catch(() => null)
         ])
         setProfile(profileData)
         if (prefsData) {
           setPrefs({ ...prefsData })
         }
-        setConditions(conditionData)
+        const storedHealth = getHealthPrefs()
+        setRestrictions(storedHealth.restrictions)
+        setAllergens(storedHealth.allergens)
       } catch {
         setStatus("Unable to load profile.")
       }
@@ -106,22 +97,31 @@ export default function Settings() {
     load()
   }, [token])
 
-  const selectedConditions = useMemo(() => new Set(conditions.map((item) => item.type)), [conditions])
+  const restrictionOptions = [
+    { value: "vegan", label: "Vegan", description: "Excludes all animal-derived foods." },
+    { value: "vegetarian", label: "Vegetarian", description: "No meat or fish; may include eggs/dairy." },
+    { value: "gluten_free", label: "Gluten-Free", description: "No wheat, barley, or rye." },
+    { value: "lactose_free", label: "Dairy-Free", description: "Avoids milk-based products." },
+    { value: "nut_allergy", label: "Nut Allergies", description: "Avoid peanuts and tree nuts." },
+    { value: "halal", label: "Halal", description: "Complies with Islamic dietary laws." },
+    { value: "kosher", label: "Kosher", description: "Complies with Jewish dietary laws." },
+    { value: "hindu", label: "Hindu", description: "Commonly restricts beef; some avoid all meat." },
+    { value: "keto", label: "Keto", description: "High fat, low carb." },
+    { value: "diabetic", label: "Diabetic", description: "Manages sugar and carbohydrates." },
+    { value: "low_sodium", label: "Low-Sodium / Low-Fat", description: "Used for cardiovascular health." }
+  ]
 
-  const toggleCondition = (type: MedicalCondition["type"]) => {
-    setConditions((prev) => {
-      if (prev.some((item) => item.type === type)) {
-        return prev.filter((item) => item.type !== type)
-      }
-      return [...prev, { type }]
-    })
-  }
-
-  const updateConditionNote = (type: MedicalCondition["type"], notes: string) => {
-    setConditions((prev) =>
-      prev.map((item) => (item.type === type ? { ...item, notes } : item))
-    )
-  }
+  const allergenOptions = [
+    { value: "milk", label: "Milk" },
+    { value: "eggs", label: "Eggs" },
+    { value: "peanuts", label: "Peanuts" },
+    { value: "tree_nuts", label: "Tree Nuts", description: "Almonds, walnuts, pecans, etc." },
+    { value: "fish", label: "Fish", description: "Salmon, cod, flounder, etc." },
+    { value: "shellfish", label: "Crustacean Shellfish", description: "Shrimp, crab, lobster." },
+    { value: "wheat", label: "Wheat" },
+    { value: "soy", label: "Soy" },
+    { value: "sesame", label: "Sesame", description: "Recognized as major allergen (2023)." }
+  ]
 
   const handleProfileSave = async () => {
     if (!token || !profile) return
@@ -212,16 +212,9 @@ export default function Settings() {
     setStatus("Activity logged.")
   }
 
-  const handleConditionsSave = async () => {
-    if (!token) return
-    setStatus("Saving conditions...")
-    try {
-      const saved = await updateConditions({ baseUrl: apiBase, token }, conditions)
-      setConditions(saved)
-      setStatus("Conditions updated.")
-    } catch (error) {
-      setStatus((error as Error).message)
-    }
+  const handleHealthSave = () => {
+    setHealthPrefs({ restrictions, allergens })
+    setStatus("Health preferences saved locally.")
   }
 
   if (!profile) {
@@ -388,40 +381,27 @@ export default function Settings() {
           </div>
 
           <div className="glass-card mb-3">
-            <h2 className="h5 mb-3">Health conditions</h2>
-            <div className="row g-2">
-              {conditionLabels.map((condition) => (
-                <div key={condition.type} className="col-md-6">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      checked={selectedConditions.has(condition.type)}
-                      onChange={() => toggleCondition(condition.type)}
-                    />
-                    <label className="form-check-label">{condition.label}</label>
-                  </div>
-                  {condition.type === "allergy" && selectedConditions.has("allergy") && (
-                    <input
-                      className="form-control mt-2"
-                      placeholder="Allergy details (e.g., peanuts, dairy)"
-                      value={conditions.find((item) => item.type === "allergy")?.notes ?? ""}
-                      onChange={(event) => updateConditionNote("allergy", event.target.value)}
-                    />
-                  )}
-                  {condition.type === "other" && selectedConditions.has("other") && (
-                    <input
-                      className="form-control mt-2"
-                      placeholder="Other condition details"
-                      value={conditions.find((item) => item.type === "other")?.notes ?? ""}
-                      onChange={(event) => updateConditionNote("other", event.target.value)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-            <button className="btn btn-primary mt-3" onClick={handleConditionsSave}>
-              Save conditions
+            <h2 className="h5 mb-3">Common dietary restrictions</h2>
+            <MultiSelect
+              label="Select restrictions"
+              options={restrictionOptions}
+              selected={restrictions}
+              onChange={setRestrictions}
+              placeholder="Search dietary restrictions"
+            />
+          </div>
+
+          <div className="glass-card mb-3">
+            <h2 className="h5 mb-3">Allergens</h2>
+            <MultiSelect
+              label="Select allergens"
+              options={allergenOptions}
+              selected={allergens}
+              onChange={setAllergens}
+              placeholder="Search allergens"
+            />
+            <button className="btn btn-primary mt-2" onClick={handleHealthSave}>
+              Save health preferences
             </button>
           </div>
 

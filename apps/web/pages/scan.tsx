@@ -12,8 +12,19 @@ export default function Scan() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [labelFile, setLabelFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const progress = useMemo(() => (labelFile ? 100 : 0), [labelFile])
+
+  useEffect(() => {
+    if (!labelFile) {
+      setPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(labelFile)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [labelFile])
 
   useEffect(() => {
     const storedToken = getToken()
@@ -122,6 +133,17 @@ export default function Scan() {
               disabled={loading}
             />
           </div>
+          {previewUrl && (
+            <div className="glass-card mt-3">
+              <div className="fw-semibold mb-2">Preview</div>
+              <img
+                src={previewUrl}
+                alt="Captured preview"
+                className="img-fluid rounded"
+              />
+              <div className="text-muted small mt-2">Captured and ready for analysis.</div>
+            </div>
+          )}
           <button
             className="btn btn-primary mt-3"
             onClick={handleSubmit}

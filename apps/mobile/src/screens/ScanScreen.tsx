@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react"
-import { View, Text, StyleSheet, Pressable } from "react-native"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { View, Text, StyleSheet, Pressable, Image } from "react-native"
 import { Camera, CameraType } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { theme } from "../theme"
-import { getProfile, setLastAnalysis } from "../storage/cache"
+import { getProfile, setLastAnalysis, setScanImageForId } from "../storage/cache"
 
 type ImageState = {
   label?: { uri: string; name: string; type: string }
@@ -26,6 +26,12 @@ export default function ScanScreen() {
 
     request()
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      setStatus("Capture one clear food or label photo.")
+    }, [])
+  )
 
   const capturePhoto = async () => {
     if (!cameraRef.current) return
@@ -64,18 +70,24 @@ export default function ScanScreen() {
       const analysis = await runAnalyze(formData)
       await setLastAnalysis(analysis)
       if (profile?.id) {
-        await saveHistory({
+        const saved = await saveHistory({
           userId: profile.id,
           extractedText: analysis.parsing.extractedText,
           parsedIngredients: analysis.ingredientBreakdown.map((item) => item.name),
           parsedNutrition: analysis.nutritionHighlights,
           analysisSnapshot: analysis
         })
+        if (saved?.id && image.label?.uri) {
+          await setScanImageForId(saved.id, image.label.uri)
+        }
       }
 
       navigation.navigate("Results" as never, {
-        analysis
+        analysis,
+        imageUri: image.label?.uri
       } as never)
+      setImage({})
+      setStatus("Capture one clear food or label photo.")
     } catch (error) {
       setStatus((error as Error).message || "Unable to analyze image.")
     }
@@ -108,12 +120,20 @@ export default function ScanScreen() {
         </View>
       )}
 
+      {image.label?.uri ? (
+        <View style={styles.previewCard}>
+          <Text style={styles.sectionTitle}>Preview</Text>
+          <Image source={{ uri: image.label.uri }} style={styles.previewImage} />
+          <Text style={styles.captureLine}>Captured and ready for analysis.</Text>
+        </View>
+      ) : null}
+
       <View style={styles.actionRow}>
         <Pressable style={styles.captureButton} onPress={capturePhoto}>
           <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
         </Pressable>
         <Pressable style={styles.primaryAction} onPress={handleAnalyze}>
-          <Ionicons name="sparkles" size={18} color="#02130c" />
+          <Ionicons name="sparkles" size={18} color="#ffffff" />
           <Text style={styles.primaryActionText}>Analyze</Text>
         </Pressable>
       </View>
@@ -158,7 +178,7 @@ const styles = StyleSheet.create({
     color: theme.colors.muted
   },
   progressPill: {
-    backgroundColor: theme.colors.glass,
+    backgroundColor: theme.colors.panel,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -211,7 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.45)"
+    backgroundColor: "rgba(0,0,0,0.35)"
   },
   overlayText: {
     color: theme.colors.text,
@@ -227,7 +247,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 999,
-    backgroundColor: theme.colors.glassStrong,
+    backgroundColor: theme.colors.panel,
     borderWidth: 2,
     borderColor: theme.colors.accent2,
     alignItems: "center",
@@ -244,11 +264,11 @@ const styles = StyleSheet.create({
     gap: 8
   },
   primaryActionText: {
-    color: "#02130c",
+    color: "#ffffff",
     fontWeight: "700"
   },
   secondaryButton: {
-    backgroundColor: theme.colors.glass,
+    backgroundColor: theme.colors.panel,
     borderRadius: 999,
     paddingVertical: 12,
     alignItems: "center",
@@ -264,12 +284,27 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   section: {
-    backgroundColor: theme.colors.glass,
+    backgroundColor: theme.colors.panel,
     padding: 14,
     borderRadius: theme.radius.lg,
     marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border
+  },
+  previewCard: {
+    backgroundColor: theme.colors.panel,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border
+  },
+  previewImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: theme.radius.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm
   },
   sectionTitle: {
     fontWeight: "700",

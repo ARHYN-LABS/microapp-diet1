@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
 import { requestPasswordReset } from "@wimf/shared"
 import { apiBase } from "../api/config"
 import { theme } from "../theme"
@@ -26,6 +27,8 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.logo}>SafePlate AI</Text>
+      <Text style={styles.tagline}>I can trust this app with my health.</Text>
       <Text style={styles.title}>Forgot password</Text>
       <Text style={styles.subtitle}>Request a reset token.</Text>
       <TextInput
@@ -38,6 +41,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
         onChangeText={setEmail}
       />
       <Pressable style={styles.primaryButton} onPress={handleReset}>
+        <Ionicons name="mail-outline" size={18} color="#ffffff" />
         <Text style={styles.primaryButtonText}>Request reset</Text>
       </Pressable>
       {status ? <Text style={styles.status}>{status}</Text> : null}
@@ -54,6 +58,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
+  },
+  logo: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: theme.colors.text,
+    marginBottom: 6,
+    fontFamily: theme.font.heading
+  },
+  tagline: {
+    color: theme.colors.muted,
+    marginBottom: theme.spacing.lg
   },
   title: {
     fontSize: 26,
@@ -78,10 +93,13 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
     padding: 14,
     borderRadius: 999,
-    alignItems: "center"
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8
   },
   primaryButtonText: {
-    color: "#02130c",
+    color: "#ffffff",
     fontWeight: "700"
   },
   status: {

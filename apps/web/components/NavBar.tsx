@@ -26,7 +26,7 @@ export default function NavBar() {
       <div className="container d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-3">
           <Link className="app-logo" href="/">
-            microapp-diet
+            SafePlate AI
           </Link>
           <div className="app-links d-none d-lg-flex">
             <Link href="/">Home</Link>

@@ -1,9 +1,14 @@
-import { DarkTheme, NavigationContainer } from "@react-navigation/native"
+import { DefaultTheme, NavigationContainer } from "@react-navigation/native"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  DrawerItem
+} from "@react-navigation/drawer"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
-import { Pressable } from "react-native"
-import { useEffect, useState } from "react"
+import { Pressable, Text, View } from "react-native"
+import { useEffect, useState, useContext } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import DashboardScreen from "./src/screens/DashboardScreen"
 import ScanScreen from "./src/screens/ScanScreen"
@@ -16,17 +21,32 @@ import SignupScreen from "./src/screens/SignupScreen"
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen"
 import ResetPasswordScreen from "./src/screens/ResetPasswordScreen"
 import { theme } from "./src/theme"
-import { getToken } from "./src/storage/cache"
+import { clearAuth, getToken } from "./src/storage/cache"
 import { AuthContext } from "./src/auth"
 
 const Tab = createBottomTabNavigator()
 const ScanStack = createNativeStackNavigator()
 const RootStack = createNativeStackNavigator()
 const AuthStack = createNativeStackNavigator()
+const Drawer = createDrawerNavigator()
 
 function ScanStackScreen() {
   return (
-    <ScanStack.Navigator>
+    <ScanStack.Navigator
+      screenOptions={({ navigation }) => ({
+        headerStyle: { backgroundColor: theme.colors.panel },
+        headerTintColor: theme.colors.text,
+        headerTitleStyle: { fontFamily: theme.font.heading },
+        headerLeft: () => (
+          <Pressable
+            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+            onPress={() => navigation.getParent()?.getParent()?.openDrawer()}
+          >
+            <Ionicons name="menu" size={20} color={theme.colors.text} />
+          </Pressable>
+        )
+      })}
+    >
       <ScanStack.Screen name="ScanHome" component={ScanScreen} options={{ title: "Scan" }} />
       <ScanStack.Screen name="Results" component={ResultsScreen} />
     </ScanStack.Navigator>
@@ -47,12 +67,15 @@ function AuthStackScreen() {
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ navigation }) => ({
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
         headerTitleStyle: { fontFamily: theme.font.heading },
         headerLeft: () => (
-          <Pressable style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+          <Pressable
+            style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+            onPress={() => navigation.getParent()?.openDrawer()}
+          >
             <Ionicons name="menu" size={20} color={theme.colors.text} />
           </Pressable>
         ),
@@ -64,7 +87,7 @@ function MainTabs() {
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarLabelStyle: { fontSize: 12, marginBottom: 6 },
         tabBarIconStyle: { marginTop: 6 }
-      }}
+      })}
     >
       <Tab.Screen
         name="Dashboard"
@@ -116,6 +139,72 @@ function MainTabs() {
   )
 }
 
+function DrawerContent({ navigation }: { navigation: any }) {
+  const { setIsAuthed } = useContext(AuthContext)
+
+  return (
+    <DrawerContentScrollView contentContainerStyle={{ padding: 16 }}>
+      <View style={{ marginBottom: 16 }}>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>
+          SafePlate AI
+        </Text>
+        <Text style={{ color: theme.colors.muted, marginTop: 4 }}>
+          I can trust this app with my health.
+        </Text>
+      </View>
+      <DrawerItem
+        label="Dashboard"
+        onPress={() => navigation.navigate("MainTabs", { screen: "Dashboard" })}
+        icon={({ color, size }) => <Ionicons name="speedometer-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Scan"
+        onPress={() => navigation.navigate("MainTabs", { screen: "Scan" })}
+        icon={({ color, size }) => <Ionicons name="camera-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Journal"
+        onPress={() => navigation.navigate("MainTabs", { screen: "Journal" })}
+        icon={({ color, size }) => <Ionicons name="book-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="History"
+        onPress={() => navigation.navigate("MainTabs", { screen: "History" })}
+        icon={({ color, size }) => <Ionicons name="time-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Settings"
+        onPress={() => navigation.navigate("MainTabs", { screen: "Settings" })}
+        icon={({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Logout"
+        onPress={async () => {
+          await clearAuth()
+          setIsAuthed(false)
+        }}
+        icon={({ color, size }) => <Ionicons name="log-out-outline" color={color} size={size} />}
+      />
+    </DrawerContentScrollView>
+  )
+}
+
+function DrawerRoot() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: { backgroundColor: theme.colors.panel },
+        drawerActiveTintColor: theme.colors.accent2,
+        drawerInactiveTintColor: theme.colors.muted
+      }}
+      drawerContent={(props) => <DrawerContent {...props} />}
+    >
+      <Drawer.Screen name="MainTabs" component={MainTabs} />
+    </Drawer.Navigator>
+  )
+}
+
 export default function App() {
   const [isReady, setIsReady] = useState(false)
   const [isAuthed, setIsAuthed] = useState(false)
@@ -130,24 +219,24 @@ export default function App() {
   }, [])
 
   const navTheme = {
-    ...DarkTheme,
+    ...DefaultTheme,
     colors: {
-      ...DarkTheme.colors,
+      ...DefaultTheme.colors,
       background: theme.colors.bg,
       card: theme.colors.panel,
       text: theme.colors.text,
-      border: theme.colors.panelAlt
+      border: theme.colors.border
     }
   }
 
   return (
     <AuthContext.Provider value={{ setIsAuthed }}>
       <NavigationContainer theme={navTheme}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         {isReady && (
           <RootStack.Navigator screenOptions={{ headerShown: false }}>
             {isAuthed ? (
-              <RootStack.Screen name="Main" component={MainTabs} />
+              <RootStack.Screen name="Main" component={DrawerRoot} />
             ) : (
               <RootStack.Screen name="Auth" component={AuthStackScreen} />
             )}

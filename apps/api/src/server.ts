@@ -35,7 +35,7 @@ const upload = multer({
 
 const port = Number(process.env.PORT || 4000)
 const openAiKey = process.env.OPENAI_API_KEY
-const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-4o-mini"
+const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-5.1"
 const openai = openAiKey ? new OpenAI({ apiKey: openAiKey }) : null
 const jwtSecret = process.env.JWT_SECRET || "change-me"
 const corsOrigins = (process.env.CORS_ORIGINS || "")

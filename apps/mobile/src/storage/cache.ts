@@ -7,6 +7,13 @@ const USER_KEY = "wimf.user_id"
 const TOKEN_KEY = "wimf.token"
 const PROFILE_KEY = "wimf.profile"
 const LAST_ANALYSIS_KEY = "wimf.last_analysis"
+const HEALTH_PREFS_KEY = "wimf.health_prefs"
+const SCAN_IMAGE_KEY = "wimf.scan_images"
+
+type HealthPrefs = {
+  restrictions: string[]
+  allergens: string[]
+}
 
 export async function getUserPrefs(): Promise<UserPrefs | null> {
   const raw = await AsyncStorage.getItem(PREFS_KEY)
@@ -68,6 +75,43 @@ export async function getLastAnalysis(): Promise<unknown | null> {
 
 export async function setLastAnalysis(analysis: unknown): Promise<void> {
   await AsyncStorage.setItem(LAST_ANALYSIS_KEY, JSON.stringify(analysis))
+}
+
+export async function getHealthPrefs(): Promise<HealthPrefs> {
+  const raw = await AsyncStorage.getItem(HEALTH_PREFS_KEY)
+  if (!raw) return { restrictions: [], allergens: [] }
+  try {
+    return JSON.parse(raw) as HealthPrefs
+  } catch {
+    return { restrictions: [], allergens: [] }
+  }
+}
+
+export async function setHealthPrefs(prefs: HealthPrefs): Promise<void> {
+  await AsyncStorage.setItem(HEALTH_PREFS_KEY, JSON.stringify(prefs))
+}
+
+type ScanImageMap = Record<string, string>
+
+export async function getScanImageMap(): Promise<ScanImageMap> {
+  const raw = await AsyncStorage.getItem(SCAN_IMAGE_KEY)
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw) as ScanImageMap
+  } catch {
+    return {}
+  }
+}
+
+export async function setScanImageForId(id: string, uri: string): Promise<void> {
+  const map = await getScanImageMap()
+  map[id] = uri
+  await AsyncStorage.setItem(SCAN_IMAGE_KEY, JSON.stringify(map))
+}
+
+export async function getScanImageForId(id: string): Promise<string | null> {
+  const map = await getScanImageMap()
+  return map[id] || null
 }
 
 export async function getScanHistoryCache(): Promise<ScanHistory[]> {

@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react"
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native"
 import { fetchHistory } from "../api/client"
-import { getProfile, getScanHistoryCache, setScanHistoryCache } from "../storage/cache"
+import {
+  getProfile,
+  getScanHistoryCache,
+  getScanImageMap,
+  setScanHistoryCache
+} from "../storage/cache"
 import type { ScanHistory } from "@wimf/shared"
 import { theme } from "../theme"
 import { useNavigation } from "@react-navigation/native"
@@ -10,6 +15,7 @@ export default function HistoryScreen() {
   const navigation = useNavigation()
   const [history, setHistory] = useState<ScanHistory[]>([])
   const [status, setStatus] = useState("Loading...")
+  const [imageMap, setImageMap] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const load = async () => {
@@ -20,6 +26,8 @@ export default function HistoryScreen() {
       }
 
       try {
+        const storedImages = await getScanImageMap()
+        setImageMap(storedImages)
         const profile = await getProfile()
         if (!profile) {
           setStatus("Please log in.")
@@ -62,18 +70,18 @@ export default function HistoryScreen() {
         }
         const name = entry.productName || entry.analysisSnapshot?.productName || "Scan"
         return (
-          <Pressable
-            style={styles.card}
-            key={entry.id}
-            onPress={() => {
-              if (entry.analysisSnapshot) {
-                navigation.navigate("Scan" as never, {
-                  screen: "Results",
-                  params: { analysis: entry.analysisSnapshot }
-                } as never)
-              }
-            }}
-          >
+            <Pressable
+              style={styles.card}
+              key={entry.id}
+              onPress={() => {
+                if (entry.analysisSnapshot) {
+                  navigation.navigate("Scan" as never, {
+                    screen: "Results",
+                    params: { analysis: entry.analysisSnapshot, imageUri: imageMap[entry.id] || null }
+                  } as never)
+                }
+              }}
+            >
             <Text style={styles.cardTitle}>{name}</Text>
             <Text style={styles.cardMeta}>{new Date(entry.createdAt).toLocaleString()}</Text>
             <Text style={styles.cardMeta}>

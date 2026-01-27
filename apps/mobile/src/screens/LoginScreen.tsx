@@ -33,6 +33,8 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.logo}>SafePlate AI</Text>
+      <Text style={styles.tagline}>I can trust this app with my health.</Text>
       <Text style={styles.title}>Log in</Text>
       <Text style={styles.subtitle}>Welcome back.</Text>
 
@@ -55,7 +57,7 @@ export default function LoginScreen({ navigation }: Props) {
       />
 
       <Pressable style={styles.primaryButton} onPress={handleLogin}>
-        <Ionicons name="log-in-outline" size={18} color="#02130c" />
+        <Ionicons name="log-in-outline" size={18} color="#ffffff" />
         <Text style={styles.primaryButtonText}>Log in</Text>
       </Pressable>
 
@@ -76,6 +78,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
+  },
+  logo: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: theme.colors.text,
+    marginBottom: 6,
+    fontFamily: theme.font.heading
+  },
+  tagline: {
+    color: theme.colors.muted,
+    marginBottom: theme.spacing.lg
   },
   title: {
     fontSize: 28,
@@ -107,7 +120,7 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   primaryButtonText: {
-    color: "#02130c",
+    color: "#ffffff",
     fontWeight: "700"
   },
   link: {

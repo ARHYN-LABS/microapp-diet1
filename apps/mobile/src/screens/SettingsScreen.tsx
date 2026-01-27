@@ -2,18 +2,18 @@ import { useContext, useEffect, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Switch, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import * as Notifications from "expo-notifications"
+import { fetchPrefs, fetchProfile, saveProfile, updatePrefs } from "../api/client"
 import {
-  fetchConditions,
-  fetchPrefs,
-  fetchProfile,
-  saveConditions,
-  saveProfile,
-  updatePrefs
-} from "../api/client"
-import { clearAuth, getProfile, getUserPrefs, setProfile, setUserPrefs } from "../storage/cache"
+  clearAuth,
+  getHealthPrefs,
+  getProfile,
+  getUserPrefs,
+  setHealthPrefs,
+  setProfile,
+  setUserPrefs
+} from "../storage/cache"
 import type {
   ActivityEntry,
-  MedicalCondition,
   Plan,
   TrackingGoals,
   UserPrefs,
@@ -22,6 +22,7 @@ import type {
 } from "@wimf/shared"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
+import MultiSelect from "../components/MultiSelect"
 import {
   addActivity,
   addWeight,
@@ -57,21 +58,37 @@ const toNumberOrNull = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-const conditionLabels = [
-  { type: "diabetes", label: "Diabetes" },
-  { type: "hypertension", label: "High blood pressure" },
-  { type: "heart_disease", label: "Heart disease" },
-  { type: "high_cholesterol", label: "High cholesterol" },
-  { type: "celiac", label: "Celiac / gluten sensitivity" },
-  { type: "kidney_disease", label: "Kidney disease" },
-  { type: "allergy", label: "Allergies" },
-  { type: "other", label: "Other" }
-] as const
+const restrictionOptions = [
+  { value: "vegan", label: "Vegan", description: "Excludes all animal-derived foods." },
+  { value: "vegetarian", label: "Vegetarian", description: "No meat or fish; may include eggs/dairy." },
+  { value: "gluten_free", label: "Gluten-Free", description: "No wheat, barley, or rye." },
+  { value: "lactose_free", label: "Dairy-Free", description: "Avoids milk-based products." },
+  { value: "nut_allergy", label: "Nut Allergies", description: "Avoid peanuts and tree nuts." },
+  { value: "halal", label: "Halal", description: "Complies with Islamic dietary laws." },
+  { value: "kosher", label: "Kosher", description: "Complies with Jewish dietary laws." },
+  { value: "hindu", label: "Hindu", description: "Commonly restricts beef; some avoid all meat." },
+  { value: "keto", label: "Keto", description: "High fat, low carb." },
+  { value: "diabetic", label: "Diabetic", description: "Manages sugar and carbohydrates." },
+  { value: "low_sodium", label: "Low-Sodium / Low-Fat", description: "Used for cardiovascular health." }
+]
+
+const allergenOptions = [
+  { value: "milk", label: "Milk" },
+  { value: "eggs", label: "Eggs" },
+  { value: "peanuts", label: "Peanuts" },
+  { value: "tree_nuts", label: "Tree Nuts", description: "Almonds, walnuts, pecans, etc." },
+  { value: "fish", label: "Fish", description: "Salmon, cod, flounder, etc." },
+  { value: "shellfish", label: "Crustacean Shellfish", description: "Shrimp, crab, lobster." },
+  { value: "wheat", label: "Wheat" },
+  { value: "soy", label: "Soy" },
+  { value: "sesame", label: "Sesame", description: "Recognized as major allergen (2023)." }
+]
 
 export default function SettingsScreen() {
   const { setIsAuthed } = useContext(AuthContext)
   const [profile, setProfileState] = useState<UserProfile | null>(null)
-  const [conditions, setConditions] = useState<MedicalCondition[]>([])
+  const [restrictions, setRestrictions] = useState<string[]>([])
+  const [allergens, setAllergens] = useState<string[]>([])
   const [prefs, setPrefs] = useState<UserPrefs>(emptyPrefs)
   const [goals, setGoalsState] = useState<TrackingGoals>({
     caloriesTarget: 2000,
@@ -103,13 +120,9 @@ export default function SettingsScreen() {
         const profileData = await fetchProfile()
         setProfileState(profileData)
         setProfile(profileData)
-        const [remotePrefs, remoteConditions] = await Promise.all([
-          fetchPrefs(profileData.id),
-          fetchConditions()
-        ])
+        const [remotePrefs] = await Promise.all([fetchPrefs(profileData.id)])
         setPrefs({ ...emptyPrefs, ...remotePrefs })
         setUserPrefs(remotePrefs)
-        setConditions(remoteConditions)
       } catch {
         // keep cached values
       }
@@ -129,6 +142,10 @@ export default function SettingsScreen() {
       setRemindersState(storedReminders)
       setWeightsState(storedWeights)
       setActivitiesState(storedActivities)
+
+      const storedHealth = await getHealthPrefs()
+      setRestrictions(storedHealth.restrictions)
+      setAllergens(storedHealth.allergens)
     }
 
     load()
@@ -144,11 +161,12 @@ export default function SettingsScreen() {
       }
       const saved = await updatePrefs(prefs)
       await setUserPrefs(saved)
-      await saveConditions(conditions)
+      await setHealthPrefs({ restrictions, allergens })
       setStatus("Saved")
     } catch {
       setStatus("Saved locally (offline)")
       await setUserPrefs(prefs)
+      await setHealthPrefs({ restrictions, allergens })
     }
   }
 
@@ -351,43 +369,25 @@ export default function SettingsScreen() {
       )}
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Health conditions</Text>
-        {conditionLabels.map((condition) => {
-          const selected = conditions.some((item) => item.type === condition.type)
-          return (
-            <View key={condition.type} style={styles.switchRow}>
-              <Text style={styles.label}>{condition.label}</Text>
-              <Switch
-                value={selected}
-                onValueChange={() => {
-                  setConditions((prev) =>
-                    selected
-                      ? prev.filter((item) => item.type !== condition.type)
-                      : [...prev, { type: condition.type }]
-                  )
-                }}
-              />
-            </View>
-          )
-        })}
-        {conditions.some((item) => item.type === "allergy") && (
-          <>
-            <Text style={styles.label}>Allergy details</Text>
-            <TextInput
-              style={styles.input}
-              value={conditions.find((item) => item.type === "allergy")?.notes || ""}
-              onChangeText={(value) =>
-                setConditions((prev) =>
-                  prev.map((item) =>
-                    item.type === "allergy" ? { ...item, notes: value } : item
-                  )
-                )
-              }
-              placeholder="e.g. peanuts, dairy"
-              placeholderTextColor={theme.colors.muted}
-            />
-          </>
-        )}
+        <Text style={styles.sectionTitle}>Common dietary restrictions</Text>
+        <MultiSelect
+          label="Select restrictions"
+          options={restrictionOptions}
+          selected={restrictions}
+          onChange={setRestrictions}
+          placeholder="Search dietary restrictions"
+        />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Allergens</Text>
+        <MultiSelect
+          label="Select allergens"
+          options={allergenOptions}
+          selected={allergens}
+          onChange={setAllergens}
+          placeholder="Search allergens"
+        />
       </View>
 
       <View style={styles.card}>
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   primaryButtonText: {
-    color: "#02130c",
+    color: "#ffffff",
     fontWeight: "700"
   },
   logoutButton: {
