@@ -43,7 +43,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.kicker}>What's In My Food?</Text>
+      <Text style={styles.kicker}>SafePlate AI</Text>
       <Text style={styles.title}>Snap. Learn. Decide.</Text>
       <Text style={styles.subtitle}>
         Capture ingredients and nutrition labels for OCR-based analysis. Educational only.

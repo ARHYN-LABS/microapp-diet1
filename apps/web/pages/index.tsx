@@ -28,7 +28,7 @@ export default function Home() {
       <section className="hero fade-in">
         <div className="row align-items-center g-4">
           <div className="col-lg-7">
-            <div className="hero-kicker mb-3">What&apos;s In My Food?</div>
+            <div className="hero-kicker mb-3">SafePlate AI</div>
             <h1 className="display-4 fw-bold">
               Know what&apos;s in your food&#8212;in seconds.
             </h1>
