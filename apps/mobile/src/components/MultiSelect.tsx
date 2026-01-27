@@ -19,6 +19,7 @@ type Props = {
 
 export default function MultiSelect({ label, options, selected, onChange, placeholder }: Props) {
   const [query, setQuery] = useState("")
+  const [custom, setCustom] = useState("")
 
   const filtered = useMemo(() => {
     if (!query.trim()) return options
@@ -36,6 +37,15 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
       return
     }
     onChange([...selected, value])
+  }
+
+  const addCustom = () => {
+    const trimmed = custom.trim()
+    if (!trimmed) return
+    if (!selected.includes(trimmed)) {
+      onChange([...selected, trimmed])
+    }
+    setCustom("")
   }
 
   return (
@@ -91,6 +101,19 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
             </Pressable>
           )
         })}
+      </View>
+
+      <View style={styles.customRow}>
+        <TextInput
+          style={styles.customInput}
+          value={custom}
+          onChangeText={setCustom}
+          placeholder="Add custom item"
+          placeholderTextColor={theme.colors.muted}
+        />
+        <Pressable style={styles.addButton} onPress={addCustom}>
+          <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
       </View>
     </View>
   )
@@ -150,6 +173,33 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     overflow: "hidden",
     backgroundColor: theme.colors.panel
+  },
+  customRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: theme.spacing.sm,
+    gap: theme.spacing.sm
+  },
+  customInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.panel,
+    color: theme.colors.text
+  },
+  addButton: {
+    backgroundColor: theme.colors.accent2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999
+  },
+  addButtonText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 12
   },
   optionRow: {
     padding: theme.spacing.md,

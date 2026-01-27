@@ -3,20 +3,29 @@ import type { CSSProperties } from "react"
 import { getPrefs } from "@wimf/shared"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
+import { getHealthPrefs } from "../lib/healthPrefs"
+import { getLastScanImage } from "../lib/scanImages"
 
 export default function Results() {
   const [analysis, setAnalysis] = useState<AnalyzeFromImagesResponse | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
   const [activeFlag, setActiveFlag] =
     useState<AnalyzeFromImagesResponse["personalizedFlags"][number] | null>(null)
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
   const profile = typeof window !== "undefined" ? getProfile() : null
+  const formatTag = (value: string) =>
+    value.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
 
   useEffect(() => {
     const stored = sessionStorage.getItem("wimf.analysis")
     if (stored) {
       setAnalysis(JSON.parse(stored) as AnalyzeFromImagesResponse)
     }
+    const storedPreview = sessionStorage.getItem("wimf.preview") || getLastScanImage()
+    if (storedPreview) setPreview(storedPreview)
+    setHealthPrefs(getHealthPrefs())
   }, [])
 
   useEffect(() => {
@@ -111,7 +120,53 @@ export default function Results() {
         <span className="chip">Results</span>
       </div>
 
+      {preview && (
+        <div className="glass-card mb-3">
+          <div className="fw-semibold mb-2">Captured image</div>
+          <img src={preview} alt="Captured preview" className="img-fluid rounded" />
+        </div>
+      )}
+
+      <section className="glass-card mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <h2 className="h5 mb-0">Dietary focus</h2>
+          <span className="text-muted small">Preferences</span>
+        </div>
+        <div className="mb-3">
+          <div className="text-muted small mb-2">Dietary restrictions</div>
+          <div className="d-flex flex-wrap gap-2">
+            {healthPrefs.restrictions.length === 0 && (
+              <span className="text-muted small">None selected</span>
+            )}
+            {healthPrefs.restrictions.map((item) => (
+              <span key={item} className="chip">{formatTag(item)}</span>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="text-muted small mb-2">Allergens</div>
+          <div className="d-flex flex-wrap gap-2">
+            {healthPrefs.allergens.length === 0 && (
+              <span className="text-muted small">None selected</span>
+            )}
+            {healthPrefs.allergens.map((item) => (
+              <span key={item} className="chip">{formatTag(item)}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <div className="row g-3">
+        <div className="col-md-6">
+          <div className="metric-card h-100">
+            <div className="text-muted small">Quality score</div>
+            <div className="metric-number">{analysis.score.value}</div>
+            <div className="d-flex align-items-center gap-2">
+              <span className="chip">{analysis.score.category}</span>
+              <span className="text-muted small">AI model v1</span>
+            </div>
+          </div>
+        </div>
         <div className="col-md-6">
           <div className="metric-card h-100">
             <div className="text-muted small">Approx calories per 100g</div>
@@ -120,16 +175,6 @@ export default function Results() {
             </div>
             <div className="metric-sub">
               {caloriesPer100g === null ? "Estimate unavailable" : "Approximate estimate"}
-            </div>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="metric-card h-100">
-            <div className="text-muted small">Quality score</div>
-            <div className="metric-number">{analysis.score.value}</div>
-            <div className="d-flex align-items-center gap-2">
-              <span className="chip">{analysis.score.category}</span>
-              <span className="text-muted small">AI model v1</span>
             </div>
           </div>
         </div>

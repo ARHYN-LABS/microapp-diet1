@@ -100,6 +100,7 @@ export default function SettingsScreen() {
   const [activePlanId, setActivePlanIdState] = useState<string | null>(null)
   const [planName, setPlanName] = useState("")
   const [reminders, setRemindersState] = useState({ enabled: false, times: [] as string[] })
+  const [reminderInput, setReminderInput] = useState("")
   const [weights, setWeightsState] = useState<WeightEntry[]>([])
   const [weightInput, setWeightInput] = useState("")
   const [activities, setActivitiesState] = useState<ActivityEntry[]>([])
@@ -226,6 +227,22 @@ export default function SettingsScreen() {
       await Notifications.cancelAllScheduledNotificationsAsync()
     }
     setStatus("Reminders saved locally.")
+  }
+
+  const handleAddReminderTime = () => {
+    const trimmed = reminderInput.trim()
+    if (!trimmed) return
+    if (!reminders.times.includes(trimmed)) {
+      setRemindersState((prev) => ({ ...prev, times: [...prev.times, trimmed] }))
+    }
+    setReminderInput("")
+  }
+
+  const handleRemoveReminderTime = (time: string) => {
+    setRemindersState((prev) => ({
+      ...prev,
+      times: prev.times.filter((item) => item !== time)
+    }))
   }
 
   const handleAddWeight = () => {
@@ -462,8 +479,11 @@ export default function SettingsScreen() {
 
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Reminders</Text>
-        <View style={styles.switchRow}>
-          <Text style={styles.label}>Enable reminders</Text>
+        <View style={styles.reminderHeader}>
+          <View>
+            <Text style={styles.label}>Meal reminders</Text>
+            <Text style={styles.helperText}>Choose times to nudge meal logging.</Text>
+          </View>
           <Switch
             value={reminders.enabled}
             onValueChange={(value) =>
@@ -471,22 +491,37 @@ export default function SettingsScreen() {
             }
           />
         </View>
-        <Text style={styles.label}>Times (HH:MM, comma separated)</Text>
-        <TextInput
-          style={styles.input}
-          value={reminders.times.join(", ")}
-          onChangeText={(value) =>
-            setRemindersState((prev) => ({
-              ...prev,
-              times: value
-                .split(",")
-                .map((time) => time.trim())
-                .filter(Boolean)
-            }))
-          }
-          placeholder="08:00, 13:00, 19:00"
-          placeholderTextColor={theme.colors.muted}
-        />
+
+        <View style={styles.reminderInputRow}>
+          <TextInput
+            style={styles.reminderInput}
+            value={reminderInput}
+            onChangeText={setReminderInput}
+            placeholder="Add time (e.g., 08:00)"
+            placeholderTextColor={theme.colors.muted}
+          />
+          <Pressable style={styles.addTimeButton} onPress={handleAddReminderTime}>
+            <Text style={styles.addTimeText}>Add</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.reminderChips}>
+          {reminders.times.length === 0 ? (
+            <Text style={styles.bodyMuted}>No reminder times yet.</Text>
+          ) : (
+            reminders.times.map((time) => (
+              <Pressable
+                key={time}
+                style={styles.reminderChip}
+                onPress={() => handleRemoveReminderTime(time)}
+              >
+                <Text style={styles.reminderChipText}>{time}</Text>
+                <Ionicons name="close" size={14} color={theme.colors.muted} />
+              </Pressable>
+            ))
+          )}
+        </View>
+
         <Pressable style={styles.primaryButton} onPress={handleReminderSave}>
           <Text style={styles.primaryButtonText}>Save reminders</Text>
         </Pressable>
@@ -710,6 +745,65 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16
+  },
+  reminderHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12
+  },
+  helperText: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    marginTop: 4
+  },
+  reminderInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12
+  },
+  reminderInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.glassStrong,
+    color: theme.colors.text
+  },
+  addTimeButton: {
+    backgroundColor: theme.colors.accent2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999
+  },
+  addTimeText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 12
+  },
+  reminderChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12
+  },
+  reminderChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.panelAlt
+  },
+  reminderChipText: {
+    color: theme.colors.text,
+    fontSize: 12
   },
   primaryButton: {
     backgroundColor: theme.colors.accent,

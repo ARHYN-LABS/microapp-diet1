@@ -10,6 +10,8 @@ import { StatusBar } from "expo-status-bar"
 import { Pressable, Text, View } from "react-native"
 import { useEffect, useState, useContext } from "react"
 import { Ionicons } from "@expo/vector-icons"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 import DashboardScreen from "./src/screens/DashboardScreen"
 import ScanScreen from "./src/screens/ScanScreen"
 import ResultsScreen from "./src/screens/ResultsScreen"
@@ -48,7 +50,21 @@ function ScanStackScreen() {
       })}
     >
       <ScanStack.Screen name="ScanHome" component={ScanScreen} options={{ title: "Scan" }} />
-      <ScanStack.Screen name="Results" component={ResultsScreen} />
+      <ScanStack.Screen
+        name="Results"
+        component={ResultsScreen}
+        options={({ navigation }) => ({
+          title: "Results",
+          headerLeft: () => (
+            <Pressable
+              style={{ paddingHorizontal: 16, paddingVertical: 8 }}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
+            </Pressable>
+          )
+        })}
+      />
     </ScanStack.Navigator>
   )
 }
@@ -141,9 +157,10 @@ function MainTabs() {
 
 function DrawerContent({ navigation }: { navigation: any }) {
   const { setIsAuthed } = useContext(AuthContext)
+  const insets = useSafeAreaInsets()
 
   return (
-    <DrawerContentScrollView contentContainerStyle={{ padding: 16 }}>
+    <DrawerContentScrollView contentContainerStyle={{ padding: 16, paddingTop: insets.top + 20 }}>
       <View style={{ marginBottom: 16 }}>
         <Text style={{ fontSize: 18, fontWeight: "700", color: theme.colors.text }}>
           SafePlate AI
@@ -231,18 +248,20 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ setIsAuthed }}>
-      <NavigationContainer theme={navTheme}>
-        <StatusBar style="dark" />
-        {isReady && (
-          <RootStack.Navigator screenOptions={{ headerShown: false }}>
-            {isAuthed ? (
-              <RootStack.Screen name="Main" component={DrawerRoot} />
-            ) : (
-              <RootStack.Screen name="Auth" component={AuthStackScreen} />
-            )}
-          </RootStack.Navigator>
-        )}
-      </NavigationContainer>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <NavigationContainer theme={navTheme}>
+          <StatusBar style="dark" />
+          {isReady && (
+            <RootStack.Navigator screenOptions={{ headerShown: false }}>
+              {isAuthed ? (
+                <RootStack.Screen name="Main" component={DrawerRoot} />
+              ) : (
+                <RootStack.Screen name="Auth" component={AuthStackScreen} />
+              )}
+            </RootStack.Navigator>
+          )}
+        </NavigationContainer>
+      </GestureHandlerRootView>
     </AuthContext.Provider>
   )
 }

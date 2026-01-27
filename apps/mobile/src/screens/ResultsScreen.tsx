@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Svg, { Circle } from "react-native-svg"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { theme } from "../theme"
-import { getUserPrefs } from "../storage/cache"
+import { getHealthPrefs, getUserPrefs } from "../storage/cache"
 
 type ResultsParams = {
   analysis: AnalyzeFromImagesResponse
@@ -30,6 +30,11 @@ const categoryColors: Record<string, string> = {
 }
 
 const spacing = theme.spacing
+
+const formatTag = (value: string) =>
+  value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
 
 const Card = ({ children, style }: { children: React.ReactNode; style?: object }) => (
   <View style={[styles.card, style]}>{children}</View>
@@ -155,6 +160,7 @@ export default function ResultsScreen({ route }: Props) {
   const [activeFlag, setActiveFlag] =
     useState<AnalyzeFromImagesResponse["personalizedFlags"][number] | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
+  const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
   const scoreColor = useMemo(
     () => categoryColors[analysis.score.category] || theme.colors.text,
     [analysis.score.category]
@@ -190,6 +196,8 @@ export default function ResultsScreen({ route }: Props) {
     const loadPrefs = async () => {
       const cached = await getUserPrefs()
       if (cached) setPrefs(cached)
+      const storedHealth = await getHealthPrefs()
+      setHealthPrefs(storedHealth)
     }
 
     loadPrefs()
@@ -223,13 +231,36 @@ export default function ResultsScreen({ route }: Props) {
         </Card>
       ) : null}
 
+      <SectionHeader title="Dietary focus" icon="leaf-outline" />
+      <Card>
+        <Text style={styles.metricLabel}>Dietary restrictions</Text>
+        <View style={styles.flagsWrap}>
+          {healthPrefs.restrictions.length ? (
+            healthPrefs.restrictions.map((item) => (
+              <View key={item} style={styles.flagChip}>
+                <Text style={styles.flagText}>{formatTag(item)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.bodyMuted}>None selected</Text>
+          )}
+        </View>
+        <View style={styles.divider} />
+        <Text style={styles.metricLabel}>Allergens</Text>
+        <View style={styles.flagsWrap}>
+          {healthPrefs.allergens.length ? (
+            healthPrefs.allergens.map((item) => (
+              <View key={item} style={styles.flagChip}>
+                <Text style={styles.flagText}>{formatTag(item)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.bodyMuted}>None selected</Text>
+          )}
+        </View>
+      </Card>
+
       <View style={styles.metricsGrid}>
-        <MetricCard
-          label="Approx calories per 100g"
-          value={caloriesPer100g === null ? "Unknown" : caloriesPer100g}
-          helper={caloriesPer100g === null ? "Estimate unavailable" : "Approximate estimate"}
-          icon="flame-outline"
-        />
         <MetricCard
           label="Quality score"
           value={analysis.score.value}
@@ -242,6 +273,12 @@ export default function ResultsScreen({ route }: Props) {
           value={suitabilityLabel}
           helper={analysis.suitability?.reasons?.length ? analysis.suitability.reasons.join(" ") : "No additional notes."}
           icon="checkmark-circle-outline"
+        />
+        <MetricCard
+          label="Approx calories per 100g"
+          value={caloriesPer100g === null ? "Unknown" : caloriesPer100g}
+          helper={caloriesPer100g === null ? "Estimate unavailable" : "Approximate estimate"}
+          icon="flame-outline"
         />
       </View>
 

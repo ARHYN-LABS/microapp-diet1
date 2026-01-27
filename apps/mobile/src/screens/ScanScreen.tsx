@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { View, Text, StyleSheet, Pressable, Image } from "react-native"
+import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-native"
 import { Camera, CameraType } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
@@ -94,7 +94,7 @@ export default function ScanScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.title}>Scan</Text>
@@ -133,7 +133,7 @@ export default function ScanScreen() {
           <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
         </Pressable>
         <Pressable style={styles.primaryAction} onPress={handleAnalyze}>
-          <Ionicons name="sparkles" size={18} color="#ffffff" />
+          <Ionicons name="scan-outline" size={18} color="#ffffff" />
           <Text style={styles.primaryActionText}>Analyze</Text>
         </Pressable>
       </View>
@@ -151,13 +151,13 @@ export default function ScanScreen() {
       </View>
 
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.bg
   },
@@ -194,9 +194,9 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     color: theme.colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
-    marginTop: 4
+    marginTop: 2
   },
   cameraWrap: {
     borderRadius: theme.radius.xl,
@@ -234,8 +234,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.35)"
   },
   overlayText: {
-    color: theme.colors.text,
-    fontSize: 12
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "600"
   },
   actionRow: {
     flexDirection: "row",

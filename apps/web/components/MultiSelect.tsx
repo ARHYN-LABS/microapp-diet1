@@ -16,6 +16,7 @@ type Props = {
 
 export default function MultiSelect({ label, options, selected, onChange, placeholder }: Props) {
   const [query, setQuery] = useState("")
+  const [custom, setCustom] = useState("")
 
   const filtered = useMemo(() => {
     if (!query.trim()) return options
@@ -33,6 +34,15 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
       return
     }
     onChange([...selected, value])
+  }
+
+  const addCustom = () => {
+    const trimmed = custom.trim()
+    if (!trimmed) return
+    if (!selected.includes(trimmed)) {
+      onChange([...selected, trimmed])
+    }
+    setCustom("")
   }
 
   return (
@@ -59,10 +69,23 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
               className="chip"
               onClick={() => toggle(value)}
             >
-              {option?.label ?? value} ×
+              {option?.label ?? value} x
             </button>
           )
         })}
+      </div>
+
+      <div className="input-group mb-3">
+        <span className="input-group-text">Other</span>
+        <input
+          className="form-control"
+          value={custom}
+          onChange={(event) => setCustom(event.target.value)}
+          placeholder="Add custom item"
+        />
+        <button className="btn btn-outline-light" type="button" onClick={addCustom}>
+          Add
+        </button>
       </div>
 
       <div className="list-group multi-select-list">
@@ -83,7 +106,7 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
                   <div className="small text-muted">{option.description}</div>
                 )}
               </div>
-              <span>{isSelected ? "✓" : ""}</span>
+              <span>{isSelected ? "check" : ""}</span>
             </button>
           )
         })}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/router"
 import { analyzeFromImages, postHistory } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
+import { setLastScanImage, setScanImage } from "../lib/scanImages"
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
 
@@ -13,16 +14,26 @@ export default function Scan() {
   const [loading, setLoading] = useState(false)
   const [labelFile, setLabelFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewData, setPreviewData] = useState<string | null>(null)
 
   const progress = useMemo(() => (labelFile ? 100 : 0), [labelFile])
 
   useEffect(() => {
     if (!labelFile) {
       setPreviewUrl(null)
+      setPreviewData(null)
       return
     }
     const url = URL.createObjectURL(labelFile)
     setPreviewUrl(url)
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setPreviewData(reader.result)
+        setLastScanImage(reader.result)
+      }
+    }
+    reader.readAsDataURL(labelFile)
     return () => URL.revokeObjectURL(url)
   }, [labelFile])
 
@@ -55,7 +66,7 @@ export default function Scan() {
     try {
       const response = await analyzeFromImages({ baseUrl: apiBase, token: token || undefined }, formData)
       if (userId) {
-        await postHistory(
+        const saved = await postHistory(
           {
             baseUrl: apiBase,
             token: token || undefined
@@ -68,9 +79,15 @@ export default function Scan() {
             parsedNutrition: response.nutritionHighlights
           }
         )
+        if (saved?.id && previewData) {
+          setScanImage(saved.id, previewData)
+        }
       }
 
       sessionStorage.setItem("wimf.analysis", JSON.stringify(response))
+      if (previewData) {
+        sessionStorage.setItem("wimf.preview", previewData)
+      }
       router.push("/results")
     } catch (err) {
       setError((err as Error).message)
@@ -115,7 +132,7 @@ export default function Scan() {
 
         <div className="col-lg-7">
           <div className="scan-step">
-            <div className="d-flex justify-content-between">
+            <div className="d-flex justify-content-between align-items-start gap-3">
               <div>
                 <div className="text-muted small">Single step</div>
                 <div className="fw-semibold">Food or label photo</div>
@@ -123,7 +140,7 @@ export default function Scan() {
                   One image for product name, ingredients, and nutrition estimates.
                 </div>
               </div>
-              <span className="chip">{labelFile ? "Captured" : "Required"}</span>
+              <span className="chip scan-chip">{labelFile ? "Captured" : "Required"}</span>
             </div>
             <input
               className="form-control mt-3"
@@ -144,20 +161,22 @@ export default function Scan() {
               <div className="text-muted small mt-2">Captured and ready for analysis.</div>
             </div>
           )}
-          <button
-            className="btn btn-primary mt-3"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? "Analyzing..." : "Analyze image"}
-          </button>
-          <button
-            className="btn btn-outline-light mt-3 ms-2"
-            onClick={() => setLabelFile(null)}
-            disabled={loading}
-          >
-            Reupload image
-          </button>
+          <div className="d-flex flex-wrap gap-2 mt-3">
+            <button
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? "Analyzing..." : "Analyze image"}
+            </button>
+            <button
+              className="btn btn-outline-light"
+              onClick={() => setLabelFile(null)}
+              disabled={loading}
+            >
+              Reupload image
+            </button>
+          </div>
           {error && <div className="alert alert-warning mt-3">{error}</div>}
         </div>
       </div>

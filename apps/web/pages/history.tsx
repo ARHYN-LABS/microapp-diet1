@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
+import { useRouter } from "next/router"
 import { getHistory } from "@wimf/shared"
 import type { ScanHistory } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
+import { getScanImage } from "../lib/scanImages"
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
 
 export default function History() {
+  const router = useRouter()
   const [items, setItems] = useState<ScanHistory[]>([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
@@ -45,7 +48,18 @@ export default function History() {
       <div className="row g-3">
         {items.map((entry) => (
           <div className="col-md-6" key={entry.id}>
-            <div className="glass-card">
+            <button
+              type="button"
+              className="glass-card text-start w-100 border-0"
+              onClick={() => {
+                if (entry.analysisSnapshot) {
+                  sessionStorage.setItem("wimf.analysis", JSON.stringify(entry.analysisSnapshot))
+                  const image = getScanImage(entry.id)
+                  if (image) sessionStorage.setItem("wimf.preview", image)
+                  router.push("/results")
+                }
+              }}
+            >
               <div className="fw-semibold">
                 {entry.productName || entry.analysisSnapshot?.productName || "Scan"}
               </div>
@@ -72,7 +86,7 @@ export default function History() {
                   return "Unknown"
                 })()}
               </div>
-            </div>
+            </button>
           </div>
         ))}
       </div>

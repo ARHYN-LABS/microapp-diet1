@@ -131,6 +131,15 @@ a {
   border: 1px solid var(--border);
 }
 
+.scan-chip {
+  padding: 10px 16px;
+  min-width: 92px;
+  text-align: center;
+  font-weight: 600;
+  background: rgba(26, 188, 156, 0.14);
+  align-self: flex-start;
+}
+
 .flag-chip {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -249,10 +258,10 @@ a {
 }
 
 .multi-select-list .list-group-item.is-selected {
-  background: rgba(26, 188, 156, 0.12);
-  color: var(--text);
+  background: var(--accent-2);
+  color: #ffffff;
 }
 
 .multi-select-list .list-group-item.is-selected .text-muted {
-  color: var(--muted) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
 }
