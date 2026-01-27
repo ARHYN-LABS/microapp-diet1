@@ -3,13 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
   Image
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import Svg, { Circle } from "react-native-svg"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { theme } from "../theme"
 import { getHealthPrefs, getUserPrefs } from "../storage/cache"
@@ -17,6 +15,7 @@ import { getHealthPrefs, getUserPrefs } from "../storage/cache"
 type ResultsParams = {
   analysis: AnalyzeFromImagesResponse
   imageUri?: string | null
+  fromHistory?: boolean
 }
 
 type Props = {
@@ -70,59 +69,6 @@ const MetricCard = ({
   </Card>
 )
 
-const GaugeCard = ({
-  label,
-  value,
-  target,
-  unit,
-  color
-}: {
-  label: string
-  value: number | null | undefined
-  target: number | null | undefined
-  unit: string
-  color: string
-}) => {
-  const size = 88
-  const stroke = 8
-  const radius = (size - stroke) / 2
-  const circumference = 2 * Math.PI * radius
-  const hasData = value !== null && value !== undefined && target !== null && target !== undefined
-  const progress = hasData && target > 0 ? Math.min(1, value / target) : 0
-  const strokeDashoffset = circumference * (1 - progress)
-
-  return (
-    <Card style={styles.gaugeCard}>
-      <Svg width={size} height={size} style={styles.gaugeRing}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="rgba(255,255,255,0.12)"
-          strokeWidth={stroke}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={stroke}
-          strokeDasharray={`${circumference} ${circumference}`}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          fill="none"
-        />
-      </Svg>
-      <Text style={styles.gaugePercent}>{hasData ? Math.round(progress * 100) : "--"}%</Text>
-      <Text style={styles.gaugeLabel}>{label}</Text>
-      <Text style={styles.gaugeMeta}>
-        {hasData ? `${value}${unit} of ${target}${unit}` : "Not detected"}
-      </Text>
-    </Card>
-  )
-}
-
 const IngredientItem = ({
   status,
   name,
@@ -156,9 +102,6 @@ export default function ResultsScreen({ route }: Props) {
   const { analysis } = route.params
   const imageUri = route.params.imageUri
   const insets = useSafeAreaInsets()
-  const [expanded, setExpanded] = useState(false)
-  const [activeFlag, setActiveFlag] =
-    useState<AnalyzeFromImagesResponse["personalizedFlags"][number] | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
   const scoreColor = useMemo(
@@ -190,6 +133,9 @@ export default function ResultsScreen({ route }: Props) {
     const average = values.reduce((sum, value) => sum + value, 0) / values.length
     return average.toFixed(2)
   }, [analysis.parsing.confidences])
+
+  const showHalal =
+    !!prefs?.halalCheckEnabled || healthPrefs.restrictions.includes("halal")
 
 
   useEffect(() => {
@@ -282,69 +228,16 @@ export default function ResultsScreen({ route }: Props) {
         />
       </View>
 
-      <SectionHeader title="Personalized for you" icon="sparkles-outline" />
-      <View style={styles.flagsWrap}>
-        {analysis.personalizedFlags.length ? (
-          analysis.personalizedFlags.map((flag) => (
-            <Pressable
-              key={flag.flag}
-              style={styles.flagChip}
-              onPress={() => setActiveFlag(flag)}
-            >
-              <Text style={styles.flagText}>{flag.flag}: {flag.status}</Text>
-            </Pressable>
-          ))
-        ) : (
-          <Text style={styles.bodyMuted}>No personalized flags yet.</Text>
-        )}
-      </View>
-
-      <View style={styles.gaugeGrid}>
-        <GaugeCard
-          label="Sodium vs limit"
-          value={analysis.nutritionHighlights?.sodium_mg}
-          target={prefs?.lowSodiumMgLimit ?? null}
-          unit="mg"
-          color={theme.colors.accent}
-        />
-        <GaugeCard
-          label="Sugar vs limit"
-          value={analysis.nutritionHighlights?.sugar_g}
-          target={prefs?.lowSugarGlimit ?? null}
-          unit="g"
-          color={theme.colors.warning}
-        />
-        <GaugeCard
-          label="Protein vs target"
-          value={analysis.nutritionHighlights?.protein_g}
-          target={prefs?.highProteinGtarget ?? null}
-          unit="g"
-          color={theme.colors.accent2}
-        />
-      </View>
-
-      <SectionHeader title="Halal status" icon="information-circle-outline" />
-      <Card>
-        <Text style={styles.halalStatus}>{analysis.halal.status.toUpperCase()}</Text>
-        <Text style={styles.bodyMuted}>Confidence {analysis.halal.confidence.toFixed(2)}</Text>
-        <Text style={styles.bodyText}>{analysis.halal.explanation}</Text>
-      </Card>
-
-      <Pressable style={styles.accordion} onPress={() => setExpanded((prev) => !prev)}>
-        <View style={styles.accordionHeader}>
-          <Text style={styles.sectionHeader}>Why this score?</Text>
-          <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={theme.colors.muted} />
-        </View>
-        {expanded ? (
-          <View style={styles.accordionBody}>
-            {analysis.score.explanations.map((item, index) => (
-              <Text style={styles.bodyText} key={`${item.label}-${index}`}>
-                {item.label}: {item.direction === "up" ? "+" : "-"}{item.points} - {item.reason}
-              </Text>
-            ))}
-          </View>
-        ) : null}
-      </Pressable>
+      {showHalal ? (
+        <>
+          <SectionHeader title="Halal status" icon="information-circle-outline" />
+          <Card>
+            <Text style={styles.halalStatus}>{analysis.halal.status.toUpperCase()}</Text>
+            <Text style={styles.bodyMuted}>Confidence {analysis.halal.confidence.toFixed(2)}</Text>
+            <Text style={styles.bodyText}>{analysis.halal.explanation}</Text>
+          </Card>
+        </>
+      ) : null}
 
       <SectionHeader title="Ingredients explained" icon="leaf-outline" />
       {analysis.ingredientBreakdown.map((ingredient, index) => (
@@ -388,18 +281,6 @@ export default function ResultsScreen({ route }: Props) {
           </View>
         </View>
       </Card>
-
-      {activeFlag && (
-        <Pressable style={styles.overlay} onPress={() => setActiveFlag(null)}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>{activeFlag.flag}</Text>
-            <Text style={styles.bodyText}>{activeFlag.explanation}</Text>
-            <Text style={styles.bodyMuted}>
-              Status: {activeFlag.status} | Confidence {activeFlag.confidence.toFixed(2)}
-            </Text>
-          </View>
-        </Pressable>
-      )}
 
       <Text style={styles.disclaimer}>{analysis.disclaimer}</Text>
     </ScrollView>
@@ -501,57 +382,11 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: 12
   },
-  gaugeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    marginTop: spacing.md
-  },
-  gaugeCard: {
-    width: "48%",
-    alignItems: "center"
-  },
-  gaugeRing: {
-    marginBottom: spacing.sm
-  },
-  gaugePercent: {
-    position: "absolute",
-    top: 40,
-    fontSize: 14,
-    fontWeight: "700",
-    color: theme.colors.text
-  },
-  gaugeLabel: {
-    color: theme.colors.text,
-    fontSize: 12
-  },
-  gaugeMeta: {
-    color: theme.colors.muted,
-    fontSize: 11,
-    textAlign: "center"
-  },
   halalStatus: {
     fontSize: 18,
     fontWeight: "700",
     color: theme.colors.text,
     marginBottom: spacing.sm
-  },
-  accordion: {
-    marginTop: spacing.lg,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: spacing.md,
-    backgroundColor: theme.colors.glass
-  },
-  accordionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center"
-  },
-  accordionBody: {
-    marginTop: spacing.sm,
-    gap: spacing.sm
   },
   ingredientCard: {
     padding: spacing.md
@@ -608,29 +443,6 @@ const styles = StyleSheet.create({
   nutritionText: {
     color: theme.colors.textSoft,
     fontSize: 12
-  },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.65)",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  modalCard: {
-    width: "85%",
-    backgroundColor: theme.colors.glassStrong,
-    borderRadius: theme.radius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border
-  },
-  modalTitle: {
-    color: theme.colors.text,
-    fontWeight: "700",
-    marginBottom: spacing.sm
   },
   disclaimer: {
     color: theme.colors.muted,

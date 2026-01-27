@@ -111,7 +111,7 @@ export default function ScanScreen() {
 
       {hasPermission === false ? (
         <Text style={styles.subtitle}>Camera permission is required.</Text>
-      ) : isFocused ? (
+      ) : isFocused && !image.label ? (
         <View style={styles.cameraWrap}>
           <Camera
             key={cameraKey}
@@ -139,19 +139,32 @@ export default function ScanScreen() {
       ) : null}
 
       <View style={styles.actionRow}>
-        <Pressable style={styles.captureButton} onPress={capturePhoto}>
-          <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
-        </Pressable>
-        <Pressable style={styles.primaryAction} onPress={handleAnalyze}>
+        {image.label ? (
+          <Pressable
+            style={styles.secondaryAction}
+            onPress={() => {
+              setImage({})
+              setStatus("Capture one clear food or label photo.")
+              setCameraKey((prev) => prev + 1)
+            }}
+          >
+            <Ionicons name="refresh" size={16} color={theme.colors.text} />
+            <Text style={styles.secondaryActionText}>Retake</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.captureButton} onPress={capturePhoto}>
+            <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
+          </Pressable>
+        )}
+        <Pressable
+          style={[styles.primaryAction, !image.label && styles.primaryActionDisabled]}
+          onPress={handleAnalyze}
+          disabled={!image.label}
+        >
           <Ionicons name="scan-outline" size={18} color="#ffffff" />
           <Text style={styles.primaryActionText}>Analyze</Text>
         </Pressable>
       </View>
-
-      <Pressable style={styles.secondaryButton} onPress={() => setImage({})}>
-        <Ionicons name="refresh" size={16} color={theme.colors.text} />
-        <Text style={styles.secondaryButtonText}>Reupload image</Text>
-      </Pressable>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Captured</Text>
@@ -278,19 +291,21 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "700"
   },
-  secondaryButton: {
-    backgroundColor: theme.colors.panel,
+  primaryActionDisabled: {
+    opacity: 0.6
+  },
+  secondaryAction: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderRadius: 999,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.panel,
     borderWidth: 1,
     borderColor: theme.colors.border,
     flexDirection: "row",
-    justifyContent: "center",
+    alignItems: "center",
     gap: 8
   },
-  secondaryButtonText: {
+  secondaryActionText: {
     color: theme.colors.text,
     fontWeight: "700"
   },

@@ -462,33 +462,6 @@ export default function SettingsScreen() {
           }
           keyboardType="numeric"
         />
-        <Text style={styles.label}>Protein target (g)</Text>
-        <TextInput
-          style={styles.input}
-          value={goals.proteinTarget.toString()}
-          onChangeText={(value) =>
-            setGoalsState((prev) => ({ ...prev, proteinTarget: Number(value) || 0 }))
-          }
-          keyboardType="numeric"
-        />
-        <Text style={styles.label}>Sodium limit (mg)</Text>
-        <TextInput
-          style={styles.input}
-          value={goals.sodiumLimit.toString()}
-          onChangeText={(value) =>
-            setGoalsState((prev) => ({ ...prev, sodiumLimit: Number(value) || 0 }))
-          }
-          keyboardType="numeric"
-        />
-        <Text style={styles.label}>Sugar limit (g)</Text>
-        <TextInput
-          style={styles.input}
-          value={goals.sugarLimit.toString()}
-          onChangeText={(value) =>
-            setGoalsState((prev) => ({ ...prev, sugarLimit: Number(value) || 0 }))
-          }
-          keyboardType="numeric"
-        />
         <Pressable style={styles.primaryButton} onPress={handleGoalsSave}>
           <Text style={styles.primaryButtonText}>Save goals</Text>
         </Pressable>
@@ -620,66 +593,6 @@ export default function SettingsScreen() {
             onValueChange={(value) => setPrefs((prev) => ({ ...prev, halalCheckEnabled: value }))}
           />
         </View>
-
-        <Text style={styles.label}>Low sodium limit (mg)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={prefs.lowSodiumMgLimit?.toString() || ""}
-          onChangeText={(value) =>
-            setPrefs((prev) => ({ ...prev, lowSodiumMgLimit: toNumberOrNull(value) }))
-          }
-          placeholder="e.g. 200"
-          placeholderTextColor={theme.colors.muted}
-        />
-
-        <Text style={styles.label}>Low sugar limit (g)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={prefs.lowSugarGlimit?.toString() || ""}
-          onChangeText={(value) =>
-            setPrefs((prev) => ({ ...prev, lowSugarGlimit: toNumberOrNull(value) }))
-          }
-          placeholder="e.g. 10"
-          placeholderTextColor={theme.colors.muted}
-        />
-
-        <Text style={styles.label}>Low carb limit (g)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={prefs.lowCarbGlimit?.toString() || ""}
-          onChangeText={(value) =>
-            setPrefs((prev) => ({ ...prev, lowCarbGlimit: toNumberOrNull(value) }))
-          }
-          placeholder="e.g. 30"
-          placeholderTextColor={theme.colors.muted}
-        />
-
-        <Text style={styles.label}>Low calorie limit (per 50g)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={prefs.lowCalorieLimit?.toString() || ""}
-          onChangeText={(value) =>
-            setPrefs((prev) => ({ ...prev, lowCalorieLimit: toNumberOrNull(value) }))
-          }
-          placeholder="e.g. 150"
-          placeholderTextColor={theme.colors.muted}
-        />
-
-        <Text style={styles.label}>High protein target (g)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={prefs.highProteinGtarget?.toString() || ""}
-          onChangeText={(value) =>
-            setPrefs((prev) => ({ ...prev, highProteinGtarget: toNumberOrNull(value) }))
-          }
-          placeholder="e.g. 12"
-          placeholderTextColor={theme.colors.muted}
-        />
 
         <View style={styles.switchRow}>
           <Text style={styles.label}>Vegetarian</Text>

@@ -419,74 +419,6 @@ export default function Settings() {
               <label className="form-check-label">Enable halal check</label>
             </div>
 
-            <div className="row g-3">
-              <div className="col-md-6">
-                <label className="form-label">Low sodium limit (mg)</label>
-                <input
-                  className="form-control"
-                  value={prefs.lowSodiumMgLimit ?? ""}
-                  onChange={(event) =>
-                    setPrefs((prev) => ({
-                      ...prev,
-                      lowSodiumMgLimit: toNumberOrNull(event.target.value)
-                    }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Low sugar limit (g)</label>
-                <input
-                  className="form-control"
-                  value={prefs.lowSugarGlimit ?? ""}
-                  onChange={(event) =>
-                    setPrefs((prev) => ({
-                      ...prev,
-                      lowSugarGlimit: toNumberOrNull(event.target.value)
-                    }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Low carb limit (g)</label>
-                <input
-                  className="form-control"
-                  value={prefs.lowCarbGlimit ?? ""}
-                  onChange={(event) =>
-                    setPrefs((prev) => ({
-                      ...prev,
-                      lowCarbGlimit: toNumberOrNull(event.target.value)
-                    }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Low calorie limit (per 50g)</label>
-                <input
-                  className="form-control"
-                  value={prefs.lowCalorieLimit ?? ""}
-                  onChange={(event) =>
-                    setPrefs((prev) => ({
-                      ...prev,
-                      lowCalorieLimit: toNumberOrNull(event.target.value)
-                    }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">High protein target (g)</label>
-                <input
-                  className="form-control"
-                  value={prefs.highProteinGtarget ?? ""}
-                  onChange={(event) =>
-                    setPrefs((prev) => ({
-                      ...prev,
-                      highProteinGtarget: toNumberOrNull(event.target.value)
-                    }))
-                  }
-                />
-              </div>
-            </div>
-
             <div className="row g-3 mt-1">
               <div className="col-md-4">
                 <div className="form-check form-switch">
@@ -544,36 +476,6 @@ export default function Settings() {
                   value={goals.caloriesTarget}
                   onChange={(event) =>
                     setGoalsState((prev) => ({ ...prev, caloriesTarget: Number(event.target.value) }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Protein target (g)</label>
-                <input
-                  className="form-control"
-                  value={goals.proteinTarget}
-                  onChange={(event) =>
-                    setGoalsState((prev) => ({ ...prev, proteinTarget: Number(event.target.value) }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Sodium limit (mg)</label>
-                <input
-                  className="form-control"
-                  value={goals.sodiumLimit}
-                  onChange={(event) =>
-                    setGoalsState((prev) => ({ ...prev, sodiumLimit: Number(event.target.value) }))
-                  }
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Sugar limit (g)</label>
-                <input
-                  className="form-control"
-                  value={goals.sugarLimit}
-                  onChange={(event) =>
-                    setGoalsState((prev) => ({ ...prev, sugarLimit: Number(event.target.value) }))
                   }
                 />
               </div>

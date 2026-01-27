@@ -11,16 +11,14 @@ export default function DashboardScreen() {
   const [date] = useState(todayKey())
   const [totals, setTotals] = useState({
     calories: 0,
-    protein_g: 0,
-    sugar_g: 0,
-    sodium_mg: 0,
-    missingNutritionCount: 0
+    missingNutritionCount: 0,
+    itemsCount: 0
   })
   const [goals, setGoals] = useState({
     caloriesTarget: 2000,
-    proteinTarget: 80,
-    sodiumLimit: 2000,
-    sugarLimit: 50
+    proteinTarget: 0,
+    sodiumLimit: 0,
+    sugarLimit: 0
   })
   const [streaks, setStreaks] = useState({ current: 0, longest: 0 })
   const [activityCalories, setActivityCalories] = useState(0)
@@ -37,10 +35,8 @@ export default function DashboardScreen() {
 
       setTotals({
         calories: log.totals.calories,
-        protein_g: log.totals.protein_g,
-        sugar_g: log.totals.sugar_g,
-        sodium_mg: log.totals.sodium_mg,
-        missingNutritionCount: log.missingNutritionCount
+        missingNutritionCount: log.missingNutritionCount,
+        itemsCount: log.items.length
       })
       setGoals(goal)
       setStreaks(streak)
@@ -54,9 +50,8 @@ export default function DashboardScreen() {
     const text = [
       "Today summary (educational only):",
       `Calories: ${totals.calories}/${goals.caloriesTarget}`,
-      `Protein: ${totals.protein_g}g`,
-      `Sugar: ${totals.sugar_g}g`,
-      `Sodium: ${totals.sodium_mg}mg`,
+      `Meals logged: ${totals.itemsCount}`,
+      `Activity calories: ${activityCalories} kcal`,
       "Educational, not medical advice."
     ].join("\n")
 
@@ -101,26 +96,20 @@ export default function DashboardScreen() {
 
       <View style={styles.cardGrid}>
         <View style={styles.glassTile}>
-          <Text style={styles.cardLabel}>Protein</Text>
-          <Text style={styles.tileValue}>
-            {totals.protein_g}g / {goals.proteinTarget}g
-          </Text>
-        </View>
-        <View style={styles.glassTile}>
-          <Text style={styles.cardLabel}>Sodium</Text>
-          <Text style={styles.tileValue}>
-            {totals.sodium_mg}mg / {goals.sodiumLimit}mg
-          </Text>
-        </View>
-        <View style={styles.glassTile}>
-          <Text style={styles.cardLabel}>Sugar</Text>
-          <Text style={styles.tileValue}>
-            {totals.sugar_g}g / {goals.sugarLimit}g
-          </Text>
+          <Text style={styles.cardLabel}>Meals logged</Text>
+          <Text style={styles.tileValue}>{totals.itemsCount}</Text>
         </View>
         <View style={styles.glassTile}>
           <Text style={styles.cardLabel}>Activity</Text>
           <Text style={styles.tileValue}>{activityCalories} kcal</Text>
+        </View>
+        <View style={styles.glassTile}>
+          <Text style={styles.cardLabel}>Longest streak</Text>
+          <Text style={styles.tileValue}>{streaks.longest} days</Text>
+        </View>
+        <View style={styles.glassTile}>
+          <Text style={styles.cardLabel}>Missing nutrition</Text>
+          <Text style={styles.tileValue}>{totals.missingNutritionCount}</Text>
         </View>
       </View>
 

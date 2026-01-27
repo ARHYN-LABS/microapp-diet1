@@ -53,12 +53,19 @@ function ScanStackScreen() {
       <ScanStack.Screen
         name="Results"
         component={ResultsScreen}
-        options={({ navigation }) => ({
+        options={({ navigation, route }) => ({
           title: "Results",
           headerLeft: () => (
             <Pressable
               style={{ paddingHorizontal: 16, paddingVertical: 8 }}
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                const fromHistory = (route.params as { fromHistory?: boolean } | undefined)?.fromHistory
+                if (fromHistory) {
+                  navigation.getParent()?.navigate("History")
+                } else {
+                  navigation.goBack()
+                }
+              }}
             >
               <Ionicons name="chevron-back" size={22} color={theme.colors.text} />
             </Pressable>
@@ -83,6 +90,7 @@ function AuthStackScreen() {
 function MainTabs() {
   return (
     <Tab.Navigator
+      initialRouteName="Dashboard"
       screenOptions={({ navigation }) => ({
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
@@ -160,15 +168,12 @@ function DrawerContent({ navigation }: { navigation: any }) {
   const insets = useSafeAreaInsets()
 
   return (
-    <DrawerContentScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: insets.top + 28, paddingBottom: 24 }}>
-      <View style={{ marginBottom: 20 }}>
+    <DrawerContentScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: insets.top + 32, paddingBottom: 24 }}>
+      <View style={{ marginBottom: 24 }}>
         <Image
           source={require("./assets/icon.png")}
-          style={{ width: 48, height: 48, borderRadius: 12, marginBottom: 8 }}
+          style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 8 }}
         />
-        <Text style={{ color: theme.colors.muted, marginTop: 2 }}>
-          I can trust this app with my health.
-        </Text>
       </View>
       <DrawerItem
         label="Dashboard"

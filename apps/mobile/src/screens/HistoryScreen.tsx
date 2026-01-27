@@ -77,7 +77,11 @@ export default function HistoryScreen() {
                 if (entry.analysisSnapshot) {
                   navigation.navigate("Scan" as never, {
                     screen: "Results",
-                    params: { analysis: entry.analysisSnapshot, imageUri: imageMap[entry.id] || null }
+                    params: {
+                      analysis: entry.analysisSnapshot,
+                      imageUri: imageMap[entry.id] || null,
+                      fromHistory: true
+                    }
                   } as never)
                 }
               }}

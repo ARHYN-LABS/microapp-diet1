@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react"
-import type { CSSProperties } from "react"
 import { getPrefs } from "@wimf/shared"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
@@ -11,8 +10,6 @@ export default function Results() {
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
-  const [activeFlag, setActiveFlag] =
-    useState<AnalyzeFromImagesResponse["personalizedFlags"][number] | null>(null)
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
   const profile = typeof window !== "undefined" ? getProfile() : null
   const formatTag = (value: string) =>
@@ -69,37 +66,7 @@ export default function Results() {
     return average.toFixed(2)
   }, [analysis])
 
-  const ringCards = useMemo(() => {
-    if (!analysis) return []
-    const nutrition = analysis.nutritionHighlights
-    const sodium = nutrition?.sodium_mg ?? null
-    const sugar = nutrition?.sugar_g ?? null
-    const protein = nutrition?.protein_g ?? null
-
-    return [
-      {
-        title: "Sodium vs limit",
-        value: sodium,
-        unit: "mg",
-        limit: prefs?.lowSodiumMgLimit ?? null,
-        color: "var(--accent)"
-      },
-      {
-        title: "Sugar vs limit",
-        value: sugar,
-        unit: "g",
-        limit: prefs?.lowSugarGlimit ?? null,
-        color: "var(--warning)"
-      },
-      {
-        title: "Protein vs target",
-        value: protein,
-        unit: "g",
-        limit: prefs?.highProteinGtarget ?? null,
-        color: "var(--accent-2)"
-      }
-    ]
-  }, [analysis, prefs])
+  const showHalal = !!prefs?.halalCheckEnabled || healthPrefs.restrictions.includes("halal")
 
   if (!analysis) {
     return (
@@ -198,95 +165,22 @@ export default function Results() {
         </div>
       </section>
 
-      <section className="mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h2 className="h5 mb-0">Personalized for you</h2>
-          <span className="text-muted small">Tap a flag for details</span>
-        </div>
-        <div className="d-flex flex-wrap gap-2">
-          {analysis.personalizedFlags.map((flag) => (
-            <button
-              key={flag.flag}
-              className={`flag-chip ${
-                flag.status === "pass"
-                  ? "flag-pass"
-                  : flag.status === "warn"
-                    ? "flag-warn"
-                    : flag.status === "fail"
-                      ? "flag-fail"
-                      : "flag-unknown"
-              }`}
-              type="button"
-              onClick={() => setActiveFlag(flag)}
-            >
-              {flag.flag}: {flag.status}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="row g-3 mt-3">
-        {ringCards.map((ring) => {
-          const hasData = ring.limit !== null && ring.value !== null && ring.value !== undefined
-          const progress =
-            hasData && ring.limit
-              ? Math.min(100, ((ring.value ?? 0) / ring.limit) * 100)
-              : 0
-          const ringStyle = {
-            "--progress": progress,
-            "--ring-color": ring.color
-          } as CSSProperties
-
-          return (
-            <div className="col-md-4" key={ring.title}>
-              <div className="metric-card h-100 text-center">
-                <div
-                  className="progress-ring"
-                  style={ringStyle}
-                >
-                  <div>
-                    <div className="ring-value">{hasData ? Math.round(progress) : "--"}%</div>
-                    <div className="ring-label">{ring.title}</div>
-                  </div>
-                </div>
-                <div className="text-muted small">
-                  {hasData
-                    ? `${ring.value}${ring.unit} of ${ring.limit}${ring.unit}`
-                    : "Not detected"}
-                </div>
+      {showHalal && (
+        <section className="mt-4">
+          <div className="glass-card">
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                <div className="text-muted small">Halal status</div>
+                <div className="fw-semibold">{analysis.halal.status.toUpperCase()}</div>
               </div>
+              <span className="chip">Confidence {analysis.halal.confidence.toFixed(2)}</span>
             </div>
-          )
-        })}
-      </section>
-
-      <section className="mt-4">
-        <div className="glass-card">
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <div className="text-muted small">Halal status</div>
-              <div className="fw-semibold">{analysis.halal.status.toUpperCase()}</div>
-            </div>
-            <span className="chip">Confidence {analysis.halal.confidence.toFixed(2)}</span>
+            <p className="text-muted mb-0 mt-2">{analysis.halal.explanation}</p>
           </div>
-          <p className="text-muted mb-0 mt-2">{analysis.halal.explanation}</p>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="row g-3 mt-3">
-        <div className="col-lg-6">
-          <details className="glass-card">
-            <summary className="fw-semibold mb-2">Why this score?</summary>
-            <ul className="list-unstyled mb-0">
-              {analysis.score.explanations.map((item, index) => (
-                <li key={`${item.label}-${index}`}>
-                  {item.label}: {item.direction === "up" ? "+" : "-"}
-                  {item.points} - {item.reason}
-                </li>
-              ))}
-            </ul>
-          </details>
-        </div>
         <div className="col-lg-6">
           <details className="glass-card">
             <summary className="fw-semibold mb-2">What we detected</summary>
@@ -335,36 +229,6 @@ export default function Results() {
           Calories: {analysis.nutritionHighlights?.calories ?? "Unknown"}
         </div>
       </section>
-
-      {activeFlag && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100"
-          style={{ background: "rgba(0,0,0,0.6)", zIndex: 50 }}
-          onClick={() => setActiveFlag(null)}
-        >
-          <div
-            className="position-absolute bottom-0 start-0 end-0 p-4"
-            style={{ maxWidth: 720, margin: "0 auto" }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="glass-card">
-              <div className="d-flex justify-content-between align-items-center">
-                <div className="fw-semibold">{activeFlag.flag}</div>
-                <button
-                  className="btn btn-outline-light btn-sm"
-                  onClick={() => setActiveFlag(null)}
-                >
-                  Close
-                </button>
-              </div>
-              <div className="text-muted small mt-2">{activeFlag.explanation}</div>
-              <div className="text-muted small mt-2">
-                Status: {activeFlag.status} | Confidence {activeFlag.confidence.toFixed(2)}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="footer-note mt-4">{analysis.disclaimer}</div>
     </main>
