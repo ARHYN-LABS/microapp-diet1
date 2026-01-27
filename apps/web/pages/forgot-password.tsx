@@ -25,6 +25,7 @@ export default function ForgotPassword() {
         <div className="col-lg-5">
           <div className="glass-card">
             <div className="text-center mb-4">
+              <img src="/logo.png" alt="SafePlate AI" height={64} className="mb-3" />
               <div className="fw-bold fs-4">SafePlate AI</div>
               <div className="text-muted">I can trust this app with my health.</div>
             </div>
