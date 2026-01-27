@@ -14,6 +14,35 @@ type Props = {
   placeholder?: string
 }
 
+const optionMeta: Record<
+  string,
+  {
+    color: string
+    label: string
+  }
+> = {
+  vegan: { color: "#1ABC9C", label: "V" },
+  vegetarian: { color: "#2C7BE5", label: "Ve" },
+  gluten_free: { color: "#F4A261", label: "G" },
+  lactose_free: { color: "#4EA8DE", label: "D" },
+  nut_allergy: { color: "#E76F51", label: "N" },
+  halal: { color: "#0EA5A5", label: "H" },
+  kosher: { color: "#6366F1", label: "K" },
+  hindu: { color: "#F97316", label: "Hi" },
+  keto: { color: "#8B5CF6", label: "K" },
+  diabetic: { color: "#EF4444", label: "D" },
+  low_sodium: { color: "#0F766E", label: "LS" },
+  milk: { color: "#60A5FA", label: "M" },
+  eggs: { color: "#F59E0B", label: "E" },
+  peanuts: { color: "#D97706", label: "P" },
+  tree_nuts: { color: "#A16207", label: "TN" },
+  fish: { color: "#3B82F6", label: "F" },
+  shellfish: { color: "#EF4444", label: "C" },
+  wheat: { color: "#FBBF24", label: "W" },
+  soy: { color: "#22C55E", label: "S" },
+  sesame: { color: "#F97316", label: "Se" }
+}
+
 export default function MultiSelect({ label, options, selected, onChange, placeholder }: Props) {
   const [query, setQuery] = useState("")
   const [custom, setCustom] = useState("")
@@ -100,7 +129,15 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
               }`}
               onClick={() => toggle(option.value)}
             >
-              <div>
+              <div className="d-flex gap-2 align-items-start">
+                <span
+                  className="option-icon"
+                  style={{
+                    backgroundColor: optionMeta[option.value]?.color || "rgba(26,188,156,0.16)"
+                  }}
+                >
+                  {optionMeta[option.value]?.label || option.label.slice(0, 1)}
+                </span>
                 <div className="fw-semibold">{option.label}</div>
                 {option.description && (
                   <div className="small text-muted">{option.description}</div>

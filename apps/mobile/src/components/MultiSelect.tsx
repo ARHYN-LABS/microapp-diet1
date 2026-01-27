@@ -17,6 +17,34 @@ type Props = {
   placeholder?: string
 }
 
+const iconMeta: Record<
+  string,
+  { name: keyof typeof Ionicons.glyphMap; color: string }
+> = {
+  vegan: { name: "leaf-outline", color: theme.colors.accent },
+  vegetarian: { name: "leaf", color: theme.colors.accent2 },
+  gluten_free: { name: "ban-outline", color: "#F4A261" },
+  lactose_free: { name: "water-outline", color: "#4EA8DE" },
+  nut_allergy: { name: "alert-circle-outline", color: theme.colors.warning },
+  halal: { name: "moon-outline", color: "#0EA5A5" },
+  kosher: { name: "star-outline", color: "#6366F1" },
+  hindu: { name: "flame-outline", color: "#F97316" },
+  keto: { name: "barbell-outline", color: "#8B5CF6" },
+  diabetic: { name: "pulse-outline", color: theme.colors.danger },
+  low_sodium: { name: "heart-outline", color: "#0F766E" },
+  milk: { name: "water-outline", color: "#60A5FA" },
+  eggs: { name: "ellipse-outline", color: "#F59E0B" },
+  peanuts: { name: "nutrition-outline", color: "#D97706" },
+  tree_nuts: { name: "leaf-outline", color: "#A16207" },
+  fish: { name: "fish-outline", color: "#3B82F6" },
+  shellfish: { name: "bug-outline", color: "#EF4444" },
+  wheat: { name: "nutrition-outline", color: "#FBBF24" },
+  soy: { name: "leaf-outline", color: "#22C55E" },
+  sesame: { name: "leaf-outline", color: "#F97316" }
+}
+
+const getIcon = (value: string) => iconMeta[value] || { name: "leaf-outline", color: theme.colors.accent2 }
+
 export default function MultiSelect({ label, options, selected, onChange, placeholder }: Props) {
   const [query, setQuery] = useState("")
   const [custom, setCustom] = useState("")
@@ -81,6 +109,7 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
       <View style={styles.list}>
         {filtered.map((option) => {
           const isSelected = selected.includes(option.value)
+          const icon = getIcon(option.value)
           return (
             <Pressable
               key={option.value}
@@ -88,10 +117,15 @@ export default function MultiSelect({ label, options, selected, onChange, placeh
               onPress={() => toggle(option.value)}
             >
               <View style={styles.optionLeft}>
+                <View style={[styles.iconWrap, { backgroundColor: icon.color }]}>
+                  <Ionicons name={icon.name} size={14} color="#ffffff" />
+                </View>
+                <View style={styles.optionText}>
                 <Text style={styles.optionLabel}>{option.label}</Text>
                 {option.description ? (
                   <Text style={styles.optionDescription}>{option.description}</Text>
                 ) : null}
+                </View>
               </View>
               <Ionicons
                 name={isSelected ? "checkmark-circle" : "ellipse-outline"}
@@ -214,7 +248,13 @@ const styles = StyleSheet.create({
   },
   optionLeft: {
     flex: 1,
-    marginRight: theme.spacing.sm
+    marginRight: theme.spacing.sm,
+    flexDirection: "row",
+    gap: theme.spacing.sm,
+    alignItems: "flex-start"
+  },
+  optionText: {
+    flex: 1
   },
   optionLabel: {
     color: theme.colors.text,
@@ -225,5 +265,12 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     fontSize: 12,
     marginTop: 4
+  },
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center"
   }
 })
