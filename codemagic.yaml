@@ -12,11 +12,6 @@ workflows:
       - name: Install dependencies
         script: |
           npm ci
-      - name: Install Android SDK/NDK
-        script: |
-          sdkmanager --version
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-33" "build-tools;33.0.0" "ndk;23.1.7779620"
       - name: Build shared package
         script: |
           npm run build --workspace packages/shared
