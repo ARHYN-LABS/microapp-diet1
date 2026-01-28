@@ -24,31 +24,31 @@ const emptyPrefs: UserPrefs = {
 const countryOptions = ["United States", "United Kingdom", "Pakistan", "United Arab Emirates", "Saudi Arabia", "Canada", "Australia"]
 
 const dietaryToggles = [
-  { key: "halal", label: "Halal", icon: "H", color: "#1ABC9C" },
-  { key: "kosher", label: "Kosher", icon: "K", color: "#2C7BE5" },
-  { key: "vegetarian", label: "Vegetarian", icon: "V", color: "#22C55E" },
-  { key: "vegan", label: "Vegan", icon: "Vg", color: "#16A34A" },
-  { key: "pescatarian", label: "Pescatarian", icon: "P", color: "#3B82F6" },
-  { key: "keto", label: "Keto", icon: "K", color: "#F97316" },
-  { key: "low_carb", label: "Low Carb", icon: "LC", color: "#14B8A6" },
-  { key: "low_sodium", label: "Low Sodium", icon: "LS", color: "#0EA5E9" },
-  { key: "low_sugar", label: "Low Sugar", icon: "LS", color: "#E11D48" },
-  { key: "high_protein", label: "High Protein", icon: "HP", color: "#2563EB" },
-  { key: "gluten_free", label: "Gluten-Free", icon: "G", color: "#F59E0B" },
-  { key: "dairy_free", label: "Dairy-Free", icon: "D", color: "#8B5CF6" }
+  { key: "halal", label: "Halal", icon: "☪", color: "#1ABC9C" },
+  { key: "kosher", label: "Kosher", icon: "✡", color: "#2C7BE5" },
+  { key: "vegetarian", label: "Vegetarian", icon: "🥗", color: "#22C55E" },
+  { key: "vegan", label: "Vegan", icon: "🌿", color: "#16A34A" },
+  { key: "pescatarian", label: "Pescatarian", icon: "🐟", color: "#3B82F6" },
+  { key: "keto", label: "Keto", icon: "🔥", color: "#F97316" },
+  { key: "low_carb", label: "Low Carb", icon: "⚡", color: "#14B8A6" },
+  { key: "low_sodium", label: "Low Sodium", icon: "🧂", color: "#0EA5E9" },
+  { key: "low_sugar", label: "Low Sugar", icon: "🫐", color: "#E11D48" },
+  { key: "high_protein", label: "High Protein", icon: "🥩", color: "#2563EB" },
+  { key: "gluten_free", label: "Gluten-Free", icon: "🌾", color: "#F59E0B" },
+  { key: "dairy_free", label: "Dairy-Free", icon: "🥛", color: "#8B5CF6" }
 ]
 
 const allergyChecks = [
-  { key: "peanuts", label: "Peanuts", icon: "P", color: "#E63946" },
-  { key: "tree_nuts", label: "Tree Nuts", icon: "TN", color: "#B45309" },
-  { key: "dairy", label: "Dairy", icon: "D", color: "#2563EB" },
-  { key: "eggs", label: "Eggs", icon: "E", color: "#F59E0B" },
-  { key: "shellfish", label: "Shellfish", icon: "S", color: "#EF4444" },
-  { key: "fish", label: "Fish", icon: "F", color: "#3B82F6" },
-  { key: "soy", label: "Soy", icon: "S", color: "#22C55E" },
-  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "W", color: "#F97316" },
-  { key: "sesame", label: "Sesame", icon: "Se", color: "#F59E0B" },
-  { key: "sulfites", label: "Sulfites", icon: "Su", color: "#EF4444" }
+  { key: "peanuts", label: "Peanuts", icon: "🥜", color: "#E63946" },
+  { key: "tree_nuts", label: "Tree Nuts", icon: "🌰", color: "#B45309" },
+  { key: "dairy", label: "Dairy", icon: "🥛", color: "#2563EB" },
+  { key: "eggs", label: "Eggs", icon: "🥚", color: "#F59E0B" },
+  { key: "shellfish", label: "Shellfish", icon: "🦐", color: "#EF4444" },
+  { key: "fish", label: "Fish", icon: "🐟", color: "#3B82F6" },
+  { key: "soy", label: "Soy", icon: "🫘", color: "#22C55E" },
+  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "🌾", color: "#F97316" },
+  { key: "sesame", label: "Sesame", icon: "🌼", color: "#F59E0B" },
+  { key: "sulfites", label: "Sulfites", icon: "⚠", color: "#EF4444" }
 ]
 
 const alertToggles = [
