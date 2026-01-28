@@ -11,6 +11,7 @@ import {
 } from "../storage/cache"
 import { theme } from "../theme"
 import ScoreRing from "../components/ScoreRing"
+import GradientButton from "../components/GradientButton"
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
@@ -155,10 +156,10 @@ export default function DashboardScreen() {
             <Text style={styles.statValue}>{unhealthyCount}</Text>
           </View>
         </View>
-        <Pressable style={styles.viewJournal} onPress={() => navigation.navigate("Journal" as never)}>
+        <GradientButton style={styles.viewJournal} onPress={() => navigation.navigate("Journal" as never)}>
           <Ionicons name="book-outline" size={16} color="#ffffff" />
           <Text style={styles.viewJournalText}>View Journal</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       <View style={styles.card}>
@@ -373,14 +374,9 @@ const styles = StyleSheet.create({
   },
   viewJournal: {
     marginTop: theme.spacing.md,
-    backgroundColor: theme.colors.accent,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 999,
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8
+    alignSelf: "flex-start"
   },
   viewJournalText: {
     color: "#ffffff",

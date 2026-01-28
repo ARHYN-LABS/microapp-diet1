@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { requestPasswordReset } from "@wimf/shared"
 import { apiBase } from "../api/config"
 import { theme } from "../theme"
+import GradientButton from "../components/GradientButton"
 
 type Props = {
   navigation: any
@@ -41,10 +42,10 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
         value={email}
         onChangeText={setEmail}
       />
-      <Pressable style={styles.primaryButton} onPress={handleReset}>
+      <GradientButton onPress={handleReset} style={styles.primaryButton}>
         <Ionicons name="mail-outline" size={18} color="#ffffff" />
         <Text style={styles.primaryButtonText}>Request reset</Text>
-      </Pressable>
+      </GradientButton>
       {status ? <Text style={styles.status}>{status}</Text> : null}
       {token ? <Text style={styles.token}>Dev token: {token}</Text> : null}
       <Pressable onPress={() => navigation.navigate("ResetPassword")}>
@@ -89,15 +90,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border
   },
-  primaryButton: {
-    backgroundColor: theme.colors.accent,
-    padding: 14,
-    borderRadius: 999,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8
-  },
+  primaryButton: {},
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"

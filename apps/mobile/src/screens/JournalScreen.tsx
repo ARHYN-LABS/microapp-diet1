@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView, TextInput } from "react-
 import { Ionicons } from "@expo/vector-icons"
 import type { AnalyzeFromImagesResponse, ManualFood, MealType } from "@wimf/shared"
 import { theme } from "../theme"
+import GradientButton from "../components/GradientButton"
 import {
   addJournalItem,
   addManualFood,
@@ -178,9 +179,9 @@ export default function JournalScreen() {
           placeholderTextColor={theme.colors.muted}
           keyboardType="numeric"
         />
-        <Pressable style={styles.primaryButton} onPress={addFromScan}>
+        <GradientButton onPress={addFromScan} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Add to Journal</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       <View style={styles.card}>
@@ -200,9 +201,9 @@ export default function JournalScreen() {
           placeholderTextColor={theme.colors.muted}
           keyboardType="numeric"
         />
-        <Pressable style={styles.primaryButton} onPress={addManual}>
+        <GradientButton onPress={addManual} style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Add manual item</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       {mealLabels.map((meal) => (
@@ -344,12 +345,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     fontSize: 12
   },
-  primaryButton: {
-    backgroundColor: theme.colors.accent,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: "center"
-  },
+  primaryButton: {},
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"

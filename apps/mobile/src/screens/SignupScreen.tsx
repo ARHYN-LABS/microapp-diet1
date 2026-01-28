@@ -2,6 +2,7 @@ import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image } from "react-native"
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
 import { signUpUser } from "../api/client"
+import GradientButton from "../components/GradientButton"
 import { setHealthPrefs, setProfile, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
@@ -162,10 +163,10 @@ export default function SignupScreen({ navigation }: Props) {
         />
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleSignup}>
+      <GradientButton onPress={handleSignup} style={styles.primaryButton}>
         <Ionicons name="person-add-outline" size={18} color="#ffffff" />
         <Text style={styles.primaryButtonText}>Create account</Text>
-      </Pressable>
+      </GradientButton>
 
       <Pressable onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Back to login</Text>
@@ -263,13 +264,6 @@ const styles = StyleSheet.create({
     marginBottom: 6
   },
   primaryButton: {
-    backgroundColor: theme.colors.accent,
-    padding: 14,
-    borderRadius: 999,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
     marginTop: 8
   },
   primaryButtonText: {

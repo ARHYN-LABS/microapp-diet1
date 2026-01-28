@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-nati
 import { Camera, CameraType } from "expo-camera"
 import { Ionicons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
+import GradientButton from "../components/GradientButton"
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native"
 import { theme } from "../theme"
 import { getProfile, getScanHistoryCache, setLastAnalysis, setScanHistoryCache, setScanImageForId } from "../storage/cache"
+import type { ScanHistory } from "@wimf/shared"
 
 type ImageState = {
   label?: { uri: string; name: string; type: string }
@@ -84,6 +86,24 @@ export default function ScanScreen() {
       }
       await setLastAnalysis(analysis)
       if (profile?.id) {
+        const localId = `local-${Date.now()}`
+        const localEntry: ScanHistory = {
+          id: localId,
+          userId: profile.id,
+          createdAt: new Date().toISOString(),
+          productName: analysis.productName ?? null,
+          extractedText: analysis.parsing.extractedText,
+          parsedIngredients: analysis.ingredientBreakdown.map((item) => item.name),
+          parsedNutrition: analysis.nutritionHighlights,
+          analysisSnapshot: analysis
+        }
+        const cached = await getScanHistoryCache()
+        const optimistic = [localEntry, ...cached.filter((entry) => entry.id !== localId)]
+        await setScanHistoryCache(optimistic)
+        if (image.label?.uri) {
+          await setScanImageForId(localId, image.label.uri)
+        }
+
         const saved = await saveHistory({
           userId: profile.id,
           extractedText: analysis.parsing.extractedText,
@@ -91,10 +111,12 @@ export default function ScanScreen() {
           parsedNutrition: analysis.nutritionHighlights,
           analysisSnapshot: analysis
         })
-        if (saved?.id && image.label?.uri) {
-          await setScanImageForId(saved.id, image.label.uri)
-          const cached = await getScanHistoryCache()
-          const next = [saved, ...cached.filter((entry) => entry.id !== saved.id)]
+        if (saved?.id) {
+          if (image.label?.uri) {
+            await setScanImageForId(saved.id, image.label.uri)
+          }
+          const refreshed = await getScanHistoryCache()
+          const next = [saved, ...refreshed.filter((entry) => entry.id !== localId && entry.id !== saved.id)]
           await setScanHistoryCache(next)
         }
       }
@@ -168,14 +190,14 @@ export default function ScanScreen() {
             <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
           </Pressable>
         )}
-        <Pressable
-          style={[styles.primaryAction, !image.label && styles.primaryActionDisabled]}
+        <GradientButton
           onPress={handleAnalyze}
           disabled={!image.label}
+          style={styles.primaryAction}
         >
           <Ionicons name="search" size={18} color="#ffffff" />
           <Text style={styles.primaryActionText}>Analyze</Text>
-        </Pressable>
+        </GradientButton>
       </View>
 
       <View style={styles.section}>
@@ -284,21 +306,11 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   primaryAction: {
-    flex: 1,
-    backgroundColor: theme.colors.accent,
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8
+    flex: 1
   },
   primaryActionText: {
     color: "#ffffff",
     fontWeight: "700"
-  },
-  primaryActionDisabled: {
-    opacity: 0.6
   },
   secondaryAction: {
     paddingHorizontal: 18,

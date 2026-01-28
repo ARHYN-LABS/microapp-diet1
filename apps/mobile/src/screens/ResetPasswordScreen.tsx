@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, Pressable, Image } from "react-nativ
 import { resetPassword } from "@wimf/shared"
 import { apiBase } from "../api/config"
 import { theme } from "../theme"
+import GradientButton from "../components/GradientButton"
 
 type Props = {
   navigation: any
@@ -56,9 +57,9 @@ export default function ResetPasswordScreen({ navigation }: Props) {
         value={newPassword}
         onChangeText={setNewPassword}
       />
-      <Pressable style={styles.primaryButton} onPress={handleReset}>
+      <GradientButton onPress={handleReset} style={styles.primaryButton}>
         <Text style={styles.primaryButtonText}>Reset password</Text>
-      </Pressable>
+      </GradientButton>
       {status ? <Text style={styles.status}>{status}</Text> : null}
     </View>
   )
@@ -98,12 +99,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border
   },
-  primaryButton: {
-    backgroundColor: theme.colors.accent,
-    padding: 14,
-    borderRadius: 999,
-    alignItems: "center"
-  },
+  primaryButton: {},
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"

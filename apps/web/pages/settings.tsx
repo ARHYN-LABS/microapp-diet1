@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+﻿import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import { getPrefs, getProfile, savePrefs, updateProfile } from "@wimf/shared"
 import type { UserPrefs, UserProfile } from "@wimf/shared"
@@ -220,32 +220,41 @@ const countryOptions = [
   "Zimbabwe"
 ]
 
+const emoji = (code: number) => String.fromCodePoint(code)
+
+const gfcoIcon = (
+  <span className="gfco-icon" aria-hidden>
+    <span className="gfco-text">GF</span>
+    <span className="gfco-slash" />
+  </span>
+)
+
 const dietaryToggles = [
-  { key: "halal", label: "Halal", icon: "☪", color: "#1ABC9C" },
-  { key: "kosher", label: "Kosher", icon: "✡", color: "#2C7BE5" },
-  { key: "vegetarian", label: "Vegetarian", icon: "🥗", color: "#22C55E" },
-  { key: "vegan", label: "Vegan", icon: "🌿", color: "#16A34A" },
-  { key: "pescatarian", label: "Pescatarian", icon: "🐟", color: "#3B82F6" },
-  { key: "keto", label: "Keto", icon: "🔥", color: "#F97316" },
-  { key: "low_carb", label: "Low Carb", icon: "⚡", color: "#14B8A6" },
-  { key: "low_sodium", label: "Low Sodium", icon: "🧂", color: "#0EA5E9" },
-  { key: "low_sugar", label: "Low Sugar", icon: "🫐", color: "#E11D48" },
-  { key: "high_protein", label: "High Protein", icon: "🥩", color: "#2563EB" },
-  { key: "gluten_free", label: "Gluten-Free", icon: "🌾", color: "#F59E0B" },
-  { key: "dairy_free", label: "Dairy-Free", icon: "🥛", color: "#8B5CF6" }
+  { key: "halal", label: "Halal", icon: <span aria-hidden>{emoji(0x262a)}</span>, color: "#1ABC9C" },
+  { key: "kosher", label: "Kosher", icon: <span aria-hidden>{emoji(0x2721)}</span>, color: "#2C7BE5" },
+  { key: "vegetarian", label: "Vegetarian", icon: <span aria-hidden>{emoji(0x1f957)}</span>, color: "#22C55E" },
+  { key: "vegan", label: "Vegan", icon: <span aria-hidden>{emoji(0x1f33f)}</span>, color: "#16A34A" },
+  { key: "pescatarian", label: "Pescatarian", icon: <span aria-hidden>{emoji(0x1f41f)}</span>, color: "#3B82F6" },
+  { key: "keto", label: "Keto", icon: <span aria-hidden>{emoji(0x1f525)}</span>, color: "#F97316" },
+  { key: "low_carb", label: "Low Carb", icon: <span aria-hidden>{emoji(0x26a1)}</span>, color: "#14B8A6" },
+  { key: "low_sodium", label: "Low Sodium", icon: <span aria-hidden>{emoji(0x1f9c2)}</span>, color: "#0EA5E9" },
+  { key: "low_sugar", label: "Low Sugar", icon: <span aria-hidden>{emoji(0x1fad0)}</span>, color: "#E11D48" },
+  { key: "high_protein", label: "High Protein", icon: <span aria-hidden>{emoji(0x1f969)}</span>, color: "#2563EB" },
+  { key: "gluten_free", label: "Gluten-Free", icon: gfcoIcon, color: "transparent" },
+  { key: "dairy_free", label: "Dairy-Free", icon: <span aria-hidden>{emoji(0x1f95b)}</span>, color: "#8B5CF6" }
 ]
 
 const allergyChecks = [
-  { key: "peanuts", label: "Peanuts", icon: "🥜", color: "#E63946" },
-  { key: "tree_nuts", label: "Tree Nuts", icon: "🌰", color: "#B45309" },
-  { key: "dairy", label: "Dairy", icon: "🥛", color: "#2563EB" },
-  { key: "eggs", label: "Eggs", icon: "🥚", color: "#F59E0B" },
-  { key: "shellfish", label: "Shellfish", icon: "🦞", color: "#EF4444" },
-  { key: "fish", label: "Fish", icon: "🐟", color: "#3B82F6" },
-  { key: "soy", label: "Soy", icon: "🫘", color: "#22C55E" },
-  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "🌾", color: "#F97316" },
-  { key: "sesame", label: "Sesame", icon: "🌼", color: "#F59E0B" },
-  { key: "sulfites", label: "Sulfites", icon: "⚠", color: "#EF4444" }
+  { key: "peanuts", label: "Peanuts", icon: <span aria-hidden>{emoji(0x1f95c)}</span>, color: "#E63946" },
+  { key: "tree_nuts", label: "Tree Nuts", icon: <span aria-hidden>{emoji(0x1f330)}</span>, color: "#B45309" },
+  { key: "dairy", label: "Dairy", icon: <span aria-hidden>{emoji(0x1f95b)}</span>, color: "#2563EB" },
+  { key: "eggs", label: "Eggs", icon: <span aria-hidden>{emoji(0x1f95a)}</span>, color: "#F59E0B" },
+  { key: "shellfish", label: "Shellfish", icon: <span aria-hidden>{emoji(0x1f99e)}</span>, color: "#EF4444" },
+  { key: "fish", label: "Fish", icon: <span aria-hidden>{emoji(0x1f41f)}</span>, color: "#3B82F6" },
+  { key: "soy", label: "Soy", icon: <span aria-hidden>{emoji(0x1fadb)}</span>, color: "#22C55E" },
+  { key: "wheat_gluten", label: "Wheat / Gluten", icon: <span aria-hidden>{emoji(0x1f33e)}</span>, color: "#F97316" },
+  { key: "sesame", label: "Sesame", icon: <span aria-hidden>{emoji(0x1f33c)}</span>, color: "#F59E0B" },
+  { key: "sulfites", label: "Sulfites", icon: <span aria-hidden>{emoji(0x26a0)}</span>, color: "#EF4444" }
 ]
 
 const alertToggles = [
@@ -411,7 +420,7 @@ export default function Settings() {
         .map(([key]) => key)
       setHealthPrefs({ restrictions, allergens, allergyOther: profilePrefs.allergyOther || "" })
       setProfilePrefs(profilePrefs)
-      setStatus("Preferences saved locally.")
+      setStatus("Preferences saved.")
     } catch (error) {
       setStatus((error as Error).message)
     }
@@ -751,3 +760,7 @@ export default function Settings() {
     </main>
   )
 }
+
+
+
+

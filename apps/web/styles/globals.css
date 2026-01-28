@@ -302,3 +302,28 @@ a {
   font-weight: 700;
   flex-shrink: 0;
 }
+
+.gfco-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1.5px solid #f59e0b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.gfco-text {
+  font-size: 9px;
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+.gfco-slash {
+  position: absolute;
+  width: 22px;
+  height: 2px;
+  background-color: #f59e0b;
+  transform: rotate(-35deg);
+}

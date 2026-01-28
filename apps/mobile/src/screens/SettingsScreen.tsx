@@ -5,6 +5,7 @@ import { Picker } from "@react-native-picker/picker"
 import Slider from "@react-native-community/slider"
 import * as ImagePicker from "expo-image-picker"
 import { fetchPrefs, fetchProfile, saveProfile, updatePrefs } from "../api/client"
+import GradientButton from "../components/GradientButton"
 import {
   clearAuth,
   getHealthPrefs,
@@ -749,9 +750,9 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.primaryButton} onPress={handleSave}>
+      <GradientButton onPress={handleSave} style={styles.primaryButton}>
         <Text style={styles.primaryButtonText}>Save Profile</Text>
-      </Pressable>
+      </GradientButton>
       <Pressable style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={18} color={theme.colors.text} />
         <Text style={styles.logoutText}>Logout</Text>
@@ -891,10 +892,6 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   primaryButton: {
-    backgroundColor: theme.colors.accent,
-    paddingVertical: 14,
-    borderRadius: 999,
-    alignItems: "center",
     marginTop: 8
   },
   primaryButtonText: {

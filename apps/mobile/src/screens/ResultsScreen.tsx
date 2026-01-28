@@ -63,6 +63,9 @@ export default function ResultsScreen({ route }: Props) {
     ) {
       return Number(((nutrition.calories * 100) / nutrition.servingSizeG).toFixed(1))
     }
+    if (nutrition.calories !== null && nutrition.calories !== undefined) {
+      return Number(nutrition.calories.toFixed(1))
+    }
     return null
   }, [analysis.nutritionHighlights])
 
