@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Switch, ScrollView, Image } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
 import { Picker } from "@react-native-picker/picker"
 import Slider from "@react-native-community/slider"
 import * as ImagePicker from "expo-image-picker"
@@ -36,31 +36,31 @@ const emptyPrefs: UserPrefs = {
 const countryOptions = ["United States", "United Kingdom", "Pakistan", "United Arab Emirates", "Saudi Arabia", "Canada", "Australia"]
 
 const dietaryOptions = [
-  { key: "halal", label: "Halal", icon: "checkmark-circle", color: "#1ABC9C" },
-  { key: "kosher", label: "Kosher", icon: "shield-checkmark", color: "#2C7BE5" },
-  { key: "vegetarian", label: "Vegetarian", icon: "leaf", color: "#22C55E" },
-  { key: "vegan", label: "Vegan", icon: "leaf-outline", color: "#16A34A" },
-  { key: "pescatarian", label: "Pescatarian", icon: "fish", color: "#3B82F6" },
-  { key: "keto", label: "Keto", icon: "flame", color: "#F97316" },
-  { key: "low_carb", label: "Low Carb", icon: "speedometer", color: "#14B8A6" },
-  { key: "low_sodium", label: "Low Sodium", icon: "water", color: "#0EA5E9" },
-  { key: "low_sugar", label: "Low Sugar", icon: "fitness", color: "#E11D48" },
-  { key: "high_protein", label: "High Protein", icon: "barbell", color: "#2563EB" },
-  { key: "gluten_free", label: "Gluten-Free", icon: "ban", color: "#F59E0B" },
-  { key: "dairy_free", label: "Dairy-Free", icon: "nutrition", color: "#8B5CF6" }
+  { key: "halal", label: "Halal", icon: "checkmark-circle", color: "#1ABC9C", type: "ion" },
+  { key: "kosher", label: "Kosher", icon: "shield-checkmark", color: "#2C7BE5", type: "ion" },
+  { key: "vegetarian", label: "Vegetarian", icon: "leaf", color: "#22C55E", type: "ion" },
+  { key: "vegan", label: "Vegan", icon: "leaf-outline", color: "#16A34A", type: "ion" },
+  { key: "pescatarian", label: "Pescatarian", icon: "fish", color: "#3B82F6", type: "mci" },
+  { key: "keto", label: "Keto", icon: "flame", color: "#F97316", type: "ion" },
+  { key: "low_carb", label: "Low Carb", icon: "speedometer", color: "#14B8A6", type: "ion" },
+  { key: "low_sodium", label: "Low Sodium", icon: "water", color: "#0EA5E9", type: "ion" },
+  { key: "low_sugar", label: "Low Sugar", icon: "fitness", color: "#E11D48", type: "ion" },
+  { key: "high_protein", label: "High Protein", icon: "barbell", color: "#2563EB", type: "ion" },
+  { key: "gluten_free", label: "Gluten-Free", icon: "gf", color: "#F59E0B", type: "gf" },
+  { key: "dairy_free", label: "Dairy-Free", icon: "nutrition", color: "#8B5CF6", type: "ion" }
 ]
 
 const allergyOptions = [
-  { key: "peanuts", label: "Peanuts", icon: "warning", color: "#E63946" },
-  { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309" },
-  { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB" },
-  { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B" },
-  { key: "shellfish", label: "Shellfish", icon: "fish", color: "#EF4444" },
-  { key: "fish", label: "Fish", icon: "fish-outline", color: "#3B82F6" },
-  { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E" },
-  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316" },
-  { key: "sesame", label: "Sesame", icon: "nutrition-outline", color: "#F59E0B" },
-  { key: "sulfites", label: "Sulfites", icon: "alert", color: "#EF4444" }
+  { key: "peanuts", label: "Peanuts", icon: "warning", color: "#E63946", type: "ion" },
+  { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309", type: "ion" },
+  { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB", type: "ion" },
+  { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B", type: "ion" },
+  { key: "shellfish", label: "Shellfish", icon: "shrimp", color: "#EF4444", type: "mci" },
+  { key: "fish", label: "Fish", icon: "fish", color: "#3B82F6", type: "mci" },
+  { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E", type: "ion" },
+  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316", type: "ion" },
+  { key: "sesame", label: "Sesame", icon: "nutrition-outline", color: "#F59E0B", type: "ion" },
+  { key: "sulfites", label: "Sulfites", icon: "alert", color: "#EF4444", type: "ion" }
 ]
 
 const alertOptions = [
@@ -420,7 +420,16 @@ export default function SettingsScreen() {
         {dietaryOptions.map((item) => (
           <View key={item.key} style={styles.toggleRow}>
             <View style={styles.toggleLabel}>
-              <Ionicons name={item.icon as any} size={16} color={item.color} />
+              {item.type === "gf" ? (
+                <View style={styles.gfIcon}>
+                  <Text style={styles.gfText}>GF</Text>
+                  <View style={styles.gfSlash} />
+                </View>
+              ) : item.type === "mci" ? (
+                <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+              ) : (
+                <Ionicons name={item.icon as any} size={16} color={item.color} />
+              )}
               <Text style={styles.toggleText}>{item.label}</Text>
             </View>
             <Switch
@@ -452,7 +461,11 @@ export default function SettingsScreen() {
               size={20}
               color={profilePrefs.allergies?.[item.key] ? theme.colors.warning : theme.colors.muted}
             />
-            <Ionicons name={item.icon as any} size={16} color={item.color} />
+            {item.type === "mci" ? (
+              <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+            ) : (
+              <Ionicons name={item.icon as any} size={16} color={item.color} />
+            )}
             <Text style={styles.checkLabel}>{item.label}</Text>
           </Pressable>
         ))}
@@ -652,6 +665,28 @@ const styles = StyleSheet.create({
   checkLabel: {
     color: theme.colors.text,
     fontWeight: "600"
+  },
+  gfIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: "#F59E0B",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative"
+  },
+  gfText: {
+    fontSize: 8,
+    fontWeight: "700",
+    color: "#F59E0B"
+  },
+  gfSlash: {
+    position: "absolute",
+    width: 22,
+    height: 2,
+    backgroundColor: "#F59E0B",
+    transform: [{ rotate: "-35deg" }]
   },
   bodyMuted: {
     color: theme.colors.muted,

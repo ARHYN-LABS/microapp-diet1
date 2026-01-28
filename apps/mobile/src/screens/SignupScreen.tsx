@@ -1,6 +1,6 @@
 import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
 import { signUpUser } from "../api/client"
 import { setHealthPrefs, setProfile, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
@@ -15,7 +15,7 @@ const dietaryOptions = [
   { key: "kosher", label: "Kosher", icon: "shield-checkmark", color: "#2C7BE5", type: "ion" },
   { key: "vegetarian", label: "Vegetarian", icon: "leaf", color: "#22C55E", type: "ion" },
   { key: "vegan", label: "Vegan", icon: "leaf-outline", color: "#16A34A", type: "ion" },
-  { key: "pescatarian", label: "Pescatarian", icon: "fish", color: "#3B82F6", type: "ion" },
+  { key: "pescatarian", label: "Pescatarian", icon: "fish", color: "#3B82F6", type: "mci" },
   { key: "keto", label: "Keto", icon: "flame", color: "#F97316", type: "ion" },
   { key: "low_carb", label: "Low Carb", icon: "speedometer", color: "#14B8A6", type: "ion" },
   { key: "low_sodium", label: "Low Sodium", icon: "water", color: "#0EA5E9", type: "ion" },
@@ -26,16 +26,16 @@ const dietaryOptions = [
 ]
 
 const allergyOptions = [
-  { key: "peanuts", label: "Peanuts", icon: "warning", color: "#E63946" },
-  { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309" },
-  { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB" },
-  { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B" },
-  { key: "shellfish", label: "Shellfish", icon: "fish", color: "#EF4444" },
-  { key: "fish", label: "Fish", icon: "fish-outline", color: "#3B82F6" },
-  { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E" },
-  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316" },
-  { key: "sesame", label: "Sesame", icon: "nutrition-outline", color: "#F59E0B" },
-  { key: "sulfites", label: "Sulfites", icon: "alert", color: "#EF4444" }
+  { key: "peanuts", label: "Peanuts", icon: "warning", color: "#E63946", type: "ion" },
+  { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309", type: "ion" },
+  { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB", type: "ion" },
+  { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B", type: "ion" },
+  { key: "shellfish", label: "Shellfish", icon: "shrimp", color: "#EF4444", type: "mci" },
+  { key: "fish", label: "Fish", icon: "fish", color: "#3B82F6", type: "mci" },
+  { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E", type: "ion" },
+  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316", type: "ion" },
+  { key: "sesame", label: "Sesame", icon: "nutrition-outline", color: "#F59E0B", type: "ion" },
+  { key: "sulfites", label: "Sulfites", icon: "alert", color: "#EF4444", type: "ion" }
 ]
 
 export default function SignupScreen({ navigation }: Props) {
@@ -121,6 +121,8 @@ export default function SignupScreen({ navigation }: Props) {
                 <Text style={styles.gfText}>GF</Text>
                 <View style={styles.gfSlash} />
               </View>
+            ) : item.type === "mci" ? (
+              <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
             ) : (
               <Ionicons name={item.icon as any} size={16} color={item.color} />
             )}
@@ -142,7 +144,11 @@ export default function SignupScreen({ navigation }: Props) {
               size={20}
               color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
             />
-            <Ionicons name={item.icon as any} size={16} color={item.color} />
+            {item.type === "mci" ? (
+              <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+            ) : (
+              <Ionicons name={item.icon as any} size={16} color={item.color} />
+            )}
             <Text style={styles.checkLabel}>{item.label}</Text>
           </Pressable>
         ))}
