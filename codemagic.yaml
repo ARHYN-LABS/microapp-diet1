@@ -25,6 +25,7 @@ workflows:
         script: |
           cd apps/mobile/android
           chmod +x gradlew
+          ./gradlew bundleDebugJsAndAssets --build-cache
           ./gradlew assembleDebug --build-cache \
             -Pandroid.compileSdkVersion=33 \
             -Pandroid.targetSdkVersion=33 \
