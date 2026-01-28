@@ -9,7 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
 import { Image, Pressable, Text, View } from "react-native"
 import { useEffect, useState, useContext } from "react"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import DashboardScreen from "./src/screens/DashboardScreen"
@@ -104,7 +104,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 elevation: 6
               }}
             >
-              <Ionicons name={config.icon} size={28} color="#ffffff" />
+              <MaterialIcons name="center-focus-strong" size={28} color="#ffffff" />
             </Pressable>
           )
         }
