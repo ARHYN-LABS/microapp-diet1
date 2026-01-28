@@ -257,7 +257,7 @@ function DrawerContent({ navigation }: { navigation: any }) {
         paddingBottom: 24
       }}
     >
-      <View style={{ marginBottom: 28 }}>
+      <View style={{ marginBottom: 28, paddingLeft: 6 }}>
         <Image
           source={require("./assets/drawer-logo.png")}
           style={{ width: 200, height: 88, resizeMode: "contain" }}
