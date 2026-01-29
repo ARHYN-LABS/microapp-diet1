@@ -321,9 +321,9 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   primaryAction: {
-    flex: 2,
-    minHeight: 64,
-    paddingVertical: 18
+    flex: 3,
+    minHeight: 68,
+    paddingVertical: 20
   },
   primaryActionText: {
     color: "#ffffff",

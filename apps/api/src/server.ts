@@ -35,7 +35,7 @@ const upload = multer({
 
 const port = Number(process.env.PORT || 4000)
 const openAiKey = process.env.OPENAI_API_KEY
-const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-5.1"
+const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini"
 const openai = openAiKey ? new OpenAI({ apiKey: openAiKey }) : null
 const jwtSecret = process.env.JWT_SECRET || "change-me"
 const corsOrigins = (process.env.CORS_ORIGINS || "")
@@ -757,15 +757,13 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   }
 
   const prompt = [
-    "You are analyzing a food photo without a label.",
-    "Return JSON only.",
-    "First decide if the image is a food item. If not food, set isFood=false and provide a short notFoodReason.",
-    "Always provide a best-guess productName with a specific dish name (e.g., crispy chicken burger).",
-    "Prefix with 'Likely' if uncertain.",
-    "If you cannot infer a field, return null.",
-    "For ingredients, list the most likely ingredients in plain English.",
-    "For nutrition, estimate per 100g if possible (calories, protein_g, carbs_g, sugar_g, sodium_mg).",
-    "Include a confidence value from 0 to 1."
+    "Analyze a food photo (no label). Return JSON only.",
+    "If not food: isFood=false and short notFoodReason.",
+    "Always give productName (specific dish, prefix 'Likely' if unsure).",
+    "If unknown, return null.",
+    "Ingredients: list likely items.",
+    "Nutrition per 100g if possible: calories, protein_g, carbs_g, sugar_g, sodium_mg.",
+    "Include confidence 0-1."
   ].join(" ")
 
   const response = await openai.responses.create({
@@ -783,7 +781,7 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
         ]
       }
     ],
-    max_output_tokens: 300,
+    max_output_tokens: 200,
     text: {
       format: { type: "json_object" }
     }

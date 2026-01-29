@@ -67,7 +67,7 @@ export default function ResultsScreen({ route }: Props) {
       return Number(nutrition.calories.toFixed(1))
     }
     return null
-  }, [analysis.nutritionHighlights])
+  }, [analysis.caloriesPer50g, analysis.nutritionHighlights])
 
   const labelConfidence = useMemo(() => {
     const values = Object.values(analysis.parsing.confidences)

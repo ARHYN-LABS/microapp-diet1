@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react"
 import { Image, Pressable, View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { getProfilePrefs } from "./src/storage/cache"
+import { getProfilePrefs } from "../storage/cache"
 import { theme } from "./src/theme"
 
 export default function HeaderAvatar() {
