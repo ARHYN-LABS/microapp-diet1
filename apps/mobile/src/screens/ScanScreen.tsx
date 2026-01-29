@@ -190,7 +190,8 @@ export default function ScanScreen() {
           </Pressable>
         ) : (
           <Pressable style={styles.captureButton} onPress={capturePhoto}>
-            <Ionicons name="radio-button-on" size={28} color={theme.colors.accent2} />
+            <Ionicons name="radio-button-on" size={28} color="#ffffff" />
+            <Text style={styles.captureLabel}>Snap</Text>
           </Pressable>
         )}
         <GradientButton
@@ -299,19 +300,25 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md
   },
   captureButton: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
     borderRadius: 999,
-    backgroundColor: theme.colors.panel,
-    borderWidth: 2,
-    borderColor: theme.colors.accent2,
+    backgroundColor: theme.colors.accent,
+    borderWidth: 3,
+    borderColor: theme.colors.panel,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    gap: 2
+  },
+  captureLabel: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "700"
   },
   primaryAction: {
     flex: 1,
-    minHeight: 56,
-    paddingVertical: 16
+    minHeight: 60,
+    paddingVertical: 18
   },
   primaryActionText: {
     color: "#ffffff",
@@ -322,15 +329,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
     borderRadius: 999,
-    backgroundColor: theme.colors.panel,
+    backgroundColor: "rgba(230,57,70,0.12)",
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: "rgba(230,57,70,0.4)",
     flexDirection: "row",
     alignItems: "center",
     gap: 8
   },
   secondaryActionText: {
-    color: theme.colors.text,
+    color: theme.colors.warning,
     fontWeight: "700"
   },
   section: {

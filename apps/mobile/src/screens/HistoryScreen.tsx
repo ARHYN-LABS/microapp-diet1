@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Pressable, Image } from "react-native"
 import { fetchHistory } from "../api/client"
 import {
   getProfile,
@@ -77,31 +77,45 @@ export default function HistoryScreen() {
           }
         }
         const name = entry.productName || entry.analysisSnapshot?.productName || "Scan"
+        const scoreValue = typeof score === "number" ? score : null
+        const scoreColor = scoreValue === null ? theme.colors.muted : scoreValue >= 70 ? "#22C55E" : scoreValue >= 40 ? "#F59E0B" : theme.colors.warning
         return (
-            <Pressable
-              style={styles.card}
-              key={entry.id}
-              onPress={() => {
-                if (entry.analysisSnapshot) {
-                  navigation.navigate("MainTabs" as never, {
-                    screen: "Scan",
+          <Pressable
+            style={[styles.card, { borderLeftColor: scoreColor }]}
+            key={entry.id}
+            onPress={() => {
+              if (entry.analysisSnapshot) {
+                navigation.navigate("MainTabs" as never, {
+                  screen: "Scan",
+                  params: {
+                    screen: "Results",
                     params: {
-                      screen: "Results",
-                      params: {
-                        analysis: entry.analysisSnapshot,
-                        imageUri: imageMap[entry.id] || null,
-                        fromHistory: true
-                      }
+                      analysis: entry.analysisSnapshot,
+                      imageUri: imageMap[entry.id] || null,
+                      fromHistory: true
                     }
-                  } as never)
-                }
-              }}
-            >
-            <Text style={styles.cardTitle}>{name}</Text>
-            <Text style={styles.cardMeta}>{new Date(entry.createdAt).toLocaleString()}</Text>
-            <Text style={styles.cardMeta}>
-              Score: {score ?? "Unknown"} | Calories/100g: {calories}
-            </Text>
+                  }
+                } as never)
+              }
+            }}
+          >
+            <View style={styles.row}>
+              <View style={styles.thumb}>
+                {imageMap[entry.id] ? (
+                  <Image source={{ uri: imageMap[entry.id] }} style={styles.thumbImage} />
+                ) : null}
+              </View>
+              <View style={styles.info}>
+                <Text style={styles.cardTitle}>{name}</Text>
+                <Text style={styles.cardMeta}>{new Date(entry.createdAt).toLocaleString()}</Text>
+                <Text style={styles.cardMeta}>
+                  Score: {score ?? "Unknown"} | Calories/100g: {calories}
+                </Text>
+              </View>
+              <View style={[styles.badge, { backgroundColor: scoreColor }]}>
+                <Text style={styles.badgeText}>{scoreValue ?? "-"}</Text>
+              </View>
+            </View>
           </Pressable>
         )
       })}
@@ -117,20 +131,55 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.bg
   },
   card: {
-    padding: 16,
+    padding: 14,
     borderRadius: theme.radius.lg,
-    backgroundColor: theme.colors.glass,
+    backgroundColor: theme.colors.panel,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: theme.colors.border
+    borderColor: theme.colors.border,
+    borderLeftWidth: 4
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12
+  },
+  thumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: theme.colors.panelAlt,
+    overflow: "hidden"
+  },
+  thumbImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover"
+  },
+  info: {
+    flex: 1
   },
   cardTitle: {
     fontWeight: "600",
-    marginBottom: 4,
+    marginBottom: 2,
     color: theme.colors.text
   },
   cardMeta: {
-    color: theme.colors.muted
+    color: theme.colors.muted,
+    fontSize: 12
+  },
+  badge: {
+    minWidth: 32,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  badgeText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 12
   },
   empty: {
     color: theme.colors.muted,

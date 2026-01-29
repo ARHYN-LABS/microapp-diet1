@@ -303,21 +303,21 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border
   },
   welcomeCard: {
-    backgroundColor: theme.colors.panel,
+    backgroundColor: theme.colors.accent,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: "rgba(26,188,156,0.4)",
     ...theme.shadow.card
   },
   welcomeText: {
     fontSize: 16,
-    color: theme.colors.textSoft,
+    color: "#ffffff",
     fontWeight: "600"
   },
   welcomeName: {
-    color: theme.colors.text,
+    color: "#ffffff",
     fontWeight: "700"
   },
   scoreCard: {
