@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-native"
 import { Camera, CameraType } from "expo-camera"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
 import GradientButton from "../components/GradientButton"
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native"
@@ -190,7 +190,7 @@ export default function ScanScreen() {
           </Pressable>
         ) : (
           <Pressable style={styles.captureButton} onPress={capturePhoto}>
-            <Ionicons name="radio-button-on" size={28} color="#ffffff" />
+            <MaterialIcons name="center-focus-strong" size={26} color="#ffffff" />
             <Text style={styles.captureLabel}>Snap</Text>
           </Pressable>
         )}
@@ -304,11 +304,16 @@ const styles = StyleSheet.create({
     minHeight: 64,
     borderRadius: 999,
     backgroundColor: theme.colors.accent,
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: theme.colors.panel,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2
+    gap: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6
   },
   captureLabel: {
     color: "#ffffff",
