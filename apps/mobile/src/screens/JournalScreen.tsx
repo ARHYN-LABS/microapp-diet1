@@ -138,7 +138,6 @@ export default function JournalScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Journal</Text>
       <Text style={styles.subtitle}>Track what you ate today.</Text>
 
       <View style={styles.card}>
@@ -291,8 +290,10 @@ const styles = StyleSheet.create({
     fontFamily: theme.font.heading
   },
   subtitle: {
-    color: theme.colors.muted,
-    marginBottom: theme.spacing.md
+    color: theme.colors.text,
+    marginBottom: theme.spacing.md,
+    fontSize: 20,
+    fontWeight: "700"
   },
   card: {
     backgroundColor: theme.colors.glass,
