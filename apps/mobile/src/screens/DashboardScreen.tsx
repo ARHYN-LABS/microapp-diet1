@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { View, Text, StyleSheet, Pressable, ScrollView, Image } from "react-native"
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { getJournalForDate } from "../storage/tracking"
@@ -19,7 +19,6 @@ export default function DashboardScreen() {
   const navigation = useNavigation()
   const [date] = useState(todayKey())
   const [name, setName] = useState("there")
-  const [photoUri, setPhotoUri] = useState<string | null>(null)
   const [profilePrefs, setProfilePrefs] = useState({
     dietary: {} as Record<string, boolean>,
     allergies: {} as Record<string, boolean>
@@ -41,7 +40,6 @@ export default function DashboardScreen() {
         setName(profile.email.split("@")[0])
       }
       const profilePrefs = await getProfilePrefs()
-      setPhotoUri(profilePrefs.photoUri || null)
       setProfilePrefs({
         dietary: profilePrefs.dietary || {},
         allergies: profilePrefs.allergies || {}
@@ -112,17 +110,6 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
-        <View style={styles.avatar}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarPlaceholder} />
-          )}
-        </View>
-      </View>
-
       <View style={styles.welcomeCard}>
         <Text style={styles.welcomeText}>
           Welcome back <Text style={styles.welcomeName}> {name}</Text>
@@ -267,40 +254,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
     backgroundColor: theme.colors.bg
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: theme.spacing.md
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: theme.colors.text,
-    fontFamily: theme.font.heading
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.panelAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover"
-  },
-  avatarPlaceholder: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: theme.colors.border
   },
   welcomeCard: {
     backgroundColor: theme.colors.accent,

@@ -25,6 +25,7 @@ import ResetPasswordScreen from "./src/screens/ResetPasswordScreen"
 import { theme } from "./src/theme"
 import { clearAuth, getToken } from "./src/storage/cache"
 import { AuthContext } from "./src/auth"
+import HeaderAvatar from "./src/components/HeaderAvatar"
 
 const Tab = createBottomTabNavigator()
 const ScanStack = createNativeStackNavigator()
@@ -143,12 +144,7 @@ function ScanStackScreen() {
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
         headerTitleStyle: { fontFamily: theme.font.heading },
-        headerTitle: () => (
-          <Image
-            source={require("./assets/icon.png")}
-            style={{ width: 28, height: 28, resizeMode: "contain" }}
-          />
-        ),
+        headerTitleAlign: "left",
         headerLeft: () => (
           <Pressable
             style={{ paddingHorizontal: 16, paddingVertical: 8 }}
@@ -156,7 +152,8 @@ function ScanStackScreen() {
           >
             <Ionicons name="menu" size={20} color={theme.colors.text} />
           </Pressable>
-        )
+        ),
+        headerRight: () => <HeaderAvatar />
       })}
     >
       <ScanStack.Screen name="ScanHome" component={ScanScreen} options={{ title: "Scan" }} />
@@ -206,12 +203,7 @@ function MainTabs() {
         headerStyle: { backgroundColor: theme.colors.panel },
         headerTintColor: theme.colors.text,
         headerTitleStyle: { fontFamily: theme.font.heading },
-        headerTitle: () => (
-          <Image
-            source={require("./assets/icon.png")}
-            style={{ width: 28, height: 28, resizeMode: "contain" }}
-          />
-        ),
+        headerTitleAlign: "left",
         headerLeft: () => (
           <Pressable
             style={{ paddingHorizontal: 16, paddingVertical: 8 }}
@@ -220,6 +212,7 @@ function MainTabs() {
             <Ionicons name="menu" size={20} color={theme.colors.text} />
           </Pressable>
         ),
+        headerRight: () => <HeaderAvatar />,
         tabBarStyle: {
           backgroundColor: theme.colors.panel,
           borderTopColor: theme.colors.border
@@ -229,12 +222,12 @@ function MainTabs() {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ headerTitle: "" }}
+        options={{ headerTitle: "Dashboard" }}
       />
       <Tab.Screen
         name="Journal"
         component={JournalScreen}
-        options={{ headerTitle: "" }}
+        options={{ headerTitle: "Journal" }}
       />
       <Tab.Screen
         name="Scan"
@@ -246,12 +239,12 @@ function MainTabs() {
       <Tab.Screen
         name="History"
         component={HistoryScreen}
-        options={{}}
+        options={{ headerTitle: "History" }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{}}
+        options={{ headerTitle: "Profile" }}
       />
     </Tab.Navigator>
   )
