@@ -7,6 +7,7 @@ import GradientButton from "../components/GradientButton"
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native"
 import { theme } from "../theme"
 import {
+  getLastAnalysis,
   getProfile,
   getScanHistoryCache,
   setLastAnalysis,
@@ -14,7 +15,7 @@ import {
   setScanImageForId,
   setScanImageForKey
 } from "../storage/cache"
-import type { ScanHistory } from "@wimf/shared"
+import type { AnalyzeFromImagesResponse, ScanHistory } from "@wimf/shared"
 
 type ImageState = {
   label?: { uri: string; name: string; type: string }
@@ -27,6 +28,7 @@ export default function ScanScreen() {
   const cameraRef = useRef<Camera | null>(null)
   const isFocused = useIsFocused()
   const [cameraKey, setCameraKey] = useState(0)
+  const [lastAnalysis, setLastAnalysisState] = useState<AnalyzeFromImagesResponse | null>(null)
   const navigation = useNavigation()
 
   useEffect(() => {
@@ -43,6 +45,9 @@ export default function ScanScreen() {
       setStatus("Capture one clear food or label photo.")
       setImage({})
       setCameraKey((prev) => prev + 1)
+      getLastAnalysis().then((stored) => {
+        if (stored) setLastAnalysisState(stored as AnalyzeFromImagesResponse)
+      })
     }, [])
   )
 
@@ -95,6 +100,7 @@ export default function ScanScreen() {
         return
       }
       await setLastAnalysis(analysis)
+      setLastAnalysisState(analysis)
       if (profile?.id) {
         const localId = `local-${Date.now()}`
         const localEntry: ScanHistory = {
@@ -180,7 +186,26 @@ export default function ScanScreen() {
       {image.label?.uri ? (
         <View style={styles.previewCard}>
           <Text style={styles.sectionTitle}>Preview</Text>
-          <Image source={{ uri: image.label.uri }} style={styles.previewImage} />
+          <View style={styles.previewWrap}>
+            <Image source={{ uri: image.label.uri }} style={styles.previewImage} />
+            {lastAnalysis?.nutritionHighlights ? (
+              <View style={styles.nutritionOverlay}>
+                {[
+                  { label: "Calories", value: lastAnalysis.nutritionHighlights.calories },
+                  { label: "Fat (g)", value: (lastAnalysis.nutritionHighlights as any).fat_g },
+                  { label: "Carbs (g)", value: lastAnalysis.nutritionHighlights.carbs_g },
+                  { label: "Protein (g)", value: lastAnalysis.nutritionHighlights.protein_g }
+                ].map((item) => (
+                  <View key={item.label} style={styles.nutritionItem}>
+                    <Text style={styles.nutritionValue}>
+                      {item.value !== null && item.value !== undefined ? item.value : "—"}
+                    </Text>
+                    <Text style={styles.nutritionLabel}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.captureLine}>Captured and ready for analysis.</Text>
         </View>
       ) : null}
@@ -202,9 +227,9 @@ export default function ScanScreen() {
         ) : (
           <Pressable style={styles.captureButton} onPress={capturePhoto}>
             <View style={styles.captureCircle}>
-              <MaterialIcons name="center-focus-strong" size={26} color="#ffffff" />
+              <MaterialIcons name="center-focus-strong" size={22} color="#ffffff" />
             </View>
-            <Text style={styles.captureLabel}>Snap</Text>
+            <Text style={styles.captureLabel}>Scan</Text>
           </Pressable>
         )}
         <GradientButton
@@ -308,20 +333,21 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     gap: 12,
     marginBottom: theme.spacing.md
   },
   captureButton: {
-    flex: 3,
+    flex: 1,
+    minHeight: 64,
     alignItems: "center",
     justifyContent: "center",
     gap: 6
   },
   captureCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: theme.colors.accent,
     borderWidth: 4,
     borderColor: theme.colors.panel,
@@ -339,9 +365,9 @@ const styles = StyleSheet.create({
     fontWeight: "700"
   },
   primaryAction: {
-    flex: 7,
-    minHeight: 68,
-    paddingVertical: 20
+    flex: 1,
+    minHeight: 64,
+    paddingVertical: 18
   },
   primaryActionText: {
     color: "#ffffff",
@@ -379,12 +405,41 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border
   },
+  previewWrap: {
+    position: "relative"
+  },
   previewImage: {
     width: "100%",
     height: 200,
     borderRadius: theme.radius.md,
     marginTop: theme.spacing.sm,
     marginBottom: theme.spacing.sm
+  },
+  nutritionOverlay: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 12,
+    backgroundColor: "rgba(17,24,39,0.7)",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  nutritionItem: {
+    alignItems: "center",
+    flex: 1
+  },
+  nutritionValue: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14
+  },
+  nutritionLabel: {
+    color: "#E2E8F0",
+    fontSize: 11,
+    marginTop: 2
   },
   sectionTitle: {
     fontWeight: "700",
