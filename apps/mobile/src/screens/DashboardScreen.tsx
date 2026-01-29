@@ -203,7 +203,20 @@ export default function DashboardScreen() {
           <Text style={styles.bodyMuted}>No recent scans yet.</Text>
         ) : (
           recentScans.map((scan) => (
-            <View key={scan.id} style={styles.scanRow}>
+            <Pressable
+              key={scan.id}
+              style={styles.scanRow}
+              onPress={() =>
+                navigation.navigate(
+                  "Results" as never,
+                  {
+                    analysis: scan.analysisSnapshot,
+                    imageUri: imageMap[scan.id] || null,
+                    fromHistory: true
+                  } as never
+                )
+              }
+            >
               <View style={styles.scanThumb}>
                 {imageMap[scan.id] ? (
                   <Image source={{ uri: imageMap[scan.id] }} style={styles.scanThumbImage} />
@@ -222,7 +235,7 @@ export default function DashboardScreen() {
               <View style={styles.scoreBadge}>
                 <Text style={styles.scoreBadgeText}>{scan.analysisSnapshot?.score?.value ?? "-"}</Text>
               </View>
-            </View>
+            </Pressable>
           ))
         )}
       </View>
@@ -231,7 +244,20 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Popular Scans Today</Text>
         <View style={styles.popularRow}>
           {popularScans.map((scan) => (
-            <View key={scan.id} style={styles.popularCard}>
+            <Pressable
+              key={scan.id}
+              style={styles.popularCard}
+              onPress={() =>
+                navigation.navigate(
+                  "Results" as never,
+                  {
+                    analysis: scan.analysisSnapshot,
+                    imageUri: imageMap[scan.id] || null,
+                    fromHistory: true
+                  } as never
+                )
+              }
+            >
               <View style={styles.popularThumb}>
                 {imageMap[scan.id] ? (
                   <Image source={{ uri: imageMap[scan.id] }} style={styles.popularImage} />
@@ -243,7 +269,7 @@ export default function DashboardScreen() {
                   <Text style={styles.popularScoreText}>{scan.analysisSnapshot?.score?.value ?? "-"}</Text>
                 </View>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
