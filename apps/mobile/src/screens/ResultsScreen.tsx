@@ -203,7 +203,26 @@ export default function ResultsScreen({ route }: Props) {
 
       {imageUri ? (
         <Card style={styles.previewCard}>
-          <Image source={{ uri: imageUri }} style={styles.previewImage} />
+          <View style={styles.previewWrap}>
+            <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            {analysis.nutritionHighlights ? (
+              <View style={styles.nutritionOverlay}>
+                {[
+                  { label: "Calories", value: analysis.nutritionHighlights.calories },
+                  { label: "Fat (g)", value: (analysis.nutritionHighlights as any).fat_g },
+                  { label: "Carbs (g)", value: analysis.nutritionHighlights.carbs_g },
+                  { label: "Protein (g)", value: analysis.nutritionHighlights.protein_g }
+                ].map((item) => (
+                  <View key={item.label} style={styles.nutritionItem}>
+                    <Text style={styles.nutritionValue}>
+                      {item.value !== null && item.value !== undefined ? item.value : "—"}
+                    </Text>
+                    <Text style={styles.nutritionLabel}>{item.label}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
         </Card>
       ) : null}
 
@@ -375,9 +394,38 @@ const styles = StyleSheet.create({
     padding: 0,
     overflow: "hidden"
   },
+  previewWrap: {
+    position: "relative"
+  },
   previewImage: {
     width: "100%",
     height: 180
+  },
+  nutritionOverlay: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    bottom: 12,
+    backgroundColor: "rgba(17,24,39,0.7)",
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  nutritionItem: {
+    alignItems: "center",
+    flex: 1
+  },
+  nutritionValue: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14
+  },
+  nutritionLabel: {
+    color: "#E2E8F0",
+    fontSize: 11,
+    marginTop: 2
   },
   chipWrap: {
     flexDirection: "row",
