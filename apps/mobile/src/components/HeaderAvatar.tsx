@@ -1,20 +1,25 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Image, Pressable, View } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { getProfilePrefs } from "../storage/cache"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
+import { getProfile } from "../storage/cache"
 import { theme } from "../theme"
 
 export default function HeaderAvatar() {
   const navigation = useNavigation()
   const [photoUri, setPhotoUri] = useState<string | null>(null)
 
+  const loadPhoto = async () => {
+    const profile = await getProfile()
+    setPhotoUri(profile?.avatarUrl || null)
+  }
+
   useEffect(() => {
-    const load = async () => {
-      const prefs = await getProfilePrefs()
-      setPhotoUri(prefs.photoUri || null)
-    }
-    load()
+    loadPhoto()
   }, [])
+
+  useFocusEffect(() => {
+    loadPhoto()
+  })
 
   const handlePress = () => {
     try {

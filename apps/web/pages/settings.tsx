@@ -1,10 +1,10 @@
 ﻿import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
-import { getPrefs, getProfile, savePrefs, updateProfile } from "@wimf/shared"
-import type { UserPrefs, UserProfile } from "@wimf/shared"
+import { getPrefs, getProfile, getProfilePrefs, savePrefs, saveProfilePrefs, updateProfile } from "@wimf/shared"
+import type { ProfilePrefs, UserPrefs, UserProfile } from "@wimf/shared"
 import { getToken } from "../lib/auth"
 import { getHealthPrefs, setHealthPrefs } from "../lib/healthPrefs"
-import { getProfilePrefs, setProfilePrefs } from "../lib/profilePrefs"
+import { getProfilePrefs as getLocalProfilePrefs, setProfilePrefs } from "../lib/profilePrefs"
 
 const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
 
@@ -287,7 +287,7 @@ export default function Settings() {
   const [token, setToken] = useState<string | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs>(emptyPrefs)
-  const [profilePrefs, setProfilePrefsState] = useState(getProfilePrefs())
+  const [profilePrefs, setProfilePrefsState] = useState<ProfilePrefs>(getLocalProfilePrefs())
   const [phoneNumber, setPhoneNumber] = useState("")
   const [status, setStatus] = useState("")
 
@@ -306,6 +306,7 @@ export default function Settings() {
       try {
         const profileData = await getProfile({ baseUrl: apiBase, token })
         const prefsData = await getPrefs({ baseUrl: apiBase, token }, profileData.id).catch(() => null)
+        const profilePrefsData = await getProfilePrefs({ baseUrl: apiBase, token }).catch(() => null)
         setProfile(profileData)
         if (prefsData) {
           setPrefs({ ...prefsData })
@@ -314,17 +315,18 @@ export default function Settings() {
           setPhoneNumber(profileData.mobileNumber)
         }
         const storedHealth = getHealthPrefs()
-        const storedProfilePrefs = getProfilePrefs()
+        const storedProfilePrefs = getLocalProfilePrefs()
+        const sourcePrefs = profilePrefsData || storedProfilePrefs
         setProfilePrefsState({
-          ...storedProfilePrefs,
-          dietaryOther: storedProfilePrefs.dietaryOther || "",
-          allergyOther: storedProfilePrefs.allergyOther || storedHealth.allergyOther || "",
+          ...sourcePrefs,
+          dietaryOther: sourcePrefs.dietaryOther || "",
+          allergyOther: sourcePrefs.allergyOther || storedHealth.allergyOther || "",
           dietary: {
-            ...storedProfilePrefs.dietary,
+            ...sourcePrefs.dietary,
             ...Object.fromEntries(storedHealth.restrictions.map((item) => [item, true]))
           },
           allergies: {
-            ...storedProfilePrefs.allergies,
+            ...sourcePrefs.allergies,
             ...Object.fromEntries(storedHealth.allergens.map((item) => [item, true]))
           }
         })
@@ -371,13 +373,29 @@ export default function Settings() {
     }))
   }
 
-  const handlePhoto = (file: File | null) => {
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setProfilePrefsState((prev) => ({ ...prev, photoUri: reader.result as string }))
+  const handlePhoto = async (file: File | null) => {
+    if (!file || !token || !profile) return
+    setStatus("Uploading photo...")
+    const formData = new FormData()
+    formData.append("photo", file)
+    try {
+      const response = await fetch(`${apiBase}/profile/photo`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null)
+        throw new Error(payload?.error || "Failed to upload photo")
+      }
+      const updated = (await response.json()) as UserProfile
+      setProfile(updated)
+      setStatus("Photo updated.")
+    } catch (error) {
+      setStatus((error as Error).message)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleProfileSave = async () => {
@@ -409,6 +427,9 @@ export default function Settings() {
       }
       const saved = await savePrefs({ baseUrl: apiBase, token }, nextPrefs)
       setPrefs(saved)
+      const savedProfilePrefs = await saveProfilePrefs({ baseUrl: apiBase, token }, profilePrefs)
+      setProfilePrefsState(savedProfilePrefs)
+      setProfilePrefs(savedProfilePrefs)
       const restrictions = Object.entries(profilePrefs.dietary || {})
         .filter(([, value]) => value)
         .map(([key]) => key)
@@ -453,8 +474,12 @@ export default function Settings() {
                 className="rounded-circle border d-flex align-items-center justify-content-center"
                 style={{ width: 64, height: 64, overflow: "hidden" }}
               >
-                {profilePrefs.photoUri ? (
-                  <img src={profilePrefs.photoUri} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {profile.avatarUrl || profilePrefs.photoUri ? (
+                  <img
+                    src={profile.avatarUrl || profilePrefs.photoUri || ""}
+                    alt="Profile"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
                 ) : (
                   <span className="text-muted small">Photo</span>
                 )}

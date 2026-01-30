@@ -195,7 +195,6 @@ export default function ScanScreen() {
               <View style={styles.nutritionOverlay}>
                 {[
                   { label: "Calories", value: lastAnalysis.nutritionHighlights.calories },
-                  { label: "Fat (g)", value: (lastAnalysis.nutritionHighlights as any).fat_g },
                   { label: "Carbs (g)", value: lastAnalysis.nutritionHighlights.carbs_g },
                   { label: "Protein (g)", value: lastAnalysis.nutritionHighlights.protein_g }
                 ].map((item) => (

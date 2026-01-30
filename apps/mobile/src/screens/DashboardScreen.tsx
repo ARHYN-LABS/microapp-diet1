@@ -211,15 +211,18 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: scan.imageUrl || imageMap[scan.id] || null,
+                    imageUri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] || null,
                     fromHistory: true
                   } as never
                 )
               }
             >
               <View style={styles.scanThumb}>
-                {(scan.imageUrl || imageMap[scan.id]) ? (
-                  <Image source={{ uri: scan.imageUrl || imageMap[scan.id] }} style={styles.scanThumbImage} />
+                {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
+                  <Image
+                    source={{ uri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] }}
+                    style={styles.scanThumbImage}
+                  />
                 ) : null}
               </View>
               <View style={styles.scanInfo}>
@@ -252,15 +255,18 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: scan.imageUrl || imageMap[scan.id] || null,
+                    imageUri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] || null,
                     fromHistory: true
                   } as never
                 )
               }
             >
               <View style={styles.popularThumb}>
-                {(scan.imageUrl || imageMap[scan.id]) ? (
-                  <Image source={{ uri: scan.imageUrl || imageMap[scan.id] }} style={styles.popularImage} />
+                {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
+                  <Image
+                    source={{ uri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] }}
+                    style={styles.popularImage}
+                  />
                 ) : null}
                 <View style={styles.popularScore}>
                   <Text style={styles.popularScoreText}>{scan.analysisSnapshot?.score?.value ?? "-"}</Text>

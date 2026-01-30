@@ -11,6 +11,7 @@ model User {
   id              String             @id @default(cuid())
   fullName        String?
   email           String             @unique
+  avatarUrl       String?
   passwordHash    String
   mobileNumber    String?
   age             Int?
@@ -27,6 +28,7 @@ model User {
   updatedAt       DateTime           @updatedAt
   history         ScanHistory[]
   prefs           UserPrefs?
+  profilePrefs    ProfilePrefs?
   conditions      MedicalCondition[]
   calorieLogs     CalorieLog[]
 }
@@ -61,6 +63,23 @@ model UserPrefs {
   sensitiveStomach    Boolean?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ProfilePrefs {
+  userId        String   @id
+  dob           String?
+  country       String?
+  dietaryOther  String?
+  allergyOther  String?
+  dietary       Json?
+  allergies     Json?
+  alerts        Json?
+  sensitivities Json?
+  scoring       Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 }

@@ -42,6 +42,23 @@ export type UserPrefs = {
   sensitiveStomach?: boolean | null
 }
 
+export type ProfilePrefs = {
+  dob?: string | null
+  country?: string | null
+  dietaryOther?: string
+  dietary: Record<string, boolean>
+  allergies: Record<string, boolean>
+  allergyOther?: string
+  alerts: Record<string, boolean>
+  sensitivities: Record<string, boolean>
+  scoring: {
+    allergies: number
+    dietary: number
+    processing: number
+    strictMode: boolean
+  }
+}
+
 export type Gender = "male" | "female" | "other"
 
 export type ActivityLevel = "sedentary" | "light" | "moderate" | "active"
@@ -68,6 +85,7 @@ export type UserProfile = {
   id: string
   fullName?: string | null
   email: string
+  avatarUrl?: string | null
   mobileNumber?: string | null
   age?: number | null
   gender?: Gender | null

@@ -7,12 +7,15 @@ import {
   getConditions,
   getTodayCalories,
   getPrefs,
+  getProfilePrefs,
   logIn,
   postHistory,
   savePrefs,
+  saveProfilePrefs,
   signUp,
   updateConditions,
   updateProfile,
+  type ProfilePrefs,
   type UserPrefs
 } from "@wimf/shared"
 import { apiBase } from "./config"
@@ -60,6 +63,16 @@ export async function updatePrefs(prefs: UserPrefs): Promise<UserPrefs> {
   return savePrefs(config, prefs)
 }
 
+export async function fetchProfilePrefs(): Promise<ProfilePrefs> {
+  const config = await getConfig()
+  return getProfilePrefs(config)
+}
+
+export async function updateProfilePrefs(prefs: ProfilePrefs): Promise<ProfilePrefs> {
+  const config = await getConfig()
+  return saveProfilePrefs(config, prefs)
+}
+
 export async function signUpUser(payload: { fullName: string; email: string; password: string }) {
   const config = await getConfig()
   return signUp(config, payload)
@@ -98,4 +111,32 @@ export async function fetchTodayCalories() {
 export async function addCaloriesToLog(payload: { calories: number; source?: string }) {
   const config = await getConfig()
   return addCalories(config, payload)
+}
+
+export async function uploadProfilePhoto(uri: string) {
+  const config = await getConfig()
+  if (!config.token) {
+    throw new Error("Unauthorized")
+  }
+  const formData = new FormData()
+  formData.append(
+    "photo",
+    {
+      uri,
+      name: "avatar.jpg",
+      type: "image/jpeg"
+    } as unknown as Blob
+  )
+  const response = await fetch(`${config.baseUrl}/profile/photo`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.token}`
+    },
+    body: formData
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(payload?.error || "Failed to upload photo")
+  }
+  return response.json()
 }

@@ -3,6 +3,7 @@ import type {
   MedicalCondition,
   OCRExtraction,
   ParsedData,
+  ProfilePrefs,
   ScanHistory,
   UserPrefs,
   UserProfile
@@ -119,6 +120,31 @@ export async function savePrefs(config: ApiConfig, prefs: UserPrefs): Promise<Us
     throw new Error("Failed to save preferences")
   }
   return (await response.json()) as UserPrefs
+}
+
+export async function getProfilePrefs(config: ApiConfig): Promise<ProfilePrefs> {
+  const response = await fetch(withBase(config.baseUrl, "/profile-prefs"), {
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    throw new Error("Failed to load profile preferences")
+  }
+  return (await response.json()) as ProfilePrefs
+}
+
+export async function saveProfilePrefs(
+  config: ApiConfig,
+  prefs: ProfilePrefs
+): Promise<ProfilePrefs> {
+  const response = await fetch(withBase(config.baseUrl, "/profile-prefs"), {
+    method: "PUT",
+    headers: authHeaders(config, { "Content-Type": "application/json" }),
+    body: JSON.stringify(prefs)
+  })
+  if (!response.ok) {
+    throw new Error("Failed to save profile preferences")
+  }
+  return (await response.json()) as ProfilePrefs
 }
 
 export async function signUp(

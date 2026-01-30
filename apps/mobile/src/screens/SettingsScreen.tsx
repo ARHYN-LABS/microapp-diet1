@@ -4,7 +4,15 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
 import { Picker } from "@react-native-picker/picker"
 import Slider from "@react-native-community/slider"
 import * as ImagePicker from "expo-image-picker"
-import { fetchPrefs, fetchProfile, saveProfile, updatePrefs } from "../api/client"
+import {
+  fetchPrefs,
+  fetchProfile,
+  fetchProfilePrefs,
+  saveProfile,
+  updatePrefs,
+  updateProfilePrefs,
+  uploadProfilePhoto
+} from "../api/client"
 import GradientButton from "../components/GradientButton"
 import {
   clearAuth,
@@ -362,18 +370,26 @@ export default function SettingsScreen() {
 
       const storedHealth = await getHealthPrefs()
       const storedProfilePrefs = await getProfilePrefs()
+      let serverProfilePrefs = null as any
+      try {
+        serverProfilePrefs = await fetchProfilePrefs()
+        await setProfilePrefs(serverProfilePrefs)
+      } catch {
+        // ignore
+      }
+      const sourcePrefs = serverProfilePrefs || storedProfilePrefs
       setProfilePrefsState((prev) => ({
         ...prev,
-        ...storedProfilePrefs,
-        country: storedProfilePrefs.country || prev.country,
-        dietaryOther: storedProfilePrefs.dietaryOther || "",
-        allergyOther: storedProfilePrefs.allergyOther ?? storedHealth.allergyOther ?? "",
+        ...sourcePrefs,
+        country: sourcePrefs.country || prev.country,
+        dietaryOther: sourcePrefs.dietaryOther || "",
+        allergyOther: sourcePrefs.allergyOther ?? storedHealth.allergyOther ?? "",
         dietary: {
-          ...storedProfilePrefs.dietary,
+          ...sourcePrefs.dietary,
           ...Object.fromEntries(storedHealth.restrictions.map((item) => [item, true]))
         },
         allergies: {
-          ...storedProfilePrefs.allergies,
+          ...sourcePrefs.allergies,
           ...Object.fromEntries(storedHealth.allergens.map((item) => [item, true]))
         }
       }))
@@ -425,7 +441,17 @@ export default function SettingsScreen() {
       aspect: [1, 1]
     })
     if (!result.canceled && result.assets.length > 0) {
-      setProfilePrefsState((prev) => ({ ...prev, photoUri: result.assets[0].uri }))
+      const uri = result.assets[0].uri
+      setProfilePrefsState((prev) => ({ ...prev, photoUri: uri }))
+      setStatus("Uploading photo...")
+      try {
+        const savedProfile = await uploadProfilePhoto(uri)
+        setProfileState(savedProfile)
+        await setProfile(savedProfile)
+        setStatus("Photo updated.")
+      } catch (error) {
+        setStatus((error as Error).message || "Unable to upload photo.")
+      }
     }
   }
 
@@ -462,7 +488,8 @@ export default function SettingsScreen() {
         .filter(([, value]) => value)
         .map(([key]) => key)
       await setHealthPrefs({ restrictions, allergens, allergyOther: profilePrefs.allergyOther || "" })
-      await setProfilePrefs(profilePrefs)
+      const savedProfilePrefs = await updateProfilePrefs(profilePrefs)
+      await setProfilePrefs(savedProfilePrefs)
       setStatus("Saved")
     } catch {
       setStatus("Saved")
@@ -492,8 +519,8 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Personal information</Text>
           <View style={styles.photoRow}>
             <View style={styles.photoPlaceholder}>
-              {profilePrefs.photoUri ? (
-                <Image source={{ uri: profilePrefs.photoUri }} style={styles.photoImage} />
+              {profile.avatarUrl || profilePrefs.photoUri ? (
+                <Image source={{ uri: profile.avatarUrl || profilePrefs.photoUri || "" }} style={styles.photoImage} />
               ) : (
                 <Ionicons name="person-circle-outline" size={52} color={theme.colors.muted} />
               )}

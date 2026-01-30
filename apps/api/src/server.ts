@@ -10,7 +10,8 @@ import {
   parseExtraction,
   type NutritionParsed,
   type OCRExtraction,
-  type ParsedData
+  type ParsedData,
+  type ProfilePrefs
 } from "@wimf/shared"
 import { z } from "zod"
 import { createWorker } from "tesseract.js"
@@ -155,7 +156,8 @@ const profileSchema = z.object({
   dietaryPreference: z.enum(["halal", "vegetarian", "vegan", "none"]).optional(),
   heightCm: z.number().min(50).max(250).optional(),
   weightKg: z.number().min(20).max(250).optional(),
-  activityLevel: z.enum(["sedentary", "light", "moderate", "active"]).optional()
+  activityLevel: z.enum(["sedentary", "light", "moderate", "active"]).optional(),
+  avatarUrl: z.string().url().optional().nullable()
 })
 
 const conditionsSchema = z.object({
@@ -201,6 +203,7 @@ app.post("/auth/signup", async (req, res, next) => {
         id: user.id,
         fullName: user.fullName,
         email: user.email,
+        avatarUrl: user.avatarUrl,
         mobileNumber: user.mobileNumber,
         age: user.age,
         gender: user.gender,
@@ -235,6 +238,7 @@ app.post("/auth/login", async (req, res, next) => {
         id: user.id,
         fullName: user.fullName,
         email: user.email,
+        avatarUrl: user.avatarUrl,
         mobileNumber: user.mobileNumber,
         age: user.age,
         gender: user.gender,
@@ -321,6 +325,7 @@ app.get("/profile", requireAuth, async (req, res, next) => {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
+      avatarUrl: user.avatarUrl,
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -359,6 +364,42 @@ app.put("/profile", requireAuth, async (req, res, next) => {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
+      avatarUrl: user.avatarUrl,
+      mobileNumber: user.mobileNumber,
+      age: user.age,
+      gender: user.gender,
+      race: user.race,
+      dietaryPreference: user.dietaryPreference,
+      heightCm: user.heightCm,
+      weightKg: user.weightKg,
+      activityLevel: user.activityLevel,
+      dailyCalorieGoal: user.dailyCalorieGoal
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.post("/profile/photo", requireAuth, upload.single("photo"), async (req, res, next) => {
+  try {
+    const file = req.file
+    if (!file) {
+      return res.status(400).json({ error: "Photo is required." })
+    }
+    const imageUrl = await saveUpload(file, req)
+    if (!imageUrl) {
+      return res.status(500).json({ error: "Unable to save photo." })
+    }
+    const userId = getAuthUserId(req)
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: imageUrl }
+    })
+    return res.json({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -1042,7 +1083,7 @@ app.get("/history", async (req, res, next) => {
       userId: entry.userId,
       createdAt: entry.createdAt.toISOString(),
       productName: entry.productName,
-      imageUrl: entry.imageUrl,
+      imageUrl: entry.imageUrl || (entry.analysisSnapshot as any)?.imageUrl || null,
       extractedText: entry.extractedText,
       parsedIngredients: entry.parsedIngredients,
       parsedNutrition: entry.parsedNutrition,
@@ -1132,6 +1173,54 @@ const prefsSchema = z.object({
   sensitiveStomach: z.boolean().nullable().optional()
 })
 
+const profilePrefsSchema = z.object({
+  dob: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  dietaryOther: z.string().optional(),
+  dietary: z.record(z.boolean()),
+  allergies: z.record(z.boolean()),
+  allergyOther: z.string().optional(),
+  alerts: z.record(z.boolean()),
+  sensitivities: z.record(z.boolean()),
+  scoring: z.object({
+    allergies: z.number(),
+    dietary: z.number(),
+    processing: z.number(),
+    strictMode: z.boolean()
+  })
+})
+
+const defaultProfilePrefs: ProfilePrefs = {
+  dob: null,
+  country: null,
+  dietaryOther: "",
+  dietary: {},
+  allergies: {},
+  allergyOther: "",
+  alerts: {
+    highRisk: true,
+    allergenDetected: true,
+    nonCompliant: true,
+    processed: true,
+    highSodiumSugar: true,
+    push: true,
+    email: true,
+    sms: true
+  },
+  sensitivities: {
+    hypertension: false,
+    diabetic: false,
+    heartHealthy: false,
+    weightLoss: false
+  },
+  scoring: {
+    allergies: 70,
+    dietary: 60,
+    processing: 40,
+    strictMode: true
+  }
+}
+
 app.post("/prefs", async (req, res, next) => {
   try {
     const payload = prefsSchema.parse(req.body)
@@ -1161,6 +1250,65 @@ app.post("/prefs", async (req, res, next) => {
     }
 
     return res.json(prefs)
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/profile-prefs", requireAuth, async (req, res, next) => {
+  try {
+    const userId = getAuthUserId(req)
+    const prefs = await withDb(
+      () => prisma.profilePrefs.findUnique({ where: { userId } }),
+      "profile prefs read"
+    )
+    if (!prefs) {
+      return res.json(defaultProfilePrefs)
+    }
+    return res.json({
+      dob: prefs.dob ?? null,
+      country: prefs.country ?? null,
+      dietaryOther: prefs.dietaryOther ?? "",
+      dietary: (prefs.dietary as Record<string, boolean>) || {},
+      allergies: (prefs.allergies as Record<string, boolean>) || {},
+      allergyOther: prefs.allergyOther ?? "",
+      alerts: (prefs.alerts as Record<string, boolean>) || defaultProfilePrefs.alerts,
+      sensitivities: (prefs.sensitivities as Record<string, boolean>) || defaultProfilePrefs.sensitivities,
+      scoring: (prefs.scoring as ProfilePrefs["scoring"]) || defaultProfilePrefs.scoring
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.put("/profile-prefs", requireAuth, async (req, res, next) => {
+  try {
+    const payload = profilePrefsSchema.parse(req.body)
+    const userId = getAuthUserId(req)
+    const nextPrefs = {
+      dob: payload.dob ?? null,
+      country: payload.country ?? null,
+      dietaryOther: payload.dietaryOther ?? "",
+      dietary: payload.dietary,
+      allergies: payload.allergies,
+      allergyOther: payload.allergyOther ?? "",
+      alerts: payload.alerts,
+      sensitivities: payload.sensitivities,
+      scoring: payload.scoring
+    }
+    const saved = await withDb(
+      () =>
+        prisma.profilePrefs.upsert({
+          where: { userId },
+          update: nextPrefs,
+          create: { userId, ...nextPrefs }
+        }),
+      "profile prefs save"
+    )
+    if (!saved) {
+      return res.status(503).json({ error: "Preferences unavailable" })
+    }
+    return res.json(nextPrefs)
   } catch (error) {
     return next(error)
   }

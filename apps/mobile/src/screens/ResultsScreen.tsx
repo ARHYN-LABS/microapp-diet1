@@ -209,7 +209,6 @@ export default function ResultsScreen({ route }: Props) {
               <View style={styles.nutritionOverlay}>
                 {[
                   { label: "Calories", value: analysis.nutritionHighlights.calories },
-                  { label: "Fat (g)", value: (analysis.nutritionHighlights as any).fat_g },
                   { label: "Carbs (g)", value: analysis.nutritionHighlights.carbs_g },
                   { label: "Protein (g)", value: analysis.nutritionHighlights.protein_g }
                 ].map((item) => (
