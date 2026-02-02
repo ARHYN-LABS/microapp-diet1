@@ -3,8 +3,7 @@ import { useRouter } from "next/router"
 import { analyzeFromImages, postHistory } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
 import { setLastScanImage, setScanImage } from "../lib/scanImages"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 export default function Scan() {
   const router = useRouter()

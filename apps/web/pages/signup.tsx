@@ -4,8 +4,7 @@ import { signUp } from "@wimf/shared"
 import { setProfile, setToken } from "../lib/auth"
 import MultiSelect from "../components/MultiSelect"
 import { setHealthPrefs } from "../lib/healthPrefs"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 export default function Signup() {
   const router = useRouter()

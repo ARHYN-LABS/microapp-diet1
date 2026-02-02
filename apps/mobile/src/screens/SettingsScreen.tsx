@@ -28,6 +28,7 @@ import {
 import type { UserPrefs, UserProfile } from "@wimf/shared"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
+import { apiBase } from "../api/config"
 
 const emptyPrefs: UserPrefs = {
   userId: "unknown",
@@ -784,6 +785,10 @@ export default function SettingsScreen() {
         <Ionicons name="log-out-outline" size={18} color={theme.colors.text} />
         <Text style={styles.logoutText}>Logout</Text>
       </Pressable>
+      <View style={styles.apiBaseWrap}>
+        <Text style={styles.apiBaseLabel}>API base</Text>
+        <Text style={styles.apiBaseValue}>{apiBase}</Text>
+      </View>
       {status ? <Text style={styles.status}>{status}</Text> : null}
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
     </ScrollView>
@@ -964,6 +969,24 @@ const styles = StyleSheet.create({
   logoutText: {
     color: theme.colors.text,
     fontWeight: "700"
+  },
+  apiBaseWrap: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.panelAlt
+  },
+  apiBaseLabel: {
+    color: theme.colors.muted,
+    fontSize: 12,
+    marginBottom: 4
+  },
+  apiBaseValue: {
+    color: theme.colors.text,
+    fontWeight: "600"
   },
   status: {
     marginTop: 12,

@@ -45,15 +45,52 @@ const ensureUploadDir = async () => {
   }
 }
 
-const saveUpload = async (file: Express.Multer.File | undefined, req: express.Request) => {
+const getBaseUrl = (req: express.Request) => `${req.protocol}://${req.get("host")}`
+
+const toStoredPath = (value?: string | null) => {
+  if (!value) return null
+  if (value.startsWith("/uploads/")) return value
+  if (value.startsWith("uploads/")) return `/${value}`
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const parsed = new URL(value)
+      if (parsed.pathname.startsWith("/uploads/")) {
+        return parsed.pathname
+      }
+    } catch {
+      // ignore invalid url
+    }
+  }
+  return value
+}
+
+const toPublicUrl = (req: express.Request, value?: string | null) => {
+  if (!value) return null
+  if (value.startsWith("/uploads/") || value.startsWith("uploads/")) {
+    const normalized = value.startsWith("/") ? value : `/${value}`
+    return `${getBaseUrl(req)}${normalized}`
+  }
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const parsed = new URL(value)
+      if (parsed.pathname.startsWith("/uploads/")) {
+        return `${getBaseUrl(req)}${parsed.pathname}`
+      }
+    } catch {
+      // ignore invalid url
+    }
+  }
+  return value
+}
+
+const saveUpload = async (file: Express.Multer.File | undefined, _req: express.Request) => {
   if (!file) return null
   await ensureUploadDir()
   const ext = file.mimetype?.includes("png") ? "png" : "jpg"
   const filename = `${crypto.randomUUID()}.${ext}`
   const filepath = path.join(uploadDir, filename)
   await fs.writeFile(filepath, file.buffer)
-  const baseUrl = `${req.protocol}://${req.get("host")}`
-  return `${baseUrl}/uploads/${filename}`
+  return `/uploads/${filename}`
 }
 
 const port = Number(process.env.PORT || 4000)
@@ -203,7 +240,7 @@ app.post("/auth/signup", async (req, res, next) => {
         id: user.id,
         fullName: user.fullName,
         email: user.email,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: toPublicUrl(req, user.avatarUrl),
         mobileNumber: user.mobileNumber,
         age: user.age,
         gender: user.gender,
@@ -238,7 +275,7 @@ app.post("/auth/login", async (req, res, next) => {
         id: user.id,
         fullName: user.fullName,
         email: user.email,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: toPublicUrl(req, user.avatarUrl),
         mobileNumber: user.mobileNumber,
         age: user.age,
         gender: user.gender,
@@ -325,7 +362,7 @@ app.get("/profile", requireAuth, async (req, res, next) => {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      avatarUrl: user.avatarUrl,
+      avatarUrl: toPublicUrl(req, user.avatarUrl),
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -364,7 +401,7 @@ app.put("/profile", requireAuth, async (req, res, next) => {
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      avatarUrl: user.avatarUrl,
+      avatarUrl: toPublicUrl(req, user.avatarUrl),
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -386,20 +423,20 @@ app.post("/profile/photo", requireAuth, upload.single("photo"), async (req, res,
     if (!file) {
       return res.status(400).json({ error: "Photo is required." })
     }
-    const imageUrl = await saveUpload(file, req)
-    if (!imageUrl) {
+    const imagePath = await saveUpload(file, req)
+    if (!imagePath) {
       return res.status(500).json({ error: "Unable to save photo." })
     }
     const userId = getAuthUserId(req)
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { avatarUrl: imageUrl }
+      data: { avatarUrl: toStoredPath(imagePath) }
     })
     return res.json({
       id: user.id,
       fullName: user.fullName,
       email: user.email,
-      avatarUrl: user.avatarUrl,
+      avatarUrl: toPublicUrl(req, user.avatarUrl),
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -883,7 +920,7 @@ app.post(
       const ingredientsFile = files.ingredientsImage?.[0]
       const nutritionFile = files.nutritionImage?.[0]
       const frontFile = files.frontImage?.[0]
-      const imageUrl = await saveUpload(frontFile || ingredientsFile || nutritionFile, req)
+      const imagePath = await saveUpload(frontFile || ingredientsFile || nutritionFile, req)
 
       if (!ingredientsFile && !nutritionFile && !frontFile) {
         return res.status(400).json({ error: "At least one label image is required." })
@@ -1048,7 +1085,7 @@ app.post(
 
       return res.json({
         ...analysis,
-        imageUrl,
+        imageUrl: toPublicUrl(req, imagePath),
         suitability,
         parsing: {
           extractedText: extracted,
@@ -1078,17 +1115,27 @@ app.get("/history", async (req, res, next) => {
       return res.json([])
     }
 
-    const response = history.map((entry) => ({
-      id: entry.id,
-      userId: entry.userId,
-      createdAt: entry.createdAt.toISOString(),
-      productName: entry.productName,
-      imageUrl: entry.imageUrl || (entry.analysisSnapshot as any)?.imageUrl || null,
-      extractedText: entry.extractedText,
-      parsedIngredients: entry.parsedIngredients,
-      parsedNutrition: entry.parsedNutrition,
-      analysisSnapshot: entry.analysisSnapshot
-    }))
+    const response = history.map((entry) => {
+      const normalizedImage = toPublicUrl(
+        req,
+        entry.imageUrl || (entry.analysisSnapshot as any)?.imageUrl || null
+      )
+      const snapshot =
+        entry.analysisSnapshot && typeof entry.analysisSnapshot === "object"
+          ? { ...(entry.analysisSnapshot as any), imageUrl: normalizedImage }
+          : entry.analysisSnapshot
+      return {
+        id: entry.id,
+        userId: entry.userId,
+        createdAt: entry.createdAt.toISOString(),
+        productName: entry.productName,
+        imageUrl: normalizedImage,
+        extractedText: entry.extractedText,
+        parsedIngredients: entry.parsedIngredients,
+        parsedNutrition: entry.parsedNutrition,
+        analysisSnapshot: snapshot
+      }
+    })
 
     return res.json(response)
   } catch (error) {
@@ -1109,17 +1156,23 @@ app.post("/history", async (req, res, next) => {
   try {
     const payload = createHistorySchema.parse(req.body)
 
+    const normalizedImage = toStoredPath(payload.imageUrl || payload.analysisSnapshot?.imageUrl || null)
+    const normalizedSnapshot =
+      payload.analysisSnapshot && typeof payload.analysisSnapshot === "object"
+        ? { ...payload.analysisSnapshot, imageUrl: normalizedImage }
+        : payload.analysisSnapshot
+
     const created = await withDb(
       () =>
         prisma.scanHistory.create({
           data: {
             userId: payload.userId,
             productName: payload.analysisSnapshot?.productName || null,
-            imageUrl: payload.imageUrl || payload.analysisSnapshot?.imageUrl || null,
+            imageUrl: normalizedImage,
             extractedText: sanitizeExtracted(payload.extractedText),
             parsedIngredients: payload.parsedIngredients,
             parsedNutrition: payload.parsedNutrition,
-            analysisSnapshot: payload.analysisSnapshot
+            analysisSnapshot: normalizedSnapshot
           }
         }),
       "history save"
@@ -1133,11 +1186,14 @@ app.post("/history", async (req, res, next) => {
       id: created.id,
       userId: created.userId,
       createdAt: created.createdAt.toISOString(),
-      imageUrl: created.imageUrl,
+      imageUrl: toPublicUrl(req, created.imageUrl),
       extractedText: created.extractedText,
       parsedIngredients: created.parsedIngredients,
       parsedNutrition: created.parsedNutrition,
-      analysisSnapshot: created.analysisSnapshot
+      analysisSnapshot:
+        created.analysisSnapshot && typeof created.analysisSnapshot === "object"
+          ? { ...(created.analysisSnapshot as any), imageUrl: toPublicUrl(req, created.imageUrl) }
+          : created.analysisSnapshot
     })
   } catch (error) {
     return next(error)

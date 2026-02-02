@@ -4,13 +4,13 @@ import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
 import { getHealthPrefs } from "../lib/healthPrefs"
 import { getLastScanImage } from "../lib/scanImages"
+import { apiBase } from "../lib/apiBase"
 
 export default function Results() {
   const [analysis, setAnalysis] = useState<AnalyzeFromImagesResponse | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
   const profile = typeof window !== "undefined" ? getProfile() : null
   const formatTag = (value: string) =>
     value.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())

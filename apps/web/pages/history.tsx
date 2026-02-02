@@ -4,8 +4,7 @@ import { getHistory } from "@wimf/shared"
 import type { ScanHistory } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
 import { getScanImage } from "../lib/scanImages"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 export default function History() {
   const router = useRouter()
@@ -46,7 +45,12 @@ export default function History() {
         <div className="text-muted">No scans yet.</div>
       )}
       <div className="row g-3">
-        {items.map((entry) => (
+        {items.map((entry) => {
+          const preview =
+            entry.imageUrl ||
+            entry.analysisSnapshot?.imageUrl ||
+            getScanImage(entry.id)
+          return (
           <div className="col-md-6" key={entry.id}>
             <button
               type="button"
@@ -54,12 +58,18 @@ export default function History() {
               onClick={() => {
                 if (entry.analysisSnapshot) {
                   sessionStorage.setItem("wimf.analysis", JSON.stringify(entry.analysisSnapshot))
-                  const image = entry.imageUrl || getScanImage(entry.id)
-                  if (image) sessionStorage.setItem("wimf.preview", image)
+                  if (preview) sessionStorage.setItem("wimf.preview", preview)
                   router.push("/results")
                 }
               }}
             >
+              {preview && (
+                <img
+                  src={preview}
+                  alt="Scan preview"
+                  className="img-fluid rounded mb-3"
+                />
+              )}
               <div className="fw-semibold">
                 {entry.productName || entry.analysisSnapshot?.productName || "Scan"}
               </div>
@@ -88,7 +98,8 @@ export default function History() {
               </div>
             </button>
           </div>
-        ))}
+          )
+        })}
       </div>
       <div className="footer-note mt-4">Educational, not medical advice.</div>
     </main>

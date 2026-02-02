@@ -5,8 +5,7 @@ import type { ProfilePrefs, UserPrefs, UserProfile } from "@wimf/shared"
 import { getToken } from "../lib/auth"
 import { getHealthPrefs, setHealthPrefs } from "../lib/healthPrefs"
 import { getProfilePrefs as getLocalProfilePrefs, setProfilePrefs } from "../lib/profilePrefs"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 const emptyPrefs: UserPrefs = {
   userId: "unknown",

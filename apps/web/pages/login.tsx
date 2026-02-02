@@ -2,8 +2,7 @@ import { useState } from "react"
 import { useRouter } from "next/router"
 import { logIn } from "@wimf/shared"
 import { setProfile, setToken } from "../lib/auth"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 export default function Login() {
   const router = useRouter()

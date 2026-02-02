@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { requestPasswordReset } from "@wimf/shared"
-
-const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000"
+import { apiBase } from "../lib/apiBase"
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("")
