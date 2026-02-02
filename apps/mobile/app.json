@@ -23,6 +23,7 @@
     },
     "android": {
       "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./network_security_config.xml",
       "permissions": [
         "CAMERA"
       ],
