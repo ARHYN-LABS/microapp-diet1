@@ -18,7 +18,9 @@ import {
   clearAuth,
   getHealthPrefs,
   getProfile,
+  getProfileCached,
   getProfilePrefs,
+  getProfilePrefsCached,
   getUserPrefs,
   setHealthPrefs,
   setProfile,
@@ -343,11 +345,29 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const cachedProfile = await getProfile()
+      const cachedProfile = getProfileCached()
       if (cachedProfile) {
         setProfileState(cachedProfile)
         if (cachedProfile.mobileNumber) {
           setPhoneNumber(cachedProfile.mobileNumber)
+        }
+      }
+      const cachedProfilePrefs = getProfilePrefsCached()
+      setProfilePrefsState((prev) => ({
+        ...prev,
+        ...cachedProfilePrefs,
+        country: cachedProfilePrefs.country || prev.country,
+        dietaryOther: cachedProfilePrefs.dietaryOther || "",
+        allergyOther: cachedProfilePrefs.allergyOther ?? "",
+        dietary: cachedProfilePrefs.dietary || {},
+        allergies: cachedProfilePrefs.allergies || {}
+      }))
+
+      const storedProfile = await getProfile()
+      if (storedProfile) {
+        setProfileState(storedProfile)
+        if (storedProfile.mobileNumber) {
+          setPhoneNumber(storedProfile.mobileNumber)
         }
       }
       const cachedPrefs = await getUserPrefs()

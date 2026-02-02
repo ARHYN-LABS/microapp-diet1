@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { theme } from "../theme"
-import { getHealthPrefs, getProfilePrefs, getUserPrefs } from "../storage/cache"
+import { getHealthPrefs, getProfilePrefs, getProfilePrefsCached, getUserPrefs } from "../storage/cache"
 import ScoreRing from "../components/ScoreRing"
 
 type ResultsParams = {
@@ -38,11 +38,14 @@ export default function ResultsScreen({ route }: Props) {
   const insets = useSafeAreaInsets()
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
-  const [profilePrefs, setProfilePrefs] = useState({
-    dietary: {} as Record<string, boolean>,
-    allergies: {} as Record<string, boolean>,
-    allergyOther: "",
-    sensitivities: {} as Record<string, boolean>
+  const [profilePrefs, setProfilePrefs] = useState(() => {
+    const cached = getProfilePrefsCached()
+    return {
+      dietary: cached.dietary || {},
+      allergies: cached.allergies || {},
+      allergyOther: cached.allergyOther || "",
+      sensitivities: cached.sensitivities || {}
+    }
   })
 
   const caloriesPer100g = useMemo(() => {

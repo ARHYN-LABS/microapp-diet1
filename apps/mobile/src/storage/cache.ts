@@ -11,6 +11,9 @@ const HEALTH_PREFS_KEY = "wimf.health_prefs"
 const PROFILE_PREFS_KEY = "wimf.profile_prefs"
 const SCAN_IMAGE_KEY = "wimf.scan_images"
 
+let profileCache: UserProfile | null | undefined
+let profilePrefsCache: ProfilePrefs | null | undefined
+
 type HealthPrefs = {
   restrictions: string[]
   allergens: string[]
@@ -99,19 +102,36 @@ export async function setToken(token: string): Promise<void> {
 
 export async function clearAuth(): Promise<void> {
   await AsyncStorage.multiRemove([TOKEN_KEY, PROFILE_KEY, USER_KEY])
+  profileCache = null
+  profilePrefsCache = null
+}
+
+export function getProfileCached(): UserProfile | null {
+  return profileCache ?? null
+}
+
+export function getProfilePrefsCached(): ProfilePrefs {
+  return profilePrefsCache || defaultProfilePrefs
 }
 
 export async function getProfile(): Promise<UserProfile | null> {
+  if (profileCache !== undefined) return profileCache
   const raw = await AsyncStorage.getItem(PROFILE_KEY)
-  if (!raw) return null
+  if (!raw) {
+    profileCache = null
+    return null
+  }
   try {
-    return JSON.parse(raw) as UserProfile
+    profileCache = JSON.parse(raw) as UserProfile
+    return profileCache
   } catch {
+    profileCache = null
     return null
   }
 }
 
 export async function setProfile(profile: UserProfile): Promise<void> {
+  profileCache = profile
   await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
 }
 
@@ -144,16 +164,23 @@ export async function setHealthPrefs(prefs: HealthPrefs): Promise<void> {
 }
 
 export async function getProfilePrefs(): Promise<ProfilePrefs> {
+  if (profilePrefsCache) return profilePrefsCache
   const raw = await AsyncStorage.getItem(PROFILE_PREFS_KEY)
-  if (!raw) return defaultProfilePrefs
+  if (!raw) {
+    profilePrefsCache = defaultProfilePrefs
+    return defaultProfilePrefs
+  }
   try {
-    return { ...defaultProfilePrefs, ...(JSON.parse(raw) as ProfilePrefs) }
+    profilePrefsCache = { ...defaultProfilePrefs, ...(JSON.parse(raw) as ProfilePrefs) }
+    return profilePrefsCache
   } catch {
+    profilePrefsCache = defaultProfilePrefs
     return defaultProfilePrefs
   }
 }
 
 export async function setProfilePrefs(prefs: ProfilePrefs): Promise<void> {
+  profilePrefsCache = { ...defaultProfilePrefs, ...prefs }
   await AsyncStorage.setItem(PROFILE_PREFS_KEY, JSON.stringify(prefs))
 }
 

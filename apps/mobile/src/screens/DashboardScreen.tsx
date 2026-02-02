@@ -5,7 +5,9 @@ import { useNavigation } from "@react-navigation/native"
 import { getJournalForDate } from "../storage/tracking"
 import {
   getProfile,
+  getProfileCached,
   getProfilePrefs,
+  getProfilePrefsCached,
   getScanHistoryCache,
   getScanImageMap
 } from "../storage/cache"
@@ -33,6 +35,18 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     const load = async () => {
+      const cachedProfile = getProfileCached()
+      if (cachedProfile?.fullName) {
+        setName(cachedProfile.fullName.split(" ")[0])
+      } else if (cachedProfile?.email) {
+        setName(cachedProfile.email.split("@")[0])
+      }
+      const cachedPrefs = getProfilePrefsCached()
+      setProfilePrefs({
+        dietary: cachedPrefs.dietary || {},
+        allergies: cachedPrefs.allergies || {}
+      })
+
       const profile = await getProfile()
       if (profile?.fullName) {
         setName(profile.fullName.split(" ")[0])
