@@ -11,6 +11,10 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Build shared package
+        script: |
+          cd packages/shared
+          npm run build
       - name: Prebuild Android project
         script: |
           cd apps/mobile
@@ -33,6 +37,10 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Build shared package
+        script: |
+          cd packages/shared
+          npm run build
       - name: Prebuild Android project
         script: |
           cd apps/mobile
@@ -55,6 +63,10 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Build shared package
+        script: |
+          cd packages/shared
+          npm run build
       - name: Prebuild Android project
         script: |
           cd apps/mobile
