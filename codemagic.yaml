@@ -29,10 +29,6 @@ workflows:
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "http://76.13.100.119:4000"
-        CM_KEYSTORE_PATH: ""
-        CM_KEYSTORE_PASSWORD: ""
-        CM_KEY_ALIAS: ""
-        CM_KEY_PASSWORD: ""
     scripts:
       - name: Install dependencies
         script: |
