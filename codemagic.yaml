@@ -21,3 +21,38 @@ workflows:
           ./gradlew assembleDebug
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+  android-release:
+    name: Android Release APK (standalone)
+    max_build_duration: 60
+    environment:
+      node: 18.18.2
+      java: 17
+      vars:
+        EXPO_PUBLIC_API_BASE: "http://76.13.100.119:4000"
+        CM_KEYSTORE_PATH: ""
+        CM_KEYSTORE_PASSWORD: ""
+        CM_KEY_ALIAS: ""
+        CM_KEY_PASSWORD: ""
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install
+      - name: Prebuild Android project
+        script: |
+          cd apps/mobile
+          npx expo prebuild --platform android --clean
+      - name: Configure release keystore
+        script: |
+          if [ -z "$CM_KEYSTORE_PATH" ]; then echo "Missing CM_KEYSTORE_PATH"; exit 1; fi
+          if [ -z "$CM_KEYSTORE_PASSWORD" ]; then echo "Missing CM_KEYSTORE_PASSWORD"; exit 1; fi
+          if [ -z "$CM_KEY_ALIAS" ]; then echo "Missing CM_KEY_ALIAS"; exit 1; fi
+          if [ -z "$CM_KEY_PASSWORD" ]; then echo "Missing CM_KEY_PASSWORD"; exit 1; fi
+          printf "storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" \
+            "$CM_KEYSTORE_PATH" "$CM_KEYSTORE_PASSWORD" "$CM_KEY_ALIAS" "$CM_KEY_PASSWORD" \
+            > apps/mobile/android/keystore.properties
+      - name: Build release APK
+        script: |
+          cd apps/mobile/android
+          ./gradlew assembleRelease
+    artifacts:
+      - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
