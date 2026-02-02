@@ -25,7 +25,9 @@
       "usesCleartextTraffic": true,
       "networkSecurityConfig": "./network_security_config.xml",
       "permissions": [
-        "CAMERA"
+        "CAMERA",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
