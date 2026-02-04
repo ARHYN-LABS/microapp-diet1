@@ -23,28 +23,29 @@ export default function NavBar() {
 
   return (
     <nav className="app-nav">
-      <div className="container d-flex align-items-center justify-content-between">
-        <div className="d-flex align-items-center gap-3">
+      <div className="container app-nav-inner">
+        <div className="app-brand">
           <Link className="app-logo" href="/">
             <img src="/logo.png" alt="SafePlate AI" />
+            <span>SafePlate AI</span>
           </Link>
-          <div className="app-links d-none d-lg-flex">
-            <Link href="/">Home</Link>
-            <Link href="/dashboard">Dashboard</Link>
-            <Link href="/scan">Scan</Link>
-            <Link href="/results">Results</Link>
-            <Link href="/journal">Journal</Link>
-            <Link href="/history">History</Link>
-            <Link href="/settings">Profile</Link>
-          </div>
         </div>
-        <div className="d-flex align-items-center gap-2">
+        <div className="app-links d-none d-lg-flex">
+          <Link href="/">Home</Link>
+          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/scan">Scan</Link>
+          <Link href="/results">Results</Link>
+          <Link href="/journal">Journal</Link>
+          <Link href="/history">History</Link>
+          <Link href="/settings">Profile</Link>
+        </div>
+        <div className="app-actions">
           {!isAuthed && (
             <>
-              <Link className="btn btn-outline-light btn-sm" href="/login">
+              <Link className="app-store-badge" href="/login">
                 Log in
               </Link>
-              <Link className="btn btn-primary btn-sm" href="/signup">
+              <Link className="app-store-badge is-primary" href="/signup">
                 Sign up
               </Link>
             </>
@@ -52,7 +53,7 @@ export default function NavBar() {
           {isAuthed && (
             <>
               <span className="chip d-none d-md-inline">{name || "Account"}</span>
-              <button className="btn btn-outline-light btn-sm" onClick={handleLogout}>
+              <button className="app-store-badge" onClick={handleLogout}>
                 Logout
               </button>
             </>
