@@ -388,6 +388,7 @@ app.put("/profile", requireAuth, async (req, res, next) => {
     if (!userId) {
       return res.status(401).json({ error: "Unauthorized" })
     }
+    const safeUserId = userId
     const existing = await prisma.user.findUnique({ where: { id: userId } })
     const goal = calculateDailyCalorieGoal({
       age: payload.age ?? existing?.age ?? null,
@@ -1361,9 +1362,9 @@ app.put("/profile-prefs", requireAuth, async (req, res, next) => {
     const saved = await withDb(
       () =>
         prisma.profilePrefs.upsert({
-          where: { userId },
+          where: { userId: safeUserId },
           update: nextPrefs,
-          create: { userId, ...nextPrefs }
+          create: { userId: safeUserId, ...nextPrefs }
         }),
       "profile prefs save"
     )
