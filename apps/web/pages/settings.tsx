@@ -473,9 +473,9 @@ export default function Settings() {
                 className="rounded-circle border d-flex align-items-center justify-content-center"
                 style={{ width: 64, height: 64, overflow: "hidden" }}
               >
-                {profile.avatarUrl || profilePrefs.photoUri ? (
+                {profile.avatarUrl ? (
                   <img
-                    src={profile.avatarUrl || profilePrefs.photoUri || ""}
+                    src={profile.avatarUrl || ""}
                     alt="Profile"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
