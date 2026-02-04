@@ -1088,7 +1088,7 @@ app.post(
 
       return res.json({
         ...analysis,
-        imageUrl: toPublicUrl(req, imagePath),
+        imageUrl: toPublicUrl(req, imageUrl),
         suitability,
         parsing: {
           extractedText: extracted,
