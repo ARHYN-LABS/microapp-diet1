@@ -27,7 +27,6 @@ export default function NavBar() {
         <div className="d-flex align-items-center gap-3">
           <Link className="app-logo" href="/">
             <img src="/logo.png" alt="SafePlate AI" />
-            <span>SafePlate AI</span>
           </Link>
           <div className="app-links d-none d-lg-flex">
             <Link href="/">Home</Link>

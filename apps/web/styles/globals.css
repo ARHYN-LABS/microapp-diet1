@@ -259,9 +259,9 @@ a {
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 14px 0;
-  background: rgba(248, 250, 252, 0.9);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  background: rgba(248, 250, 252, 0.95);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
   backdrop-filter: blur(18px);
 }
 
@@ -270,24 +270,21 @@ a {
   letter-spacing: 0.02em;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .app-logo img {
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
-.app-logo span {
-  color: var(--text);
-  transition: color 160ms ease;
-}
-
-.app-logo:hover span {
-  color: var(--accent-2);
+.app-logo:hover img {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
 }
 
 .app-links {
@@ -297,11 +294,14 @@ a {
 .app-links a {
   color: var(--muted);
   font-size: 0.9rem;
-  transition: color 160ms ease, transform 160ms ease;
+  padding: 8px 12px;
+  border-radius: 999px;
+  transition: color 160ms ease, transform 160ms ease, background-color 160ms ease;
 }
 
 .app-links a:hover {
   color: var(--text);
+  background-color: rgba(26, 188, 156, 0.12);
   transform: translateY(-1px);
 }
 
