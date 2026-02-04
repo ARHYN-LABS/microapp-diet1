@@ -2,7 +2,6 @@ import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { logInUser } from "../api/client"
-import { apiBase } from "../api/config"
 import GradientButton from "../components/GradientButton"
 import { setProfile, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
@@ -17,7 +16,6 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [status, setStatus] = useState("")
-  const [debugStatus, setDebugStatus] = useState("")
 
   const handleLogin = async () => {
     setStatus("Signing in...")
@@ -31,22 +29,6 @@ export default function LoginScreen({ navigation }: Props) {
       navigation.replace("Main")
     } catch (error) {
       setStatus((error as Error).message)
-    }
-  }
-
-  const handlePing = async () => {
-    setDebugStatus("Pinging API...")
-    try {
-      const base = apiBase.endsWith("/") ? apiBase.slice(0, -1) : apiBase
-      const response = await fetch(`${base}/health`)
-      const payload = await response.json().catch(() => null)
-      if (!response.ok) {
-        setDebugStatus(payload?.error || `Health failed (${response.status})`)
-        return
-      }
-      setDebugStatus(payload?.status ? `Health: ${payload.status}` : "Health: ok")
-    } catch (error) {
-      setDebugStatus((error as Error).message || "Ping failed")
     }
   }
 
@@ -106,13 +88,6 @@ export default function LoginScreen({ navigation }: Props) {
       </Pressable>
 
       {status ? <Text style={styles.status}>{status}</Text> : null}
-      <View style={styles.debugBlock}>
-        <Text style={styles.debugText}>API: {apiBase}</Text>
-        <Pressable onPress={handlePing}>
-          <Text style={styles.debugLink}>Ping API</Text>
-        </Pressable>
-        {debugStatus ? <Text style={styles.debugText}>{debugStatus}</Text> : null}
-      </View>
     </View>
   )
 }
@@ -209,16 +184,5 @@ const styles = StyleSheet.create({
   status: {
     color: theme.colors.muted,
     marginTop: 12
-  },
-  debugBlock: {
-    marginTop: 12
-  },
-  debugText: {
-    color: theme.colors.muted,
-    fontSize: 12
-  },
-  debugLink: {
-    color: theme.colors.accent2,
-    marginTop: 6
   }
 })
