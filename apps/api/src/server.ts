@@ -385,6 +385,9 @@ app.put("/profile", requireAuth, async (req, res, next) => {
   try {
     const payload = profileSchema.parse(req.body)
     const userId = getAuthUserId(req)
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" })
+    }
     const existing = await prisma.user.findUnique({ where: { id: userId } })
     const goal = calculateDailyCalorieGoal({
       age: payload.age ?? existing?.age ?? null,
