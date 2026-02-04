@@ -295,17 +295,12 @@ a {
 }
 
 .app-logo img {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
   transition: transform 160ms ease, box-shadow 160ms ease;
-}
-
-.app-logo span {
-  font-size: 1.2rem;
-  color: var(--text);
 }
 
 .app-logo:hover img {

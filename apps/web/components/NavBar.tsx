@@ -27,7 +27,6 @@ export default function NavBar() {
         <div className="app-brand">
           <Link className="app-logo" href="/">
             <img src="/logo.png" alt="SafePlate AI" />
-            <span>SafePlate AI</span>
           </Link>
         </div>
         <div className="app-links d-none d-lg-flex">
