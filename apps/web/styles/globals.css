@@ -96,9 +96,9 @@ a {
 
 .btn-outline-light {
   border-color: var(--border);
-  color: var(--text);
+  color: #111827;
   border-radius: 999px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.9);
   transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease,
     background-color 160ms ease;
 }
