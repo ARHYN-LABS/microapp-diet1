@@ -110,6 +110,14 @@ a {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
 }
 
+.btn:focus,
+.btn:focus-visible,
+.btn-primary:focus,
+.btn-outline-light:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(44, 123, 229, 0.2);
+}
+
 .glass-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.9));
   border: 1px solid var(--border);
@@ -263,6 +271,7 @@ a {
   background: rgba(248, 250, 252, 0.95);
   border-bottom: 1px solid rgba(226, 232, 240, 0.7);
   backdrop-filter: blur(18px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
 
 .app-logo {
@@ -296,7 +305,10 @@ a {
   font-size: 0.9rem;
   padding: 8px 12px;
   border-radius: 999px;
-  transition: color 160ms ease, transform 160ms ease, background-color 160ms ease;
+  text-decoration: none !important;
+  font-weight: 500;
+  transition: color 160ms ease, transform 160ms ease, background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .app-links a:hover {
@@ -305,9 +317,39 @@ a {
   transform: translateY(-1px);
 }
 
+.app-links a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.2);
+}
+
 .form-control:focus,
 .form-select:focus {
   border-color: rgba(44, 123, 229, 0.45);
+  box-shadow: 0 0 0 0.2rem rgba(44, 123, 229, 0.15);
+}
+
+.form-control,
+.form-select {
+  border-radius: 14px;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+.form-switch .form-check-input {
+  width: 2.4rem;
+  height: 1.2rem;
+  background-color: rgba(226, 232, 240, 0.9);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.form-switch .form-check-input:checked {
+  background-color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.form-check-input:focus {
   box-shadow: 0 0 0 0.2rem rgba(44, 123, 229, 0.15);
 }
 
