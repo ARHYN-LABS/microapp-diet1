@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { getPrefs } from "@wimf/shared"
 import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
-import { getHealthPrefs } from "../lib/healthPrefs"
+import { getHealthPrefs, type HealthPrefs } from "../lib/healthPrefs"
 import { getLastScanImage } from "../lib/scanImages"
 import { apiBase } from "../lib/apiBase"
 
@@ -10,7 +10,10 @@ export default function Results() {
   const [analysis, setAnalysis] = useState<AnalyzeFromImagesResponse | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
+  const [healthPrefs, setHealthPrefs] = useState<HealthPrefs>({
+    restrictions: [],
+    allergens: []
+  })
   const profile = typeof window !== "undefined" ? getProfile() : null
   const formatTag = (value: string) =>
     value.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())
