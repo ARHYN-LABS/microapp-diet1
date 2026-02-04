@@ -298,14 +298,13 @@ a {
   width: 56px;
   height: 56px;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  border-radius: 0;
+  box-shadow: none;
+  transition: transform 160ms ease;
 }
 
 .app-logo:hover img {
   transform: translateY(-1px);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
 }
 
 .app-links {
