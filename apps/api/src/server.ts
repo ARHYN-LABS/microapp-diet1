@@ -36,6 +36,9 @@ const upload = multer({
   limits: { fileSize: 6 * 1024 * 1024 }
 })
 
+// Respect proxy headers from Caddy so generated URLs use https
+app.set("trust proxy", 1)
+
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 const ensureUploadDir = async () => {
   try {
