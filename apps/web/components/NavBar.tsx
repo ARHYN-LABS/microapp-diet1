@@ -31,13 +31,27 @@ export default function NavBar() {
           </Link>
         </div>
         <div className="app-links d-none d-lg-flex">
-          <Link href="/">Home</Link>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/scan">Scan</Link>
-          <Link href="/results">Results</Link>
-          <Link href="/journal">Journal</Link>
-          <Link href="/history">History</Link>
-          <Link href="/settings">Profile</Link>
+          <Link className={router.pathname === "/" ? "active" : ""} href="/">
+            Home
+          </Link>
+          <Link className={router.pathname === "/dashboard" ? "active" : ""} href="/dashboard">
+            Dashboard
+          </Link>
+          <Link className={router.pathname === "/scan" ? "active" : ""} href="/scan">
+            Scan
+          </Link>
+          <Link className={router.pathname === "/results" ? "active" : ""} href="/results">
+            Results
+          </Link>
+          <Link className={router.pathname === "/journal" ? "active" : ""} href="/journal">
+            Journal
+          </Link>
+          <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
+            History
+          </Link>
+          <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
+            Profile
+          </Link>
         </div>
         <div className="app-actions">
           {!isAuthed && (
@@ -61,13 +75,27 @@ export default function NavBar() {
         </div>
       </div>
       <div className="container app-links d-flex d-lg-none mt-2">
-        <Link href="/">Home</Link>
-        <Link href="/dashboard">Dashboard</Link>
-        <Link href="/scan">Scan</Link>
-        <Link href="/results">Results</Link>
-        <Link href="/journal">Journal</Link>
-        <Link href="/history">History</Link>
-        <Link href="/settings">Profile</Link>
+        <Link className={router.pathname === "/" ? "active" : ""} href="/">
+          Home
+        </Link>
+        <Link className={router.pathname === "/dashboard" ? "active" : ""} href="/dashboard">
+          Dashboard
+        </Link>
+        <Link className={router.pathname === "/scan" ? "active" : ""} href="/scan">
+          Scan
+        </Link>
+        <Link className={router.pathname === "/results" ? "active" : ""} href="/results">
+          Results
+        </Link>
+        <Link className={router.pathname === "/journal" ? "active" : ""} href="/journal">
+          Journal
+        </Link>
+        <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
+          History
+        </Link>
+        <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
+          Profile
+        </Link>
       </div>
     </nav>
   )
