@@ -49,6 +49,9 @@ export default function Login() {
             <button className="btn btn-primary w-100" onClick={handleSubmit}>
               Log in
             </button>
+            <a className="btn btn-outline-light w-100 mt-2" href={`${apiBase}/auth/google/start`}>
+              Continue with Google
+            </a>
             <div className="mt-3 text-center">
               <a className="text-muted" href="/forgot-password">
                 Forgot password?

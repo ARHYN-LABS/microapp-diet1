@@ -20,6 +20,7 @@ import OpenAI from "openai"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import querystring from "querystring"
 
 class OcrError extends Error {
   constructor(message: string) {
@@ -101,6 +102,11 @@ const openAiKey = process.env.OPENAI_API_KEY
 const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini"
 const openai = openAiKey ? new OpenAI({ apiKey: openAiKey }) : null
 const jwtSecret = process.env.JWT_SECRET || "change-me"
+const googleClientId = process.env.GOOGLE_CLIENT_ID || ""
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
+const googleRedirectUri =
+  process.env.GOOGLE_REDIRECT_URI || "https://api.safe-plate.ai/auth/google/callback"
+const webAppUrl = process.env.WEB_APP_URL || "https://safe-plate.ai"
 const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -175,6 +181,10 @@ const signUpSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1)
+})
+
+const googleCodeSchema = z.object({
+  code: z.string().min(1)
 })
 
 const forgotPasswordSchema = z.object({
@@ -419,6 +429,94 @@ app.put("/profile", requireAuth, async (req, res, next) => {
       activityLevel: user.activityLevel,
       dailyCalorieGoal: user.dailyCalorieGoal
     })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/auth/google/start", async (_req, res) => {
+  if (!googleClientId || !googleClientSecret || !googleRedirectUri) {
+    return res.status(500).json({ error: "Google auth is not configured." })
+  }
+  const params = {
+    client_id: googleClientId,
+    redirect_uri: googleRedirectUri,
+    response_type: "code",
+    scope: "openid email profile",
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "true"
+  }
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(params)}`
+  return res.redirect(url)
+})
+
+app.get("/auth/google/callback", async (req, res, next) => {
+  try {
+    if (!googleClientId || !googleClientSecret || !googleRedirectUri) {
+      return res.status(500).json({ error: "Google auth is not configured." })
+    }
+    const { code } = googleCodeSchema.parse(req.query)
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: querystring.stringify({
+        code,
+        client_id: googleClientId,
+        client_secret: googleClientSecret,
+        redirect_uri: googleRedirectUri,
+        grant_type: "authorization_code"
+      })
+    })
+    if (!tokenResponse.ok) {
+      const payload = await tokenResponse.json().catch(() => null)
+      return res.status(401).json({ error: payload?.error || "Google auth failed." })
+    }
+    const tokenPayload = (await tokenResponse.json()) as {
+      access_token: string
+      id_token?: string
+    }
+
+    const profileResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${tokenPayload.access_token}` }
+    })
+    if (!profileResponse.ok) {
+      return res.status(401).json({ error: "Failed to fetch Google profile." })
+    }
+    const profile = (await profileResponse.json()) as {
+      email: string
+      name?: string
+      given_name?: string
+      family_name?: string
+    }
+
+    const fullName =
+      profile.name ||
+      [profile.given_name, profile.family_name].filter(Boolean).join(" ") ||
+      profile.email
+
+    let user = await prisma.user.findUnique({ where: { email: profile.email } })
+    if (!user) {
+      const randomPassword = crypto.randomUUID()
+      const passwordHash = await bcrypt.hash(randomPassword, 10)
+      user = await prisma.user.create({
+        data: {
+          fullName,
+          email: profile.email,
+          passwordHash,
+          dailyCalorieGoal: 2000
+        }
+      })
+    }
+
+    const token = signToken(user.id)
+    const redirectUrl = `${webAppUrl}/auth/google/callback?token=${encodeURIComponent(
+      token
+    )}&userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(
+      user.email
+    )}&fullName=${encodeURIComponent(user.fullName || "")}`
+    return res.redirect(redirectUrl)
   } catch (error) {
     return next(error)
   }
