@@ -737,7 +737,11 @@ const withDb = async <T>(action: () => Promise<T>, context: string): Promise<T |
 const visionSchema = z.object({
   productName: z.string().nullable().optional(),
   isFood: z.boolean().optional(),
-  notFoodReason: z.string().optional(),
+  notFoodReason: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? ""),
   ingredients: z.array(z.string()).optional(),
   nutrition: z
     .object({
