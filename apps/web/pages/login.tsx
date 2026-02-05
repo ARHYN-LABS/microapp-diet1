@@ -9,6 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [status, setStatus] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
 
   const handleSubmit = async () => {
     setStatus("Signing in...")
@@ -46,15 +47,34 @@ export default function Login() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <label className="form-check d-flex align-items-center gap-2 mb-0">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                />
+                <span className="text-muted">Remember me</span>
+              </label>
+              <a className="auth-link" href="/forgot-password">
+                Forgot Password?
+              </a>
+            </div>
             <button className="btn btn-primary w-100" onClick={handleSubmit}>
               Log in
             </button>
-            <a className="btn btn-outline-light w-100 mt-2" href={`${apiBase}/auth/google/start`}>
-              Continue with Google
+            <a className="auth-social auth-google mt-3" href={`${apiBase}/auth/google/start`}>
+              <span className="auth-social-icon">G</span>
+              <span>Continue with Google</span>
             </a>
-            <div className="mt-3 text-center">
-              <a className="text-muted" href="/forgot-password">
-                Forgot password?
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+            <div className="text-center text-muted">
+              Don&apos;t have an account?{" "}
+              <a className="auth-link" href="/signup">
+                Register
               </a>
             </div>
             {status && <div className="text-muted mt-2">{status}</div>}
