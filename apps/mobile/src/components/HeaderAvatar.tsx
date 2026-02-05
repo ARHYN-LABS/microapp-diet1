@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useState } from "react"
 import { Image, Pressable, View } from "react-native"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
-import { getProfile, getProfileCached } from "../storage/cache"
+import { getProfile, getProfileCached, getProfilePrefs, getProfilePrefsCached } from "../storage/cache"
 import { theme } from "../theme"
 
 export default function HeaderAvatar() {
   const navigation = useNavigation()
-  const [photoUri, setPhotoUri] = useState<string | null>(
-    () => getProfileCached()?.avatarUrl || null
-  )
+  const [photoUri, setPhotoUri] = useState<string | null>(() => {
+    const cachedProfile = getProfileCached()
+    const cachedPrefs = getProfilePrefsCached()
+    return cachedProfile?.avatarUrl || cachedPrefs.photoUri || null
+  })
 
   const loadPhoto = useCallback(async () => {
     const profile = await getProfile()
-    setPhotoUri(profile?.avatarUrl || null)
+    if (profile?.avatarUrl) {
+      setPhotoUri(profile.avatarUrl)
+      return
+    }
+    const prefs = await getProfilePrefs()
+    setPhotoUri(prefs.photoUri || null)
   }, [])
 
   useEffect(() => {

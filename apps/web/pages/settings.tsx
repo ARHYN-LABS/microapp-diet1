@@ -281,6 +281,12 @@ const toNumberOrNull = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+const withCacheBuster = (url: string) => {
+  if (!url) return url
+  const separator = url.includes("?") ? "&" : "?"
+  return `${url}${separator}t=${Date.now()}`
+}
+
 export default function Settings() {
   const router = useRouter()
   const [token, setToken] = useState<string | null>(null)
@@ -396,12 +402,14 @@ export default function Settings() {
         throw new Error(payload?.error || "Failed to upload photo")
       }
       const updated = (await response.json()) as UserProfile
-      setProfile(updated)
+      const refreshedAvatar = updated.avatarUrl ? withCacheBuster(updated.avatarUrl) : null
+      const nextProfile = refreshedAvatar ? { ...updated, avatarUrl: refreshedAvatar } : updated
+      setProfile(nextProfile)
       persistProfile({
-        id: updated.id,
-        fullName: updated.fullName,
-        email: updated.email,
-        avatarUrl: updated.avatarUrl
+        id: nextProfile.id,
+        fullName: nextProfile.fullName,
+        email: nextProfile.email,
+        avatarUrl: nextProfile.avatarUrl
       })
       setStatus("Photo updated.")
     } catch (error) {

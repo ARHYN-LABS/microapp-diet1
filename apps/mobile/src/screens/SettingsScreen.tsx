@@ -296,6 +296,12 @@ const toNumberOrNull = (value: string) => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+const withCacheBuster = (url: string) => {
+  if (!url) return url
+  const separator = url.includes("?") ? "&" : "?"
+  return `${url}${separator}t=${Date.now()}`
+}
+
 const getDefaultCountry = () => {
   try {
     const locale = Intl.DateTimeFormat().resolvedOptions().locale
@@ -466,8 +472,14 @@ export default function SettingsScreen() {
       setStatus("Uploading photo...")
       try {
         const savedProfile = await uploadProfilePhoto(uri)
-        setProfileState(savedProfile)
-        await setProfile(savedProfile)
+        const refreshedAvatar = savedProfile.avatarUrl ? withCacheBuster(savedProfile.avatarUrl) : null
+        const nextProfile = refreshedAvatar ? { ...savedProfile, avatarUrl: refreshedAvatar } : savedProfile
+        setProfileState(nextProfile)
+        await setProfile(nextProfile)
+        setProfilePrefsState((prev) => ({
+          ...prev,
+          photoUri: refreshedAvatar || prev.photoUri || uri
+        }))
         setStatus("Photo updated.")
       } catch (error) {
         setStatus((error as Error).message || "Unable to upload photo.")
