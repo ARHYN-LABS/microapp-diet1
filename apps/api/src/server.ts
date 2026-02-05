@@ -17,6 +17,7 @@ import { z } from "zod"
 import { createWorker } from "tesseract.js"
 import rateLimit from "express-rate-limit"
 import OpenAI from "openai"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
@@ -101,6 +102,11 @@ const port = Number(process.env.PORT || 4000)
 const openAiKey = process.env.OPENAI_API_KEY
 const openAiModel = process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini"
 const openai = openAiKey ? new OpenAI({ apiKey: openAiKey }) : null
+const geminiKey = process.env.GEMINI_API_KEY
+const geminiModel = process.env.GEMINI_VISION_MODEL || "gemini-1.5-flash"
+const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null
+const scanProvider = (process.env.SCAN_PROVIDER || "openai").toLowerCase()
+const scanFallback = (process.env.SCAN_FALLBACK || "").toLowerCase()
 const jwtSecret = process.env.JWT_SECRET || "change-me"
 const googleClientId = process.env.GOOGLE_CLIENT_ID || ""
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
@@ -957,12 +963,16 @@ const evaluateSuitability = (input: {
   return { verdict: "not_recommended" as const, reasons }
 }
 
-const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
-  if (!openai) {
-    throw new OcrError("Vision AI is not configured. Upload a label or set OPENAI_API_KEY.")
-  }
+const extractJsonObject = (text: string) => {
+  const trimmed = text.trim()
+  if (trimmed.startsWith("{")) return trimmed
+  const match = trimmed.match(/\{[\s\S]*\}/)
+  if (match) return match[0]
+  throw new OcrError("Vision AI did not return usable JSON.")
+}
 
-  const prompt = [
+const buildVisionPrompt = () =>
+  [
     "Analyze a food photo (no label). Return JSON only.",
     "If not food: isFood=false and short notFoodReason.",
     "Always give productName (specific dish, prefix 'Likely' if unsure).",
@@ -972,13 +982,18 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
     "Include confidence 0-1."
   ].join(" ")
 
+const runOpenAiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
+  if (!openai) {
+    throw new OcrError("Vision AI is not configured. Set OPENAI_API_KEY.")
+  }
+
   const response = await openai.responses.create({
     model: openAiModel,
     input: [
       {
         role: "user",
         content: [
-          { type: "input_text", text: prompt },
+          { type: "input_text", text: buildVisionPrompt() },
           {
             type: "input_image",
             image_url: toDataUrl(buffer, mimeType),
@@ -1003,6 +1018,56 @@ const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
     throw new OcrError(payload.notFoodReason || "Sorry, this doesn't look like a food item. Please rescan.")
   }
   return buildVisionParsed(payload)
+}
+
+const runGeminiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
+  if (!gemini) {
+    throw new OcrError("Vision AI is not configured. Set GEMINI_API_KEY.")
+  }
+
+  const model = gemini.getGenerativeModel({ model: geminiModel })
+  const response = await model.generateContent([
+    { text: buildVisionPrompt() },
+    {
+      inlineData: {
+        data: buffer.toString("base64"),
+        mimeType: mimeType || "image/jpeg"
+      }
+    }
+  ])
+
+  const responseText = response.response.text()
+  if (!responseText) {
+    throw new OcrError("Vision AI did not return usable data.")
+  }
+
+  const payload = visionSchema.parse(JSON.parse(extractJsonObject(responseText)))
+  if (payload.isFood === false) {
+    throw new OcrError(payload.notFoodReason || "Sorry, this doesn't look like a food item. Please rescan.")
+  }
+  return buildVisionParsed(payload)
+}
+
+const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
+  const providers = [scanProvider, scanFallback].filter(Boolean)
+  const uniqueProviders = Array.from(new Set(providers))
+  if (!uniqueProviders.length) uniqueProviders.push("openai")
+
+  let lastError: unknown = null
+  for (const provider of uniqueProviders) {
+    try {
+      if (provider === "gemini") {
+        return await runGeminiVisionEstimate(buffer, mimeType)
+      }
+      if (provider === "openai") {
+        return await runOpenAiVisionEstimate(buffer, mimeType)
+      }
+      throw new OcrError(`Unknown scan provider: ${provider}`)
+    } catch (error) {
+      lastError = error
+    }
+  }
+  throw lastError instanceof Error ? lastError : new OcrError("Vision AI failed.")
 }
 
 const buildVisionExtraction = (parsed: ParsedData) =>

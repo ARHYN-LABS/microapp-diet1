@@ -30,6 +30,39 @@ export default function ScanScreen() {
   const [cameraKey, setCameraKey] = useState(0)
   const [lastAnalysis, setLastAnalysisState] = useState<AnalyzeFromImagesResponse | null>(null)
   const navigation = useNavigation()
+  const nutritionOverlay = (() => {
+    if (!lastAnalysis) return null
+    const nutrition = lastAnalysis.nutritionHighlights
+    if (!nutrition && lastAnalysis.caloriesPer50g === null) return null
+
+    const caloriesValue =
+      lastAnalysis.caloriesPer50g !== null && lastAnalysis.caloriesPer50g !== undefined
+        ? Number((lastAnalysis.caloriesPer50g * 2).toFixed(1))
+        : nutrition?.caloriesPer100g !== null && nutrition?.caloriesPer100g !== undefined
+          ? Number(nutrition.caloriesPer100g.toFixed(1))
+          : nutrition?.calories !== null && nutrition?.calories !== undefined
+            ? Number(nutrition.calories.toFixed(1))
+            : null
+
+    const carbsValue =
+      nutrition?.carbs_g !== null && nutrition?.carbs_g !== undefined
+        ? Number(nutrition.carbs_g.toFixed(1))
+        : null
+
+    const proteinValue =
+      nutrition?.protein_g !== null && nutrition?.protein_g !== undefined
+        ? Number(nutrition.protein_g.toFixed(1))
+        : null
+
+    const hasAny = caloriesValue !== null || carbsValue !== null || proteinValue !== null
+    if (!hasAny) return null
+
+    return [
+      { label: "Calories", value: caloriesValue },
+      { label: "Carbs (g)", value: carbsValue },
+      { label: "Protein (g)", value: proteinValue }
+    ]
+  })()
 
   useEffect(() => {
     const request = async () => {
@@ -191,16 +224,12 @@ export default function ScanScreen() {
           <Text style={styles.sectionTitle}>Preview</Text>
           <View style={styles.previewWrap}>
             <Image source={{ uri: image.label.previewUri || image.label.uri }} style={styles.previewImage} />
-            {lastAnalysis?.nutritionHighlights ? (
+            {nutritionOverlay ? (
               <View style={styles.nutritionOverlay}>
-                {[
-                  { label: "Calories", value: lastAnalysis.nutritionHighlights.calories },
-                  { label: "Carbs (g)", value: lastAnalysis.nutritionHighlights.carbs_g },
-                  { label: "Protein (g)", value: lastAnalysis.nutritionHighlights.protein_g }
-                ].map((item) => (
+                {nutritionOverlay.map((item) => (
                   <View key={item.label} style={styles.nutritionItem}>
                     <Text style={styles.nutritionValue}>
-                      {item.value !== null && item.value !== undefined ? item.value : "—"}
+                      {item.value !== null && item.value !== undefined ? item.value : "--"}
                     </Text>
                     <Text style={styles.nutritionLabel}>{item.label}</Text>
                   </View>
@@ -466,3 +495,5 @@ const styles = StyleSheet.create({
     textAlign: "center"
   }
 })
+
+

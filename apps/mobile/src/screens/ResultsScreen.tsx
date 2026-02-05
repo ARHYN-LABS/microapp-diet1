@@ -72,6 +72,29 @@ export default function ResultsScreen({ route }: Props) {
     return null
   }, [analysis.caloriesPer50g, analysis.nutritionHighlights])
 
+  const nutritionOverlay = useMemo(() => {
+    const nutrition = analysis.nutritionHighlights
+    const caloriesValue = caloriesPer100g !== null ? caloriesPer100g :
+      nutrition?.calories !== null && nutrition?.calories !== undefined
+        ? Number(nutrition.calories.toFixed(1))
+        : null
+    const carbsValue =
+      nutrition?.carbs_g !== null && nutrition?.carbs_g !== undefined
+        ? Number(nutrition.carbs_g.toFixed(1))
+        : null
+    const proteinValue =
+      nutrition?.protein_g !== null && nutrition?.protein_g !== undefined
+        ? Number(nutrition.protein_g.toFixed(1))
+        : null
+    const hasAny = caloriesValue !== null || carbsValue !== null || proteinValue !== null
+    if (!hasAny) return null
+    return [
+      { label: "Calories", value: caloriesValue },
+      { label: "Carbs (g)", value: carbsValue },
+      { label: "Protein (g)", value: proteinValue }
+    ]
+  }, [analysis.nutritionHighlights, caloriesPer100g])
+
   const labelConfidence = useMemo(() => {
     const values = Object.values(analysis.parsing.confidences)
     if (!values.length) return "0.00"
@@ -208,16 +231,12 @@ export default function ResultsScreen({ route }: Props) {
         <Card style={styles.previewCard}>
           <View style={styles.previewWrap}>
             <Image source={{ uri: imageUri }} style={styles.previewImage} />
-            {analysis.nutritionHighlights ? (
+            {nutritionOverlay ? (
               <View style={styles.nutritionOverlay}>
-                {[
-                  { label: "Calories", value: analysis.nutritionHighlights.calories },
-                  { label: "Carbs (g)", value: analysis.nutritionHighlights.carbs_g },
-                  { label: "Protein (g)", value: analysis.nutritionHighlights.protein_g }
-                ].map((item) => (
+                {nutritionOverlay.map((item) => (
                   <View key={item.label} style={styles.nutritionItem}>
                     <Text style={styles.nutritionValue}>
-                      {item.value !== null && item.value !== undefined ? item.value : "—"}
+                      {item.value !== null && item.value !== undefined ? item.value : "--"}
                     </Text>
                     <Text style={styles.nutritionLabel}>{item.label}</Text>
                   </View>
@@ -487,3 +506,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg
   }
 })
+
+

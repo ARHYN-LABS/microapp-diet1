@@ -63,6 +63,28 @@ export default function HistoryScreen() {
     return matchName && matchDate
   })
 
+  const getPreviewUri = (entry: ScanHistory) => {
+    const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
+    return (
+      entry.imageUrl ||
+      entry.analysisSnapshot?.imageUrl ||
+      imageMap[entry.id] ||
+      imageMap[fallbackKey] ||
+      null
+    )
+  }
+
+  useEffect(() => {
+    const unique = new Set<string>()
+    history.forEach((entry) => {
+      const uri = getPreviewUri(entry)
+      if (uri) unique.add(uri)
+    })
+    unique.forEach((uri) => {
+      Image.prefetch(uri)
+    })
+  }, [history, imageMap])
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.filterRow}>
@@ -106,13 +128,7 @@ export default function HistoryScreen() {
         const name = entry.productName || entry.analysisSnapshot?.productName || "Scan"
         const scoreValue = typeof score === "number" ? score : null
         const scoreColor = scoreValue === null ? theme.colors.muted : scoreValue >= 70 ? "#22C55E" : scoreValue >= 40 ? "#F59E0B" : theme.colors.warning
-        const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
-        const previewUri =
-          entry.imageUrl ||
-          entry.analysisSnapshot?.imageUrl ||
-          imageMap[entry.id] ||
-          imageMap[fallbackKey] ||
-          null
+        const previewUri = getPreviewUri(entry)
         return (
           <Pressable
             style={[styles.card, { borderLeftColor: scoreColor }]}
@@ -136,7 +152,12 @@ export default function HistoryScreen() {
             <View style={styles.row}>
               <View style={styles.thumb}>
                 {previewUri ? (
-                  <Image source={{ uri: previewUri }} style={styles.thumbImage} />
+                  <Image
+                    source={{ uri: previewUri, cache: "force-cache" }}
+                    style={styles.thumbImage}
+                    fadeDuration={0}
+                    progressiveRenderingEnabled
+                  />
                 ) : null}
               </View>
               <View style={styles.info}>
