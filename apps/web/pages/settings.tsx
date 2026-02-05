@@ -2,7 +2,7 @@
 import { useRouter } from "next/router"
 import { getPrefs, getProfile, getProfilePrefs, savePrefs, saveProfilePrefs, updateProfile } from "@wimf/shared"
 import type { ProfilePrefs, UserPrefs, UserProfile } from "@wimf/shared"
-import { getToken } from "../lib/auth"
+import { getToken, setProfile as persistProfile } from "../lib/auth"
 import { getHealthPrefs, setHealthPrefs } from "../lib/healthPrefs"
 import { getProfilePrefs as getLocalProfilePrefs, setProfilePrefs } from "../lib/profilePrefs"
 import { apiBase } from "../lib/apiBase"
@@ -307,6 +307,12 @@ export default function Settings() {
         const prefsData = await getPrefs({ baseUrl: apiBase, token }, profileData.id).catch(() => null)
         const profilePrefsData = await getProfilePrefs({ baseUrl: apiBase, token }).catch(() => null)
         setProfile(profileData)
+        persistProfile({
+          id: profileData.id,
+          fullName: profileData.fullName,
+          email: profileData.email,
+          avatarUrl: profileData.avatarUrl
+        })
         if (prefsData) {
           setPrefs({ ...prefsData })
         }
@@ -391,6 +397,12 @@ export default function Settings() {
       }
       const updated = (await response.json()) as UserProfile
       setProfile(updated)
+      persistProfile({
+        id: updated.id,
+        fullName: updated.fullName,
+        email: updated.email,
+        avatarUrl: updated.avatarUrl
+      })
       setStatus("Photo updated.")
     } catch (error) {
       setStatus((error as Error).message)
@@ -407,6 +419,12 @@ export default function Settings() {
       }
       const saved = await updateProfile({ baseUrl: apiBase, token }, payload)
       setProfile(saved)
+      persistProfile({
+        id: saved.id,
+        fullName: saved.fullName,
+        email: saved.email,
+        avatarUrl: saved.avatarUrl
+      })
       setStatus("Profile updated.")
     } catch (error) {
       setStatus((error as Error).message)

@@ -7,12 +7,14 @@ export default function NavBar() {
   const router = useRouter()
   const [isAuthed, setIsAuthed] = useState(false)
   const [name, setName] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const token = getToken()
     const profile = getProfile()
     setIsAuthed(!!token)
     setName(profile?.fullName || profile?.email || null)
+    setAvatarUrl(profile?.avatarUrl || null)
   }, [router.asPath])
 
   const handleLogout = () => {
@@ -65,6 +67,9 @@ export default function NavBar() {
           )}
           {isAuthed && (
             <>
+              {avatarUrl ? (
+                <img className="nav-avatar" src={avatarUrl} alt="Profile" />
+              ) : null}
               <span className="chip d-none d-md-inline">{name || "Account"}</span>
               <button className="app-store-badge" onClick={handleLogout}>
                 Logout

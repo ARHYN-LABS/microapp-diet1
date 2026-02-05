@@ -354,6 +354,15 @@ a {
   justify-content: flex-end;
 }
 
+.nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(44, 123, 229, 0.3);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+}
+
 .app-store-badge {
   display: inline-flex;
   align-items: center;

@@ -2,6 +2,7 @@ export type StoredProfile = {
   id: string
   fullName?: string | null
   email: string
+  avatarUrl?: string | null
 }
 
 const TOKEN_KEY = "wimf.token"

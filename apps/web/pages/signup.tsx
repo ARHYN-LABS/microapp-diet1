@@ -46,7 +46,12 @@ export default function Signup() {
     try {
       const response = await signUp({ baseUrl: apiBase }, { fullName, email, password })
       setToken(response.token)
-      setProfile({ id: response.profile.id, fullName: response.profile.fullName, email: response.profile.email })
+      setProfile({
+        id: response.profile.id,
+        fullName: response.profile.fullName,
+        email: response.profile.email,
+        avatarUrl: response.profile.avatarUrl
+      })
       setHealthPrefs({ restrictions, allergens })
       router.push("/settings")
     } catch (error) {

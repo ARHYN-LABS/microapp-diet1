@@ -16,7 +16,12 @@ export default function Login() {
     try {
       const response = await logIn({ baseUrl: apiBase }, { email, password })
       setToken(response.token)
-      setProfile({ id: response.profile.id, fullName: response.profile.fullName, email: response.profile.email })
+      setProfile({
+        id: response.profile.id,
+        fullName: response.profile.fullName,
+        email: response.profile.email,
+        avatarUrl: response.profile.avatarUrl
+      })
       router.push("/")
     } catch (error) {
       setStatus((error as Error).message)
