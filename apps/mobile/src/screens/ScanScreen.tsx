@@ -257,7 +257,7 @@ export default function ScanScreen() {
           </Pressable>
         ) : (
           <Pressable style={styles.captureButton} onPress={capturePhoto}>
-            <Ionicons name="qr-code-outline" size={22} color={theme.colors.accent} />
+            <MaterialIcons name="center-focus-strong" size={24} color={theme.colors.accent} />
             <Text style={styles.captureLabel}>Scan</Text>
           </Pressable>
         )}

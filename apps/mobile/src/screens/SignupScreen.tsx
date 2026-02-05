@@ -1,5 +1,5 @@
-import { useContext, useState } from "react"
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image } from "react-native"
+import { useContext, useMemo, useRef, useState } from "react"
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, Animated } from "react-native"
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
 import { signUpUser } from "../api/client"
 import GradientButton from "../components/GradientButton"
@@ -48,6 +48,23 @@ export default function SignupScreen({ navigation }: Props) {
   const [dietary, setDietary] = useState<Record<string, boolean>>({})
   const [allergies, setAllergies] = useState<Record<string, boolean>>({})
   const [allergyOther, setAllergyOther] = useState("")
+  const [step, setStep] = useState(1)
+  const fadeAnim = useRef(new Animated.Value(1)).current
+  const slideAnim = useRef(new Animated.Value(0)).current
+
+  const animateStep = () => {
+    fadeAnim.setValue(0)
+    slideAnim.setValue(16)
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true })
+    ]).start()
+  }
+
+  const canContinue = useMemo(() => {
+    if (step !== 1) return true
+    return fullName.trim() && email.trim() && password.trim().length >= 6
+  }, [step, fullName, email, password])
 
   const handleSignup = async () => {
     setStatus("Creating account...")
@@ -79,94 +96,162 @@ export default function SignupScreen({ navigation }: Props) {
       <Text style={styles.title}>Sign up</Text>
       <Text style={styles.subtitle}>Create your profile.</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Full name"
-        placeholderTextColor={theme.colors.muted}
-        value={fullName}
-        onChangeText={setFullName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor={theme.colors.muted}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor={theme.colors.muted}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Dietary restrictions</Text>
-        {dietaryOptions.map((item) => (
-          <Pressable
-            key={item.key}
-            style={styles.checkRow}
-            onPress={() => setDietary((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-          >
-            <Ionicons
-              name={dietary[item.key] ? "checkbox" : "square-outline"}
-              size={20}
-              color={dietary[item.key] ? theme.colors.accent : theme.colors.muted}
-            />
-            {item.type === "gf" ? (
-              <View style={styles.gfIcon}>
-                <Text style={styles.gfText}>GF</Text>
-                <View style={styles.gfSlash} />
-              </View>
-            ) : item.type === "mci" ? (
-              <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-            ) : (
-              <Ionicons name={item.icon as any} size={16} color={item.color} />
-            )}
-            <Text style={styles.checkLabel}>{item.label}</Text>
-          </Pressable>
+      <View style={styles.stepRow}>
+        {[1, 2, 3].map((index) => (
+          <View key={index} style={[styles.stepDot, step === index && styles.stepDotActive]} />
         ))}
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Allergies & intolerances</Text>
-        {allergyOptions.map((item) => (
-          <Pressable
-            key={item.key}
-            style={styles.checkRow}
-            onPress={() => setAllergies((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-          >
-            <Ionicons
-              name={allergies[item.key] ? "checkbox" : "square-outline"}
-              size={20}
-              color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
+      <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+        {step === 1 && (
+          <>
+            <Text style={styles.sectionTitle}>Basic Info</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Full name"
+              placeholderTextColor={theme.colors.muted}
+              value={fullName}
+              onChangeText={setFullName}
             />
-            {item.type === "mci" ? (
-              <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-            ) : (
-              <Ionicons name={item.icon as any} size={16} color={item.color} />
-            )}
-            <Text style={styles.checkLabel}>{item.label}</Text>
-          </Pressable>
-        ))}
-        <Text style={styles.label}>Other (custom)</Text>
-        <TextInput
-          style={styles.input}
-          value={allergyOther}
-          onChangeText={setAllergyOther}
-          placeholder="Add custom allergy"
-          placeholderTextColor={theme.colors.muted}
-        />
-      </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor={theme.colors.muted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={theme.colors.muted}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+            <GradientButton
+              onPress={() => {
+                setStep(2)
+                animateStep()
+              }}
+              style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
+              disabled={!canContinue}
+            >
+              <Text style={styles.primaryButtonText}>Next</Text>
+            </GradientButton>
+          </>
+        )}
 
-      <GradientButton onPress={handleSignup} style={styles.primaryButton}>
-        <Ionicons name="person-add-outline" size={18} color="#ffffff" />
-        <Text style={styles.primaryButtonText}>Create account</Text>
-      </GradientButton>
+        {step === 2 && (
+          <>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.sectionTitle}>Dietary restrictions</Text>
+              <Pressable
+                style={styles.skipButton}
+                onPress={() => {
+                  setStep(3)
+                  animateStep()
+                }}
+              >
+                <Text style={styles.skipText}>Skip</Text>
+              </Pressable>
+            </View>
+            {dietaryOptions.map((item) => (
+              <Pressable
+                key={item.key}
+                style={styles.checkRow}
+                onPress={() => setDietary((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+              >
+                <Ionicons
+                  name={dietary[item.key] ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={dietary[item.key] ? theme.colors.accent : theme.colors.muted}
+                />
+                {item.type === "gf" ? (
+                  <View style={styles.gfIcon}>
+                    <Text style={styles.gfText}>GF</Text>
+                    <View style={styles.gfSlash} />
+                  </View>
+                ) : item.type === "mci" ? (
+                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+                ) : (
+                  <Ionicons name={item.icon as any} size={16} color={item.color} />
+                )}
+                <Text style={styles.checkLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+            <View style={styles.stepActions}>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  setStep(1)
+                  animateStep()
+                }}
+              >
+                <Text style={styles.secondaryButtonText}>Previous</Text>
+              </Pressable>
+              <GradientButton
+                onPress={() => {
+                  setStep(3)
+                  animateStep()
+                }}
+                style={styles.primaryButton}
+              >
+                <Text style={styles.primaryButtonText}>Next</Text>
+              </GradientButton>
+            </View>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <Text style={styles.sectionTitle}>Allergies</Text>
+            {allergyOptions.map((item) => (
+              <Pressable
+                key={item.key}
+                style={styles.checkRow}
+                onPress={() => setAllergies((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+              >
+                <Ionicons
+                  name={allergies[item.key] ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
+                />
+                {item.type === "mci" ? (
+                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+                ) : (
+                  <Ionicons name={item.icon as any} size={16} color={item.color} />
+                )}
+                <Text style={styles.checkLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+            <Text style={styles.label}>Other (custom)</Text>
+            <TextInput
+              style={styles.input}
+              value={allergyOther}
+              onChangeText={setAllergyOther}
+              placeholder="Add custom allergy"
+              placeholderTextColor={theme.colors.muted}
+            />
+            <View style={styles.stepActions}>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  setStep(2)
+                  animateStep()
+                }}
+              >
+                <Text style={styles.secondaryButtonText}>Previous</Text>
+              </Pressable>
+              <GradientButton onPress={handleSignup} style={styles.primaryButton}>
+                <Ionicons name="person-add-outline" size={18} color="#ffffff" />
+                <Text style={styles.primaryButtonText}>Create account</Text>
+              </GradientButton>
+            </View>
+          </>
+        )}
+      </Animated.View>
 
       <Pressable onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Back to login</Text>
@@ -202,6 +287,21 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginBottom: 24
   },
+  stepRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: theme.colors.border
+  },
+  stepDotActive: {
+    backgroundColor: theme.colors.accent2,
+    width: 20
+  },
   input: {
     backgroundColor: theme.colors.glass,
     color: theme.colors.text,
@@ -218,6 +318,22 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4
+  },
+  skipButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: theme.colors.glass
+  },
+  skipText: {
+    color: theme.colors.muted,
+    fontWeight: "600"
   },
   sectionTitle: {
     fontSize: 16,
@@ -266,9 +382,32 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 8
   },
+  primaryButtonDisabled: {
+    opacity: 0.6
+  },
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"
+  },
+  stepActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 8
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.glass,
+    alignItems: "center"
+  },
+  secondaryButtonText: {
+    fontWeight: "700",
+    color: theme.colors.text
   },
   link: {
     color: theme.colors.accent2,

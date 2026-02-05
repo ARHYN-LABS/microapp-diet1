@@ -550,17 +550,26 @@ export default function SettingsScreen() {
         <View style={[styles.card, styles.cardInfo]}>
           <Text style={styles.sectionTitle}>Personal information</Text>
           <View style={styles.photoRow}>
-            <View style={styles.photoPlaceholder}>
-              {profile.avatarUrl || profilePrefs.photoUri ? (
-                <Image source={{ uri: profile.avatarUrl || profilePrefs.photoUri || "" }} style={styles.photoImage} />
-              ) : (
-                <Ionicons name="person-circle-outline" size={52} color={theme.colors.muted} />
+            <View style={styles.photoWrapper}>
+              <View style={styles.photoPlaceholder}>
+                {profile.avatarUrl || profilePrefs.photoUri ? (
+                  <Image source={{ uri: profile.avatarUrl || profilePrefs.photoUri || "" }} style={styles.photoImage} />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={52} color={theme.colors.muted} />
+                )}
+              </View>
+              {(profile.avatarUrl || profilePrefs.photoUri) && (
+                <Pressable style={styles.editBadge} onPress={pickPhoto}>
+                  <Ionicons name="pencil" size={14} color="#ffffff" />
+                </Pressable>
               )}
             </View>
-            <Pressable style={styles.photoButton} onPress={pickPhoto}>
-              <Ionicons name="image-outline" size={16} color="#ffffff" />
-              <Text style={styles.photoButtonText}>Upload photo</Text>
-            </Pressable>
+            {!(profile.avatarUrl || profilePrefs.photoUri) && (
+              <Pressable style={styles.photoButton} onPress={pickPhoto}>
+                <Ionicons name="image-outline" size={16} color="#ffffff" />
+                <Text style={styles.photoButtonText}>Upload photo</Text>
+              </Pressable>
+            )}
           </View>
 
           <Text style={styles.label}>Full name *</Text>
@@ -871,6 +880,9 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 16
   },
+  photoWrapper: {
+    position: "relative"
+  },
   photoPlaceholder: {
     width: 64,
     height: 64,
@@ -886,6 +898,19 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover"
+  },
+  editBadge: {
+    position: "absolute",
+    right: -2,
+    bottom: -2,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: theme.colors.accent2,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: theme.colors.panel
   },
   photoButton: {
     flexDirection: "row",
