@@ -5,6 +5,7 @@ import { getProfile, getToken } from "../lib/auth"
 import { getHealthPrefs, type HealthPrefs } from "../lib/healthPrefs"
 import { getLastScanImage } from "../lib/scanImages"
 import { apiBase } from "../lib/apiBase"
+import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 
 export default function Results() {
   const [analysis, setAnalysis] = useState<AnalyzeFromImagesResponse | null>(null)
@@ -24,7 +25,7 @@ export default function Results() {
       setAnalysis(JSON.parse(stored) as AnalyzeFromImagesResponse)
     }
     const storedPreview = sessionStorage.getItem("wimf.preview") || getLastScanImage()
-    if (storedPreview) setPreview(storedPreview)
+    if (storedPreview) setPreview(normalizeImageUrl(storedPreview))
     setHealthPrefs(getHealthPrefs())
   }, [])
 

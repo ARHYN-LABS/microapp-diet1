@@ -5,6 +5,7 @@ import type { ScanHistory } from "@wimf/shared"
 import { getProfile, getToken } from "../lib/auth"
 import { getScanImage } from "../lib/scanImages"
 import { apiBase } from "../lib/apiBase"
+import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 
 export default function History() {
   const router = useRouter()
@@ -47,8 +48,8 @@ export default function History() {
       <div className="row g-3">
         {items.map((entry) => {
           const preview =
-            entry.imageUrl ||
-            entry.analysisSnapshot?.imageUrl ||
+            normalizeImageUrl(entry.imageUrl) ||
+            normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
             getScanImage(entry.id)
           return (
           <div className="col-md-6" key={entry.id}>

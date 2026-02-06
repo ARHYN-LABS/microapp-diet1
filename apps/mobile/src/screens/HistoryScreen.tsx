@@ -10,6 +10,7 @@ import {
 import type { ScanHistory } from "@wimf/shared"
 import { theme } from "../theme"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 
 export default function HistoryScreen() {
   const navigation = useNavigation()
@@ -66,8 +67,8 @@ export default function HistoryScreen() {
   const getPreviewUri = (entry: ScanHistory) => {
     const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
     return (
-      entry.imageUrl ||
-      entry.analysisSnapshot?.imageUrl ||
+      normalizeImageUrl(entry.imageUrl) ||
+      normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
       imageMap[entry.id] ||
       imageMap[fallbackKey] ||
       null

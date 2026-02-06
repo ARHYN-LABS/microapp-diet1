@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native"
+import { View, Text, StyleSheet, Pressable, ScrollView, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { getJournalForDate } from "../storage/tracking"
@@ -14,6 +14,7 @@ import {
 import { theme } from "../theme"
 import ScoreRing from "../components/ScoreRing"
 import GradientButton from "../components/GradientButton"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
@@ -225,7 +226,11 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] || null,
+                    imageUri:
+                      normalizeImageUrl(scan.imageUrl) ||
+                      normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                      imageMap[scan.id] ||
+                      null,
                     fromHistory: true
                   } as never
                 )
@@ -234,7 +239,12 @@ export default function DashboardScreen() {
               <View style={styles.scanThumb}>
                 {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
                   <Image
-                    source={{ uri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] }}
+                    source={{
+                      uri:
+                        normalizeImageUrl(scan.imageUrl) ||
+                        normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                        imageMap[scan.id]
+                    }}
                     style={styles.scanThumbImage}
                   />
                 ) : null}
@@ -269,7 +279,11 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] || null,
+                    imageUri:
+                      normalizeImageUrl(scan.imageUrl) ||
+                      normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                      imageMap[scan.id] ||
+                      null,
                     fromHistory: true
                   } as never
                 )
@@ -278,7 +292,12 @@ export default function DashboardScreen() {
               <View style={styles.popularThumb}>
                 {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
                   <Image
-                    source={{ uri: scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id] }}
+                    source={{
+                      uri:
+                        normalizeImageUrl(scan.imageUrl) ||
+                        normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                        imageMap[scan.id]
+                    }}
                     style={styles.popularImage}
                   />
                 ) : null}
