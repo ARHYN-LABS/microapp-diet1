@@ -3,19 +3,24 @@ import { Image, Pressable, View } from "react-native"
 import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { getProfile, getProfileCached, getProfilePrefs, getProfilePrefsCached } from "../storage/cache"
 import { theme } from "../theme"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 
 export default function HeaderAvatar() {
   const navigation = useNavigation()
   const [photoUri, setPhotoUri] = useState<string | null>(() => {
     const cachedProfile = getProfileCached()
     const cachedPrefs = getProfilePrefsCached()
-    return cachedProfile?.avatarUrl || cachedPrefs.photoUri || null
+    return (
+      normalizeImageUrl(cachedProfile?.avatarUrl) ||
+      cachedPrefs.photoUri ||
+      null
+    )
   })
 
   const loadPhoto = useCallback(async () => {
     const profile = await getProfile()
     if (profile?.avatarUrl) {
-      setPhotoUri(profile.avatarUrl)
+      setPhotoUri(normalizeImageUrl(profile.avatarUrl))
       return
     }
     const prefs = await getProfilePrefs()

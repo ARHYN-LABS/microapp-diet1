@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/router"
 import { clearToken, getProfile, getToken } from "../lib/auth"
+import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 
 export default function NavBar() {
   const router = useRouter()
@@ -14,7 +15,7 @@ export default function NavBar() {
     const profile = getProfile()
     setIsAuthed(!!token)
     setName(profile?.fullName || profile?.email || null)
-    setAvatarUrl(profile?.avatarUrl || null)
+    setAvatarUrl(normalizeImageUrl(profile?.avatarUrl) || null)
   }, [router.asPath])
 
   const handleLogout = () => {

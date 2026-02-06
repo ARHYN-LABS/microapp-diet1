@@ -6,6 +6,7 @@ import { getToken, setProfile as persistProfile } from "../lib/auth"
 import { getHealthPrefs, setHealthPrefs } from "../lib/healthPrefs"
 import { getProfilePrefs as getLocalProfilePrefs, setProfilePrefs } from "../lib/profilePrefs"
 import { apiBase } from "../lib/apiBase"
+import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 
 const emptyPrefs: UserPrefs = {
   userId: "unknown",
@@ -402,7 +403,8 @@ export default function Settings() {
         throw new Error(payload?.error || "Failed to upload photo")
       }
       const updated = (await response.json()) as UserProfile
-      const refreshedAvatar = updated.avatarUrl ? withCacheBuster(updated.avatarUrl) : null
+      const normalizedAvatar = updated.avatarUrl ? normalizeImageUrl(updated.avatarUrl) : null
+      const refreshedAvatar = normalizedAvatar ? withCacheBuster(normalizedAvatar) : null
       const nextProfile = refreshedAvatar ? { ...updated, avatarUrl: refreshedAvatar } : updated
       setProfile(nextProfile)
       persistProfile({
@@ -501,7 +503,7 @@ export default function Settings() {
               >
                 {profile.avatarUrl ? (
                   <img
-                    src={profile.avatarUrl || ""}
+                    src={normalizeImageUrl(profile.avatarUrl) || ""}
                     alt="Profile"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />

@@ -30,6 +30,7 @@ import {
 import type { UserPrefs, UserProfile } from "@wimf/shared"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 
 const emptyPrefs: UserPrefs = {
   userId: "unknown",
@@ -472,7 +473,8 @@ export default function SettingsScreen() {
       setStatus("Uploading photo...")
       try {
         const savedProfile = await uploadProfilePhoto(uri)
-        const refreshedAvatar = savedProfile.avatarUrl ? withCacheBuster(savedProfile.avatarUrl) : null
+        const normalizedAvatar = savedProfile.avatarUrl ? normalizeImageUrl(savedProfile.avatarUrl) : null
+        const refreshedAvatar = normalizedAvatar ? withCacheBuster(normalizedAvatar) : null
         const nextProfile = refreshedAvatar ? { ...savedProfile, avatarUrl: refreshedAvatar } : savedProfile
         setProfileState(nextProfile)
         await setProfile(nextProfile)
@@ -553,7 +555,10 @@ export default function SettingsScreen() {
             <View style={styles.photoWrapper}>
               <View style={styles.photoPlaceholder}>
                 {profile.avatarUrl || profilePrefs.photoUri ? (
-                  <Image source={{ uri: profile.avatarUrl || profilePrefs.photoUri || "" }} style={styles.photoImage} />
+                  <Image
+                    source={{ uri: normalizeImageUrl(profile.avatarUrl) || profilePrefs.photoUri || "" }}
+                    style={styles.photoImage}
+                  />
                 ) : (
                   <Ionicons name="person-circle-outline" size={52} color={theme.colors.muted} />
                 )}
