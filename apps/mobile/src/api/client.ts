@@ -50,15 +50,32 @@ export async function runExtract(formData: FormData) {
 
 export async function runAnalyze(formData: FormData) {
   const config = await getConfig()
-  const maxAttempts = 3
+  const maxAttempts = 4
   let attempt = 0
   let lastError: unknown
+
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number) => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        const error = new Error("Request timed out")
+        ;(error as Error & { code?: string }).code = "ETIMEDOUT"
+        reject(error)
+      }, timeoutMs)
+    })
+    try {
+      return await Promise.race([promise, timeoutPromise])
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }
 
   const shouldRetry = (error: unknown) => {
     const message = (error as Error)?.message?.toLowerCase() || ""
     return (
       message.includes("network") ||
       message.includes("timeout") ||
+      message.includes("timed out") ||
       message.includes("failed to analyze") ||
       message.includes("server error")
     )
@@ -66,7 +83,7 @@ export async function runAnalyze(formData: FormData) {
 
   while (attempt < maxAttempts) {
     try {
-      return await analyzeFromImages(config, formData)
+      return await withTimeout(analyzeFromImages(config, formData), 45000)
     } catch (error) {
       lastError = error
       attempt += 1

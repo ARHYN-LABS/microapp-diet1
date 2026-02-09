@@ -7,7 +7,8 @@ import {
   getScanImageMap,
   setScanHistoryCache,
   setProfile,
-  getToken
+  getToken,
+  getUserId
 } from "../storage/cache"
 import type { ScanHistory } from "@wimf/shared"
 import { theme } from "../theme"
@@ -49,7 +50,16 @@ export default function HistoryScreen() {
         setStatus("Please log in.")
         return
       }
-      const fresh = await fetchHistory(profile.id)
+      let fresh = await fetchHistory(profile.id)
+      if (!fresh.length) {
+        const storedUserId = await getUserId()
+        if (storedUserId && storedUserId !== profile.id) {
+          const fallback = await fetchHistory(storedUserId)
+          if (fallback.length) {
+            fresh = fallback
+          }
+        }
+      }
       setHistory(fresh)
       setScanHistoryCache(fresh)
       setStatus("")
