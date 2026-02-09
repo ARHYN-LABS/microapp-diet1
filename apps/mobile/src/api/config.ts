@@ -1,7 +1,7 @@
 import Constants from "expo-constants"
 
 const extra = Constants.expoConfig?.extra || {}
-const fallbackApiBase = "http://76.13.100.119:4000"
+const fallbackApiBase = "https://api.safe-plate.ai"
 
 export const apiBase =
   (process.env.EXPO_PUBLIC_API_BASE as string) ||
