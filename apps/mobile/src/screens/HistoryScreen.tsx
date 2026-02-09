@@ -60,9 +60,15 @@ export default function HistoryScreen() {
           }
         }
       }
-      setHistory(fresh)
-      setScanHistoryCache(fresh)
-      setStatus("")
+      if (fresh.length) {
+        setHistory(fresh)
+        setScanHistoryCache(fresh)
+        setStatus("")
+      } else if (!cached.length) {
+        setHistory([])
+        setScanHistoryCache([])
+        setStatus("No scans yet.")
+      }
     } catch {
       if (!cached.length) {
         setStatus("Unable to reach API")
