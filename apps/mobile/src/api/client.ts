@@ -50,7 +50,35 @@ export async function runExtract(formData: FormData) {
 
 export async function runAnalyze(formData: FormData) {
   const config = await getConfig()
-  return analyzeFromImages(config, formData)
+  const maxAttempts = 3
+  let attempt = 0
+  let lastError: unknown
+
+  const shouldRetry = (error: unknown) => {
+    const message = (error as Error)?.message?.toLowerCase() || ""
+    return (
+      message.includes("network") ||
+      message.includes("timeout") ||
+      message.includes("failed to analyze") ||
+      message.includes("server error")
+    )
+  }
+
+  while (attempt < maxAttempts) {
+    try {
+      return await analyzeFromImages(config, formData)
+    } catch (error) {
+      lastError = error
+      attempt += 1
+      if (attempt >= maxAttempts || !shouldRetry(error)) {
+        throw error
+      }
+      const delayMs = 600 * attempt
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Failed to analyze images")
 }
 
 export async function fetchPrefs(userId: string): Promise<UserPrefs> {

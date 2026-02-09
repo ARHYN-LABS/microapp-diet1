@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback } from "react"
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from "react-native"
-import { fetchHistory } from "../api/client"
+import { fetchHistory, fetchProfile } from "../api/client"
 import {
   getProfile,
   getScanHistoryCache,
   getScanImageMap,
-  setScanHistoryCache
+  setScanHistoryCache,
+  setProfile,
+  getToken
 } from "../storage/cache"
 import type { ScanHistory } from "@wimf/shared"
 import { theme } from "../theme"
@@ -30,7 +32,19 @@ export default function HistoryScreen() {
     try {
       const storedImages = await getScanImageMap()
       setImageMap(storedImages)
-      const profile = await getProfile()
+      const token = await getToken()
+      let profile = await getProfile()
+      if (token) {
+        try {
+          const serverProfile = await fetchProfile()
+          if (serverProfile) {
+            profile = serverProfile
+            await setProfile(serverProfile)
+          }
+        } catch {
+          // ignore profile refresh failures
+        }
+      }
       if (!profile) {
         setStatus("Please log in.")
         return
@@ -63,6 +77,8 @@ export default function HistoryScreen() {
     const matchDate = filterDate ? dateKey === filterDate : true
     return matchName && matchDate
   })
+  const visibleHistory =
+    filterName || filterDate ? filteredHistory : filteredHistory.slice(0, 10)
 
   const getPreviewUri = (entry: ScanHistory) => {
     const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
@@ -105,7 +121,7 @@ export default function HistoryScreen() {
         />
       </View>
 
-      {filteredHistory.map((entry) => {
+      {visibleHistory.map((entry) => {
         const score = entry.analysisSnapshot?.score?.value
         const nutrition = entry.analysisSnapshot?.nutritionHighlights
         let calories: number | string | null = "Unknown"
@@ -175,7 +191,10 @@ export default function HistoryScreen() {
           </Pressable>
         )
       })}
-      {!filteredHistory.length && <Text style={styles.empty}>No scans yet.</Text>}
+      {!visibleHistory.length && <Text style={styles.empty}>No scans yet.</Text>}
+      {!filterName && !filterDate && filteredHistory.length > visibleHistory.length ? (
+        <Text style={styles.empty}>Showing latest 10 scans.</Text>
+      ) : null}
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
     </ScrollView>
   )
