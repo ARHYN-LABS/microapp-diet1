@@ -42,6 +42,7 @@ const upload = multer({
 app.set("trust proxy", 1)
 
 const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
+const fallbackUploadDir = path.join(process.cwd(), "uploads")
 const ensureUploadDir = async () => {
   try {
     await fs.mkdir(uploadDir, { recursive: true })
@@ -121,6 +122,9 @@ const corsOrigins = (process.env.CORS_ORIGINS || "")
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true, limit: "1mb" }))
 app.use("/uploads", express.static(uploadDir))
+if (fallbackUploadDir !== uploadDir) {
+  app.use("/uploads", express.static(fallbackUploadDir))
+}
 app.use(
   cors({
     origin: corsOrigins.length ? corsOrigins : true,
