@@ -1274,7 +1274,9 @@ app.post(
 
 app.get("/history", async (req, res, next) => {
   try {
-    const userId = z.string().min(1).parse(req.query.userId)
+    const authUserId = getOptionalUserId(req)
+    const queryUserId = typeof req.query.userId === "string" ? req.query.userId : ""
+    const userId = authUserId || z.string().min(1).parse(queryUserId)
 
     const history = await withDb(
       () =>
@@ -1329,6 +1331,8 @@ const createHistorySchema = z.object({
 app.post("/history", async (req, res, next) => {
   try {
     const payload = createHistorySchema.parse(req.body)
+    const authUserId = getOptionalUserId(req)
+    const userId = authUserId || payload.userId
 
     const normalizedImage = toStoredPath(payload.imageUrl || payload.analysisSnapshot?.imageUrl || null)
     const normalizedSnapshot =
@@ -1340,7 +1344,7 @@ app.post("/history", async (req, res, next) => {
       () =>
         prisma.scanHistory.create({
           data: {
-            userId: payload.userId,
+            userId,
             productName: payload.analysisSnapshot?.productName || null,
             imageUrl: normalizedImage,
             extractedText: sanitizeExtracted(payload.extractedText),

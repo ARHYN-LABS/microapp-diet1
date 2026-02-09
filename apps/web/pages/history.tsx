@@ -34,6 +34,8 @@ export default function History() {
     load()
   }, [])
 
+  const visibleItems = items.slice(0, 10)
+
   return (
     <main className="container page-shell">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -46,7 +48,7 @@ export default function History() {
         <div className="text-muted">No scans yet.</div>
       )}
       <div className="row g-3">
-        {items.map((entry) => {
+        {visibleItems.map((entry) => {
           const preview =
             normalizeImageUrl(entry.imageUrl) ||
             normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
@@ -102,6 +104,9 @@ export default function History() {
           )
         })}
       </div>
+      {items.length > visibleItems.length && (
+        <div className="text-muted small mt-3">Showing latest 10 scans.</div>
+      )}
       <div className="footer-note mt-4">Educational, not medical advice.</div>
     </main>
   )
