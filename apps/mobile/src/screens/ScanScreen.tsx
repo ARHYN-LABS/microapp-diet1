@@ -6,6 +6,7 @@ import { runAnalyze, saveHistory } from "../api/client"
 import GradientButton from "../components/GradientButton"
 import { useFocusEffect, useIsFocused, useNavigation } from "@react-navigation/native"
 import { theme } from "../theme"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 import {
   getLastAnalysis,
   getProfile,
@@ -136,13 +137,14 @@ export default function ScanScreen() {
       await setLastAnalysis(analysis)
       setLastAnalysisState(analysis)
       if (profile?.id) {
+        const normalizedImageUrl = normalizeImageUrl(analysis.imageUrl)
         const localId = `local-${Date.now()}`
         const localEntry: ScanHistory = {
           id: localId,
           userId: profile.id,
           createdAt: new Date().toISOString(),
           productName: analysis.productName ?? null,
-          imageUrl: analysis.imageUrl || null,
+          imageUrl: normalizedImageUrl || analysis.imageUrl || null,
           extractedText: analysis.parsing.extractedText,
           parsedIngredients: analysis.ingredientBreakdown.map((item) => item.name),
           parsedNutrition: analysis.nutritionHighlights,
@@ -159,7 +161,7 @@ export default function ScanScreen() {
 
         const saved = await saveHistory({
           userId: profile.id,
-          imageUrl: analysis.imageUrl || null,
+          imageUrl: normalizedImageUrl || analysis.imageUrl || null,
           extractedText: analysis.parsing.extractedText,
           parsedIngredients: analysis.ingredientBreakdown.map((item) => item.name),
           parsedNutrition: analysis.nutritionHighlights,

@@ -1325,7 +1325,7 @@ app.get("/history", async (req, res, next) => {
 
 const createHistorySchema = z.object({
   userId: z.string().min(1),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: z.string().min(1).optional().nullable(),
   analysisSnapshot: z.any(),
   extractedText: z.any().optional(),
   parsedIngredients: z.array(z.string()).optional(),
