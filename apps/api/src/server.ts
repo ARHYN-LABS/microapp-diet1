@@ -1315,7 +1315,8 @@ app.get("/history", async (req, res, next) => {
         )
       : null
     const emailUserId = emailUser?.id || ""
-    const resolvedUserId = authUserId || queryUserId || emailUserId
+    // Prefer auth user when available, otherwise prefer email match over query userId
+    const resolvedUserId = authUserId || emailUserId || queryUserId
     const userId = z.string().min(1).parse(resolvedUserId)
 
     if (logHistory) {
