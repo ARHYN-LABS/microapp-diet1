@@ -38,11 +38,10 @@ const buildHistoryQuery = (input?: string | HistoryQuery) => {
   if (typeof input === "string") {
     return `?userId=${encodeURIComponent(input)}`
   }
-  const params = new URLSearchParams()
-  if (input.userId) params.set("userId", input.userId)
-  if (input.email) params.set("email", input.email)
-  const query = params.toString()
-  return query ? `?${query}` : ""
+  const parts: string[] = []
+  if (input.userId) parts.push(`userId=${encodeURIComponent(input.userId)}`)
+  if (input.email) parts.push(`email=${encodeURIComponent(input.email)}`)
+  return parts.length ? `?${parts.join("&")}` : ""
 }
 
 export async function getHistory(
