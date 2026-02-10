@@ -60,9 +60,6 @@ export async function fetchHistory(userId: string) {
 
   while (attempt < maxAttempts) {
     try {
-      if (config.token) {
-        return await withTimeout(getHistory(config), 20000)
-      }
       return await withTimeout(getHistory(config, userId), 20000)
     } catch (error) {
       lastError = error

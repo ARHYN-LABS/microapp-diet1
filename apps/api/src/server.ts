@@ -1282,14 +1282,23 @@ app.get("/history", async (req, res, next) => {
     const queryUserId = typeof req.query.userId === "string" ? req.query.userId : ""
     const userId = authUserId || z.string().min(1).parse(queryUserId)
 
-    const history = await withDb(
-      () =>
-        prisma.scanHistory.findMany({
-          where: { userId },
-          orderBy: { createdAt: "desc" }
-        }),
-      "history read"
-    )
+    const loadHistory = (id: string) =>
+      withDb(
+        () =>
+          prisma.scanHistory.findMany({
+            where: { userId: id },
+            orderBy: { createdAt: "desc" }
+          }),
+        "history read"
+      )
+
+    let history = await loadHistory(userId)
+    if ((!history || history.length === 0) && queryUserId && queryUserId !== userId) {
+      const fallback = await loadHistory(queryUserId)
+      if (fallback && fallback.length) {
+        history = fallback
+      }
+    }
 
     if (!history) {
       return res.json([])
