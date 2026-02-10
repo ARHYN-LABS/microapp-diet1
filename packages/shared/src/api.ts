@@ -28,8 +28,9 @@ const authHeaders = (config: ApiConfig, extra?: Record<string, string>) => {
   return headers
 }
 
-export async function getHistory(config: ApiConfig, userId: string): Promise<ScanHistory[]> {
-  const response = await fetch(withBase(config.baseUrl, `/history?userId=${userId}`), {
+export async function getHistory(config: ApiConfig, userId?: string): Promise<ScanHistory[]> {
+  const query = userId ? `?userId=${encodeURIComponent(userId)}` : ""
+  const response = await fetch(withBase(config.baseUrl, `/history${query}`), {
     headers: authHeaders(config)
   })
   if (!response.ok) {

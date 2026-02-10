@@ -28,7 +28,54 @@ const getConfig = async () => {
 
 export async function fetchHistory(userId: string) {
   const config = await getConfig()
-  return getHistory(config, userId)
+  const maxAttempts = 3
+  let attempt = 0
+  let lastError: unknown
+
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number) => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        const error = new Error("Request timed out")
+        ;(error as Error & { code?: string }).code = "ETIMEDOUT"
+        reject(error)
+      }, timeoutMs)
+    })
+    try {
+      return await Promise.race([promise, timeoutPromise])
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId)
+    }
+  }
+
+  const shouldRetry = (error: unknown) => {
+    const message = (error as Error)?.message?.toLowerCase() || ""
+    return (
+      message.includes("network") ||
+      message.includes("timeout") ||
+      message.includes("timed out") ||
+      message.includes("failed to load history")
+    )
+  }
+
+  while (attempt < maxAttempts) {
+    try {
+      if (config.token) {
+        return await withTimeout(getHistory(config), 20000)
+      }
+      return await withTimeout(getHistory(config, userId), 20000)
+    } catch (error) {
+      lastError = error
+      attempt += 1
+      if (attempt >= maxAttempts || !shouldRetry(error)) {
+        throw error
+      }
+      const delayMs = 500 * attempt
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Failed to load history")
 }
 
 export async function saveHistory(payload: {
