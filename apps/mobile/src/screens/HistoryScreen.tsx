@@ -119,14 +119,14 @@ export default function HistoryScreen() {
           lastFetchAt: new Date().toISOString()
         }))
       }
-    } catch {
+    } catch (error) {
       if (!cached.length) {
         setStatus("Unable to reach API")
       }
       setDebugInfo((prev) => ({
         ...prev,
         freshCount: 0,
-        lastError: "history fetch failed",
+        lastError: error instanceof Error ? error.message : "history fetch failed",
         lastFetchAt: new Date().toISOString()
       }))
     }

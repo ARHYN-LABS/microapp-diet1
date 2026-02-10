@@ -57,7 +57,16 @@ export async function getHistory(
     })
   })
   if (!response.ok) {
-    throw new Error("Failed to load history")
+    const contentType = response.headers.get("content-type") || ""
+    let detail = ""
+    if (contentType.includes("application/json")) {
+      const payload = await response.json().catch(() => null)
+      detail = payload?.error || payload?.message || JSON.stringify(payload)
+    } else {
+      detail = await response.text().catch(() => "")
+    }
+    const suffix = detail ? ` - ${detail}` : ""
+    throw new Error(`History ${response.status}${suffix}`)
   }
   return (await response.json()) as ScanHistory[]
 }
