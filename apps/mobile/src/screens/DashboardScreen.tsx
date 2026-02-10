@@ -88,11 +88,11 @@ export default function DashboardScreen() {
           }
         }
         if (serverProfile?.id) {
-          let fresh = await fetchHistory(serverProfile.id)
+          let fresh = await fetchHistory(serverProfile.id, serverProfile.email)
           if (!fresh.length) {
             const storedUserId = await getUserId()
             if (storedUserId && storedUserId !== serverProfile.id) {
-              const fallback = await fetchHistory(storedUserId)
+              const fallback = await fetchHistory(storedUserId, serverProfile.email)
               if (fallback.length) {
                 fresh = fallback
               }

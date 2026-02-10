@@ -26,7 +26,7 @@ const getConfig = async () => {
   return { baseUrl: apiBase, token: token || undefined }
 }
 
-export async function fetchHistory(userId: string) {
+export async function fetchHistory(userId: string, email?: string | null) {
   const config = await getConfig()
   const maxAttempts = 3
   let attempt = 0
@@ -60,7 +60,7 @@ export async function fetchHistory(userId: string) {
 
   while (attempt < maxAttempts) {
     try {
-      return await withTimeout(getHistory(config, userId), 20000)
+      return await withTimeout(getHistory(config, { userId, email: email || undefined }), 20000)
     } catch (error) {
       lastError = error
       attempt += 1

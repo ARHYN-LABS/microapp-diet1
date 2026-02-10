@@ -28,8 +28,28 @@ const authHeaders = (config: ApiConfig, extra?: Record<string, string>) => {
   return headers
 }
 
-export async function getHistory(config: ApiConfig, userId?: string): Promise<ScanHistory[]> {
-  const query = userId ? `?userId=${encodeURIComponent(userId)}` : ""
+type HistoryQuery = {
+  userId?: string
+  email?: string
+}
+
+const buildHistoryQuery = (input?: string | HistoryQuery) => {
+  if (!input) return ""
+  if (typeof input === "string") {
+    return `?userId=${encodeURIComponent(input)}`
+  }
+  const params = new URLSearchParams()
+  if (input.userId) params.set("userId", input.userId)
+  if (input.email) params.set("email", input.email)
+  const query = params.toString()
+  return query ? `?${query}` : ""
+}
+
+export async function getHistory(
+  config: ApiConfig,
+  input?: string | HistoryQuery
+): Promise<ScanHistory[]> {
+  const query = buildHistoryQuery(input)
   const response = await fetch(withBase(config.baseUrl, `/history${query}`), {
     headers: authHeaders(config)
   })

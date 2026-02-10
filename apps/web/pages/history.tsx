@@ -22,7 +22,7 @@ export default function History() {
           setError("Please log in to view history.")
           return
         }
-        const data = await getHistory({ baseUrl: apiBase, token }, profile.id)
+        const data = await getHistory({ baseUrl: apiBase, token }, { userId: profile.id, email: profile.email })
         setItems(data)
       } catch (err) {
         setError((err as Error).message)

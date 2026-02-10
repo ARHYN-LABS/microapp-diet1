@@ -50,11 +50,11 @@ export default function HistoryScreen() {
         setStatus("Please log in.")
         return
       }
-      let fresh = await fetchHistory(profile.id)
+      let fresh = await fetchHistory(profile.id, profile.email)
       if (!fresh.length) {
         const storedUserId = await getUserId()
         if (storedUserId && storedUserId !== profile.id) {
-          const fallback = await fetchHistory(storedUserId)
+          const fallback = await fetchHistory(storedUserId, profile.email)
           if (fallback.length) {
             fresh = fallback
           }

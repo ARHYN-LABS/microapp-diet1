@@ -1280,7 +1280,17 @@ app.get("/history", async (req, res, next) => {
   try {
     const authUserId = getOptionalUserId(req)
     const queryUserId = typeof req.query.userId === "string" ? req.query.userId : ""
-    const userId = authUserId || z.string().min(1).parse(queryUserId)
+    const queryEmail = typeof req.query.email === "string" ? req.query.email : ""
+    const emailCandidate = queryEmail.trim().toLowerCase()
+    const emailUser = emailCandidate
+      ? await withDb(
+          () => prisma.user.findUnique({ where: { email: emailCandidate } }),
+          "history email lookup"
+        )
+      : null
+    const emailUserId = emailUser?.id || ""
+    const resolvedUserId = authUserId || queryUserId || emailUserId
+    const userId = z.string().min(1).parse(resolvedUserId)
 
     const loadHistory = (id: string) =>
       withDb(
@@ -1293,8 +1303,31 @@ app.get("/history", async (req, res, next) => {
       )
 
     let history = await loadHistory(userId)
+    if ((!history || history.length === 0) && authUserId && emailUserId && emailUserId !== authUserId) {
+      const authUser = await withDb(
+        () => prisma.user.findUnique({ where: { id: authUserId } }),
+        "history auth lookup"
+      )
+      if (authUser?.email && authUser.email.toLowerCase() === emailCandidate) {
+        await withDb(
+          () =>
+            prisma.scanHistory.updateMany({
+              where: { userId: emailUserId },
+              data: { userId: authUserId }
+            }),
+          "history migrate"
+        )
+        history = await loadHistory(authUserId)
+      }
+    }
     if ((!history || history.length === 0) && queryUserId && queryUserId !== userId) {
       const fallback = await loadHistory(queryUserId)
+      if (fallback && fallback.length) {
+        history = fallback
+      }
+    }
+    if ((!history || history.length === 0) && emailUserId && emailUserId !== userId) {
+      const fallback = await loadHistory(emailUserId)
       if (fallback && fallback.length) {
         history = fallback
       }
