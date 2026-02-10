@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { View, Text, StyleSheet, Pressable, ScrollView, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { getJournalForDate } from "../storage/tracking"
+import { fetchHistory, fetchProfile } from "../api/client"
 import {
   getProfile,
   getProfileCached,
   getProfilePrefs,
   getProfilePrefsCached,
   getScanHistoryCache,
-  getScanImageMap
+  getScanImageMap,
+  setProfile,
+  setScanHistoryCache,
+  getToken,
+  getUserId
 } from "../storage/cache"
 import { theme } from "../theme"
 import ScoreRing from "../components/ScoreRing"
@@ -34,8 +39,7 @@ export default function DashboardScreen() {
   const [history, setHistory] = useState<Array<any>>([])
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    const load = async () => {
+  const load = useCallback(async () => {
       const cachedProfile = getProfileCached()
       if (cachedProfile?.fullName) {
         setName(cachedProfile.fullName.split(" ")[0])
@@ -69,10 +73,50 @@ export default function DashboardScreen() {
         missingNutritionCount: log.missingNutritionCount,
         itemsCount: log.items.length
       })
-    }
-
-    load()
+      try {
+        const token = await getToken()
+        let serverProfile = profile
+        if (token) {
+          try {
+            const refreshed = await fetchProfile()
+            if (refreshed) {
+              serverProfile = refreshed
+              await setProfile(refreshed)
+            }
+          } catch {
+            // ignore profile refresh errors
+          }
+        }
+        if (serverProfile?.id) {
+          let fresh = await fetchHistory(serverProfile.id)
+          if (!fresh.length) {
+            const storedUserId = await getUserId()
+            if (storedUserId && storedUserId !== serverProfile.id) {
+              const fallback = await fetchHistory(storedUserId)
+              if (fallback.length) {
+                fresh = fallback
+              }
+            }
+          }
+          if (fresh.length) {
+            setHistory(fresh)
+            await setScanHistoryCache(fresh)
+          }
+        }
+      } catch {
+        // keep cached history if API fails
+      }
   }, [date])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load])
+  )
 
   const averageScore = useMemo(() => {
     const scores = history
@@ -122,6 +166,12 @@ export default function DashboardScreen() {
 
   const recentScans = history.slice(0, 2)
   const popularScans = history.slice(0, 2)
+
+  const withCacheBuster = (uri: string | null | undefined, entry: any) => {
+    if (!uri) return null
+    const joiner = uri.includes("?") ? "&" : "?"
+    return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt || "")}`
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -227,10 +277,12 @@ export default function DashboardScreen() {
                   {
                     analysis: scan.analysisSnapshot,
                     imageUri:
-                      normalizeImageUrl(scan.imageUrl) ||
-                      normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                      imageMap[scan.id] ||
-                      null,
+                      withCacheBuster(
+                        normalizeImageUrl(scan.imageUrl) ||
+                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                          imageMap[scan.id],
+                        scan
+                      ),
                     fromHistory: true
                   } as never
                 )
@@ -240,10 +292,12 @@ export default function DashboardScreen() {
                 {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
                   <Image
                     source={{
-                      uri:
+                      uri: withCacheBuster(
                         normalizeImageUrl(scan.imageUrl) ||
-                        normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                        imageMap[scan.id]
+                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                          imageMap[scan.id],
+                        scan
+                      )
                     }}
                     style={styles.scanThumbImage}
                   />
@@ -280,10 +334,12 @@ export default function DashboardScreen() {
                   {
                     analysis: scan.analysisSnapshot,
                     imageUri:
-                      normalizeImageUrl(scan.imageUrl) ||
-                      normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                      imageMap[scan.id] ||
-                      null,
+                      withCacheBuster(
+                        normalizeImageUrl(scan.imageUrl) ||
+                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                          imageMap[scan.id],
+                        scan
+                      ),
                     fromHistory: true
                   } as never
                 )
@@ -293,10 +349,12 @@ export default function DashboardScreen() {
                 {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
                   <Image
                     source={{
-                      uri:
+                      uri: withCacheBuster(
                         normalizeImageUrl(scan.imageUrl) ||
-                        normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                        imageMap[scan.id]
+                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+                          imageMap[scan.id],
+                        scan
+                      )
                     }}
                     style={styles.popularImage}
                   />

@@ -107,6 +107,12 @@ export default function HistoryScreen() {
     )
   }
 
+  const withCacheBuster = (uri: string | null | undefined, entry: ScanHistory) => {
+    if (!uri) return null
+    const joiner = uri.includes("?") ? "&" : "?"
+    return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt)}`
+  }
+
   useEffect(() => {
     const unique = new Set<string>()
     history.forEach((entry) => {
@@ -161,7 +167,7 @@ export default function HistoryScreen() {
         const name = entry.productName || entry.analysisSnapshot?.productName || "Scan"
         const scoreValue = typeof score === "number" ? score : null
         const scoreColor = scoreValue === null ? theme.colors.muted : scoreValue >= 70 ? "#22C55E" : scoreValue >= 40 ? "#F59E0B" : theme.colors.warning
-        const previewUri = getPreviewUri(entry)
+        const previewUri = withCacheBuster(getPreviewUri(entry), entry)
         return (
           <Pressable
             style={[styles.card, { borderLeftColor: scoreColor }]}
