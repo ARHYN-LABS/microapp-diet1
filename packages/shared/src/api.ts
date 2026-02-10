@@ -51,7 +51,10 @@ export async function getHistory(
 ): Promise<ScanHistory[]> {
   const query = buildHistoryQuery(input)
   const response = await fetch(withBase(config.baseUrl, `/history${query}`), {
-    headers: authHeaders(config)
+    headers: authHeaders(config, {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache"
+    })
   })
   if (!response.ok) {
     throw new Error("Failed to load history")

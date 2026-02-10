@@ -1,9 +1,9 @@
 import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { logInUser } from "../api/client"
+import { fetchHistory, logInUser } from "../api/client"
 import GradientButton from "../components/GradientButton"
-import { setProfile, setToken, setUserId } from "../storage/cache"
+import { setProfile, setScanHistoryCache, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
 
@@ -24,6 +24,14 @@ export default function LoginScreen({ navigation }: Props) {
       await setToken(response.token)
       await setProfile(response.profile)
       await setUserId(response.profile.id)
+      try {
+        const history = await fetchHistory(response.profile.id, response.profile.email || email)
+        if (history && history.length) {
+          await setScanHistoryCache(history)
+        }
+      } catch {
+        // ignore history prefetch failures
+      }
       setIsAuthed(true)
       setStatus("Signed in.")
       navigation.replace("Main")

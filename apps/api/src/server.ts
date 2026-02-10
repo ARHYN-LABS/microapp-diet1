@@ -109,6 +109,7 @@ const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null
 const scanProvider = (process.env.SCAN_PROVIDER || "openai").toLowerCase()
 const scanFallback = (process.env.SCAN_FALLBACK || "").toLowerCase()
 const jwtSecret = process.env.JWT_SECRET || "change-me"
+const logHistory = process.env.LOG_HISTORY === "1"
 const googleClientId = process.env.GOOGLE_CLIENT_ID || ""
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
 const googleRedirectUri =
@@ -118,6 +119,20 @@ const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean)
+
+const getDbInfo = () => {
+  const url = process.env.DATABASE_URL
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    return {
+      host: parsed.hostname,
+      database: parsed.pathname.replace("/", "")
+    }
+  } catch {
+    return null
+  }
+}
 
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true, limit: "1mb" }))
@@ -1278,10 +1293,21 @@ app.post(
 
 app.get("/history", async (req, res, next) => {
   try {
+    res.set("Cache-Control", "no-store")
     const authUserId = getOptionalUserId(req)
     const queryUserId = typeof req.query.userId === "string" ? req.query.userId : ""
     const queryEmail = typeof req.query.email === "string" ? req.query.email : ""
-    const emailCandidate = queryEmail.trim().toLowerCase()
+    let emailCandidate = queryEmail.trim().toLowerCase()
+    const authUser =
+      !emailCandidate && authUserId
+        ? await withDb(
+            () => prisma.user.findUnique({ where: { id: authUserId } }),
+            "history auth email"
+          )
+        : null
+    if (!emailCandidate && authUser?.email) {
+      emailCandidate = authUser.email.toLowerCase()
+    }
     const emailUser = emailCandidate
       ? await withDb(
           () => prisma.user.findUnique({ where: { email: emailCandidate } }),
@@ -1291,6 +1317,16 @@ app.get("/history", async (req, res, next) => {
     const emailUserId = emailUser?.id || ""
     const resolvedUserId = authUserId || queryUserId || emailUserId
     const userId = z.string().min(1).parse(resolvedUserId)
+
+    if (logHistory) {
+      console.log("history request", {
+        authUserId,
+        queryUserId,
+        email: emailCandidate || undefined,
+        resolvedUserId,
+        db: getDbInfo()
+      })
+    }
 
     const loadHistory = (id: string) =>
       withDb(
@@ -1304,10 +1340,6 @@ app.get("/history", async (req, res, next) => {
 
     let history = await loadHistory(userId)
     if ((!history || history.length === 0) && authUserId && emailUserId && emailUserId !== authUserId) {
-      const authUser = await withDb(
-        () => prisma.user.findUnique({ where: { id: authUserId } }),
-        "history auth lookup"
-      )
       if (authUser?.email && authUser.email.toLowerCase() === emailCandidate) {
         await withDb(
           () =>
@@ -1359,6 +1391,9 @@ app.get("/history", async (req, res, next) => {
       }
     })
 
+    if (logHistory) {
+      console.log("history response", { userId, count: response.length })
+    }
     return res.json(response)
   } catch (error) {
     return next(error)

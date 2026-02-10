@@ -213,7 +213,9 @@ export default function HistoryScreen() {
           </Pressable>
         )
       })}
-      {!visibleHistory.length && <Text style={styles.empty}>No scans yet.</Text>}
+      {!visibleHistory.length && (
+        <Text style={styles.empty}>{status || "No scans yet."}</Text>
+      )}
       {!filterName && !filterDate && filteredHistory.length > visibleHistory.length ? (
         <Text style={styles.empty}>Showing latest 10 scans.</Text>
       ) : null}
