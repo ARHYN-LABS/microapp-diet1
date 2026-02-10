@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from "react-native"
 import { fetchHistory, fetchProfile } from "../api/client"
+import { apiBase } from "../api/config"
 import {
   getProfile,
   getScanHistoryCache,
@@ -22,6 +23,17 @@ export default function HistoryScreen() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
   const [filterDate, setFilterDate] = useState("")
   const [filterName, setFilterName] = useState("")
+  const [debugInfo, setDebugInfo] = useState({
+    apiBase,
+    token: "no",
+    profileId: "",
+    profileEmail: "",
+    cachedCount: 0,
+    freshCount: 0,
+    usedUserId: "",
+    lastError: "",
+    lastFetchAt: ""
+  })
 
   const loadHistory = useCallback(async () => {
     const cached = await getScanHistoryCache()
@@ -29,11 +41,19 @@ export default function HistoryScreen() {
       setHistory(cached)
       setStatus("")
     }
+    setDebugInfo((prev) => ({
+      ...prev,
+      cachedCount: cached.length
+    }))
 
     try {
       const storedImages = await getScanImageMap()
       setImageMap(storedImages)
       const token = await getToken()
+      setDebugInfo((prev) => ({
+        ...prev,
+        token: token ? "yes" : "no"
+      }))
       let profile = await getProfile()
       if (token) {
         try {
@@ -48,15 +68,31 @@ export default function HistoryScreen() {
       }
       if (!profile) {
         setStatus("Please log in.")
+        setDebugInfo((prev) => ({
+          ...prev,
+          profileId: "",
+          profileEmail: "",
+          freshCount: 0,
+          usedUserId: "",
+          lastError: "no profile",
+          lastFetchAt: new Date().toISOString()
+        }))
         return
       }
+      setDebugInfo((prev) => ({
+        ...prev,
+        profileId: profile?.id || "",
+        profileEmail: profile?.email || ""
+      }))
       let fresh = await fetchHistory(profile.id, profile.email)
+      let usedUserId = profile.id
       if (!fresh.length) {
         const storedUserId = await getUserId()
         if (storedUserId && storedUserId !== profile.id) {
           const fallback = await fetchHistory(storedUserId, profile.email)
           if (fallback.length) {
             fresh = fallback
+            usedUserId = storedUserId
           }
         }
       }
@@ -64,15 +100,35 @@ export default function HistoryScreen() {
         setHistory(fresh)
         setScanHistoryCache(fresh)
         setStatus("")
+        setDebugInfo((prev) => ({
+          ...prev,
+          freshCount: fresh.length,
+          usedUserId,
+          lastError: "",
+          lastFetchAt: new Date().toISOString()
+        }))
       } else if (!cached.length) {
         setHistory([])
         setScanHistoryCache([])
         setStatus("No scans yet.")
+        setDebugInfo((prev) => ({
+          ...prev,
+          freshCount: 0,
+          usedUserId,
+          lastError: "empty history",
+          lastFetchAt: new Date().toISOString()
+        }))
       }
     } catch {
       if (!cached.length) {
         setStatus("Unable to reach API")
       }
+      setDebugInfo((prev) => ({
+        ...prev,
+        freshCount: 0,
+        lastError: "history fetch failed",
+        lastFetchAt: new Date().toISOString()
+      }))
     }
   }, [])
 
@@ -219,6 +275,18 @@ export default function HistoryScreen() {
       {!filterName && !filterDate && filteredHistory.length > visibleHistory.length ? (
         <Text style={styles.empty}>Showing latest 10 scans.</Text>
       ) : null}
+      <View style={styles.debugBox}>
+        <Text style={styles.debugTitle}>Debug</Text>
+        <Text style={styles.debugText}>apiBase: {debugInfo.apiBase}</Text>
+        <Text style={styles.debugText}>token: {debugInfo.token}</Text>
+        <Text style={styles.debugText}>profileId: {debugInfo.profileId || "-"}</Text>
+        <Text style={styles.debugText}>email: {debugInfo.profileEmail || "-"}</Text>
+        <Text style={styles.debugText}>cachedCount: {debugInfo.cachedCount}</Text>
+        <Text style={styles.debugText}>freshCount: {debugInfo.freshCount}</Text>
+        <Text style={styles.debugText}>usedUserId: {debugInfo.usedUserId || "-"}</Text>
+        <Text style={styles.debugText}>lastError: {debugInfo.lastError || "-"}</Text>
+        <Text style={styles.debugText}>lastFetchAt: {debugInfo.lastFetchAt || "-"}</Text>
+      </View>
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
     </ScrollView>
   )
@@ -302,5 +370,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: theme.colors.muted,
     textAlign: "center"
+  },
+  debugBox: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.panelAlt
+  },
+  debugTitle: {
+    fontWeight: "600",
+    marginBottom: 6,
+    color: theme.colors.text
+  },
+  debugText: {
+    fontSize: 12,
+    color: theme.colors.muted
   }
 })
