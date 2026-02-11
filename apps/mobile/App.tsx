@@ -18,7 +18,6 @@ import ResultsScreen from "./src/screens/ResultsScreen"
 import HistoryScreen from "./src/screens/HistoryScreen"
 import SettingsScreen from "./src/screens/SettingsScreen"
 import JournalScreen from "./src/screens/JournalScreen"
-import PricingScreen from "./src/screens/PricingScreen"
 import LoginScreen from "./src/screens/LoginScreen"
 import SignupScreen from "./src/screens/SignupScreen"
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen"
@@ -268,11 +267,6 @@ function DrawerContent({ navigation }: { navigation: any }) {
         icon={({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />}
       />
       <DrawerItem
-        label="Pricing"
-        onPress={() => navigation.navigate("Pricing")}
-        icon={({ color, size }) => <Ionicons name="pricetag-outline" color={color} size={size} />}
-      />
-      <DrawerItem
         label="Logout"
         onPress={async () => {
           await clearAuth()
@@ -296,7 +290,6 @@ function DrawerRoot() {
       drawerContent={(props) => <DrawerContent {...props} />}
     >
       <Drawer.Screen name="MainTabs" component={MainTabs} />
-      <Drawer.Screen name="Pricing" component={PricingScreen} />
     </Drawer.Navigator>
   )
 }

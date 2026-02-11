@@ -121,6 +121,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY || ""
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ""
 const stripePriceSilver = process.env.STRIPE_PRICE_SILVER || ""
 const stripePriceGolden = process.env.STRIPE_PRICE_GOLDEN || ""
+const billingEnabled = process.env.BILLING_ENABLED === "1"
 const stripeSuccessUrl = process.env.STRIPE_SUCCESS_URL || `${webAppUrl}/settings?billing=success`
 const stripeCancelUrl = process.env.STRIPE_CANCEL_URL || `${webAppUrl}/settings?billing=cancel`
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null
@@ -237,6 +238,9 @@ app.post(
   "/stripe/webhook",
   express.raw({ type: "application/json" }),
   async (req, res) => {
+    if (!billingEnabled) {
+      return res.status(503).send("Billing is disabled")
+    }
     if (!stripe || !stripeWebhookSecret) {
       return res.status(500).send("Stripe not configured")
     }
@@ -690,6 +694,9 @@ app.get("/billing/summary", requireAuth, async (req, res, next) => {
 
 app.post("/billing/checkout", requireAuth, async (req, res, next) => {
   try {
+    if (!billingEnabled) {
+      return res.status(503).json({ error: "Billing is disabled" })
+    }
     const userId = getAuthUserId(req)
     const payload = billingCheckoutSchema.parse(req.body)
     const user = await prisma.user.findUnique({ where: { id: userId } })
@@ -759,6 +766,9 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
 
 app.post("/billing/portal", requireAuth, async (req, res, next) => {
   try {
+    if (!billingEnabled) {
+      return res.status(503).json({ error: "Billing is disabled" })
+    }
     if (!stripe) {
       return res.status(500).json({ error: "Stripe not configured" })
     }
@@ -1682,7 +1692,7 @@ app.post(
           const planConfig = getPlanConfig(billingUser.planName)
           const scanLimit = billingUser.scanLimit ?? planConfig.scanLimit
           const scansUsed = billingUser.scansUsed ?? 0
-          if (scansUsed >= scanLimit) {
+          if (billingEnabled && scansUsed >= scanLimit) {
             return res.status(403).json({
               error: "Plan limit reached",
               code: "SCAN_LIMIT_REACHED",

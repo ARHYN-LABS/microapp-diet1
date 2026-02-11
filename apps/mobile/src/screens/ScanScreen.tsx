@@ -191,11 +191,7 @@ export default function ScanScreen() {
         setStatus("Plan limit reached.")
         Alert.alert(
           "Plan limit reached",
-          "You reached your plan limit. Upgrade to continue.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Upgrade", onPress: () => navigation.navigate("Pricing" as never) }
-          ]
+          "You reached your plan limit. Please contact support."
         )
         return
       }
