@@ -97,6 +97,58 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }
 
+  const handleMicrosoftLogin = async () => {
+    setStatus("Opening Microsoft...")
+    try {
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: "safeplate"
+      })
+      const authUrl = `${apiBase}/auth/microsoft/start?redirect=${encodeURIComponent(redirectUri)}`
+      const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
+      if (result.type !== "success") {
+        setStatus("Microsoft sign-in canceled.")
+        return
+      }
+      const token = result.params?.token as string | undefined
+      if (!token) {
+        setStatus("Microsoft sign-in failed.")
+        return
+      }
+      await setToken(token)
+      const serverProfile = await fetchProfile().catch(() => null)
+      if (serverProfile) {
+        await setProfile(serverProfile)
+        await setUserId(serverProfile.id)
+      } else {
+        const fallbackProfile = {
+          id: (result.params?.userId as string) || "",
+          email: (result.params?.email as string) || "",
+          fullName: (result.params?.fullName as string) || ""
+        }
+        if (fallbackProfile.id) {
+          await setProfile(fallbackProfile as any)
+          await setUserId(fallbackProfile.id)
+        }
+      }
+      try {
+        const profile = await fetchProfile()
+        if (profile) {
+          const history = await fetchHistory(profile.id, profile.email)
+          if (history && history.length) {
+            await setScanHistoryCache(history)
+          }
+        }
+      } catch {
+        // ignore history prefetch failures
+      }
+      setIsAuthed(true)
+      setStatus("Signed in.")
+      navigation.replace("Main")
+    } catch (error) {
+      setStatus((error as Error).message)
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.logoWrap}>
@@ -139,7 +191,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Ionicons name="logo-google" size={18} color="#EA4335" />
           <Text style={styles.socialText}>Google</Text>
         </Pressable>
-        <Pressable style={[styles.socialButton, styles.microsoftButton]}>
+        <Pressable style={[styles.socialButton, styles.microsoftButton]} onPress={handleMicrosoftLogin}>
           <Ionicons name="logo-microsoft" size={18} color="#2563EB" />
           <Text style={styles.socialText}>Microsoft</Text>
         </Pressable>

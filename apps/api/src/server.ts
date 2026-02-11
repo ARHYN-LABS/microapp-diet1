@@ -116,6 +116,12 @@ const googleRedirectUri =
   process.env.GOOGLE_REDIRECT_URI || "https://api.safe-plate.ai/auth/google/callback"
 const webAppUrl = process.env.WEB_APP_URL || "https://safe-plate.ai"
 
+const microsoftClientId = process.env.MICROSOFT_CLIENT_ID || ""
+const microsoftClientSecret = process.env.MICROSOFT_CLIENT_SECRET || ""
+const microsoftRedirectUri =
+  process.env.MICROSOFT_REDIRECT_URI || "https://api.safe-plate.ai/auth/microsoft/callback"
+const microsoftTenant = process.env.MICROSOFT_TENANT || "common"
+
 const isAllowedRedirect = (value: string) => {
   if (!value) return false
   if (value.startsWith("safeplate://")) return true
@@ -551,6 +557,104 @@ app.get("/auth/google/callback", async (req, res, next) => {
         data: {
           fullName,
           email: profile.email,
+          passwordHash,
+          dailyCalorieGoal: 2000
+        }
+      })
+    }
+
+    const token = signToken(user.id)
+    const state =
+      typeof req.query.state === "string" && isAllowedRedirect(req.query.state)
+        ? req.query.state
+        : ""
+    const baseRedirect = state || `${webAppUrl}/auth/google/callback`
+    const redirectUrl = appendQuery(baseRedirect, {
+      token,
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName || ""
+    })
+    return res.redirect(redirectUrl)
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/auth/microsoft/start", async (req, res) => {
+  if (!microsoftClientId || !microsoftClientSecret || !microsoftRedirectUri) {
+    return res.status(500).json({ error: "Microsoft auth is not configured." })
+  }
+  const redirect =
+    typeof req.query.redirect === "string" && isAllowedRedirect(req.query.redirect)
+      ? req.query.redirect
+      : ""
+  const params = {
+    client_id: microsoftClientId,
+    redirect_uri: microsoftRedirectUri,
+    response_type: "code",
+    response_mode: "query",
+    scope: "openid email profile offline_access User.Read",
+    prompt: "select_account",
+    ...(redirect ? { state: redirect } : {})
+  }
+  const url = `https://login.microsoftonline.com/${microsoftTenant}/oauth2/v2.0/authorize?${querystring.stringify(
+    params
+  )}`
+  return res.redirect(url)
+})
+
+app.get("/auth/microsoft/callback", async (req, res, next) => {
+  try {
+    if (!microsoftClientId || !microsoftClientSecret || !microsoftRedirectUri) {
+      return res.status(500).json({ error: "Microsoft auth is not configured." })
+    }
+    const { code } = googleCodeSchema.parse(req.query)
+    const tokenResponse = await fetch(
+      `https://login.microsoftonline.com/${microsoftTenant}/oauth2/v2.0/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: querystring.stringify({
+          code,
+          client_id: microsoftClientId,
+          client_secret: microsoftClientSecret,
+          redirect_uri: microsoftRedirectUri,
+          grant_type: "authorization_code"
+        })
+      }
+    )
+    if (!tokenResponse.ok) {
+      const payload = await tokenResponse.json().catch(() => null)
+      return res.status(401).json({ error: payload?.error || "Microsoft auth failed." })
+    }
+    const tokenPayload = (await tokenResponse.json()) as { access_token: string }
+
+    const profileResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+      headers: { Authorization: `Bearer ${tokenPayload.access_token}` }
+    })
+    if (!profileResponse.ok) {
+      return res.status(401).json({ error: "Failed to fetch Microsoft profile." })
+    }
+    const profile = (await profileResponse.json()) as {
+      displayName?: string
+      mail?: string
+      userPrincipalName?: string
+    }
+    const email = profile.mail || profile.userPrincipalName || ""
+    if (!email) {
+      return res.status(400).json({ error: "Microsoft account missing email." })
+    }
+    const fullName = profile.displayName || email
+
+    let user = await prisma.user.findUnique({ where: { email } })
+    if (!user) {
+      const randomPassword = crypto.randomUUID()
+      const passwordHash = await bcrypt.hash(randomPassword, 10)
+      user = await prisma.user.create({
+        data: {
+          fullName,
+          email,
           passwordHash,
           dailyCalorieGoal: 2000
         }
