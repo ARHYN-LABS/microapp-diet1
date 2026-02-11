@@ -49,7 +49,9 @@ export default function LoginScreen({ navigation }: Props) {
     setStatus("Opening Google...")
     try {
       const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "safeplate"
+        scheme: "safeplate",
+        path: "oauth",
+        useProxy: false
       })
       const authUrl = `${apiBase}/auth/google/start?redirect=${encodeURIComponent(redirectUri)}`
       const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
@@ -101,7 +103,9 @@ export default function LoginScreen({ navigation }: Props) {
     setStatus("Opening Microsoft...")
     try {
       const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "safeplate"
+        scheme: "safeplate",
+        path: "oauth",
+        useProxy: false
       })
       const authUrl = `${apiBase}/auth/microsoft/start?redirect=${encodeURIComponent(redirectUri)}`
       const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
