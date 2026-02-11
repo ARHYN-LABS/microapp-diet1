@@ -124,7 +124,7 @@ const stripePriceGolden = process.env.STRIPE_PRICE_GOLDEN || ""
 const billingEnabled = process.env.BILLING_ENABLED === "1"
 const stripeSuccessUrl = process.env.STRIPE_SUCCESS_URL || `${webAppUrl}/settings?billing=success`
 const stripeCancelUrl = process.env.STRIPE_CANCEL_URL || `${webAppUrl}/settings?billing=cancel`
-const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" }) : null
 
 const microsoftClientId = process.env.MICROSOFT_CLIENT_ID || ""
 const microsoftClientSecret = process.env.MICROSOFT_CLIENT_SECRET || ""
@@ -680,6 +680,9 @@ app.put("/profile", requireAuth, async (req, res, next) => {
 app.get("/billing/summary", requireAuth, async (req, res, next) => {
   try {
     const userId = getAuthUserId(req)
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" })
+    }
     const baseUser = await ensureBillingDefaults(userId)
     if (!baseUser) {
       return res.status(404).json({ error: "Profile not found" })
@@ -698,6 +701,9 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
       return res.status(503).json({ error: "Billing is disabled" })
     }
     const userId = getAuthUserId(req)
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" })
+    }
     const payload = billingCheckoutSchema.parse(req.body)
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) {
@@ -705,7 +711,7 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
     }
     if (payload.planName === "free") {
       if (stripe && user.stripeSubscriptionId) {
-        await stripe.subscriptions.del(user.stripeSubscriptionId)
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId)
       }
       const updated = await prisma.user.update({
         where: { id: userId },
@@ -773,6 +779,9 @@ app.post("/billing/portal", requireAuth, async (req, res, next) => {
       return res.status(500).json({ error: "Stripe not configured" })
     }
     const userId = getAuthUserId(req)
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" })
+    }
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user?.stripeCustomerId) {
       return res.status(400).json({ error: "Billing account not found" })
