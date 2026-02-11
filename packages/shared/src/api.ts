@@ -6,7 +6,8 @@ import type {
   ProfilePrefs,
   ScanHistory,
   UserPrefs,
-  UserProfile
+  UserProfile,
+  BillingSummary
 } from "./index"
 import type { AnalyzeFromImagesResponse } from "./analyze"
 
@@ -126,7 +127,10 @@ export async function analyzeFromImages(
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null)
-    throw new Error(payload?.error || "Failed to analyze images")
+    const message = payload?.message || payload?.error || "Failed to analyze images"
+    const error = new Error(message)
+    ;(error as Error & { code?: string }).code = payload?.code || `HTTP_${response.status}`
+    throw error
   }
 
   return (await response.json()) as AnalyzeFromImagesResponse
@@ -268,6 +272,45 @@ export async function updateProfile(
     throw new Error(payload?.error || "Failed to update profile")
   }
   return (await response.json()) as UserProfile
+}
+
+export async function getBillingSummary(config: ApiConfig): Promise<BillingSummary> {
+  const response = await fetch(withBase(config.baseUrl, "/billing/summary"), {
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(payload?.error || "Failed to load billing summary")
+  }
+  return (await response.json()) as BillingSummary
+}
+
+export async function createBillingCheckout(
+  config: ApiConfig,
+  payload: { planName: string }
+): Promise<{ url: string }> {
+  const response = await fetch(withBase(config.baseUrl, "/billing/checkout"), {
+    method: "POST",
+    headers: authHeaders(config, { "Content-Type": "application/json" }),
+    body: JSON.stringify(payload)
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(payload?.error || "Failed to start checkout")
+  }
+  return (await response.json()) as { url: string }
+}
+
+export async function createBillingPortal(config: ApiConfig): Promise<{ url: string }> {
+  const response = await fetch(withBase(config.baseUrl, "/billing/portal"), {
+    method: "POST",
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new Error(payload?.error || "Failed to open billing portal")
+  }
+  return (await response.json()) as { url: string }
 }
 
 export async function getConditions(config: ApiConfig): Promise<MedicalCondition[]> {

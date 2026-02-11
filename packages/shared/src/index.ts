@@ -95,6 +95,17 @@ export type UserProfile = {
   weightKg?: number | null
   activityLevel?: ActivityLevel | null
   dailyCalorieGoal?: number | null
+  planName?: string | null
+  scansUsed?: number | null
+  scanLimit?: number | null
+  billingStartDate?: string | null
+}
+
+export type BillingSummary = {
+  planName: string
+  scansUsed: number
+  scanLimit: number
+  billingStartDate: string | null
 }
 
 export type CalorieSummary = {

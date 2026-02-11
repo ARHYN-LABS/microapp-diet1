@@ -24,6 +24,12 @@ model User {
   dailyCalorieGoal Int?
   resetTokenHash  String?
   resetTokenExpires DateTime?
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  planName        String  @default("free")
+  scansUsed       Int     @default(0)
+  scanLimit       Int     @default(10)
+  billingStartDate DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   history         ScanHistory[]

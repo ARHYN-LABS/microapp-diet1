@@ -22,6 +22,7 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import querystring from "querystring"
+import Stripe from "stripe"
 
 class OcrError extends Error {
   constructor(message: string) {
@@ -116,6 +117,14 @@ const googleRedirectUri =
   process.env.GOOGLE_REDIRECT_URI || "https://api.safe-plate.ai/auth/google/callback"
 const webAppUrl = process.env.WEB_APP_URL || "https://safe-plate.ai"
 
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || ""
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ""
+const stripePriceSilver = process.env.STRIPE_PRICE_SILVER || ""
+const stripePriceGolden = process.env.STRIPE_PRICE_GOLDEN || ""
+const stripeSuccessUrl = process.env.STRIPE_SUCCESS_URL || `${webAppUrl}/settings?billing=success`
+const stripeCancelUrl = process.env.STRIPE_CANCEL_URL || `${webAppUrl}/settings?billing=cancel`
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2022-11-15" }) : null
+
 const microsoftClientId = process.env.MICROSOFT_CLIENT_ID || ""
 const microsoftClientSecret = process.env.MICROSOFT_CLIENT_SECRET || ""
 const microsoftRedirectUri =
@@ -156,6 +165,166 @@ const getDbInfo = () => {
     return null
   }
 }
+
+const PLAN_CONFIG = {
+  free: { planName: "free", label: "Free", scanLimit: 10, priceId: "" },
+  silver: { planName: "silver", label: "Silver", scanLimit: 150, priceId: stripePriceSilver },
+  golden: { planName: "golden", label: "Golden", scanLimit: 300, priceId: stripePriceGolden }
+} as const
+
+const normalizePlanName = (value?: string | null) => {
+  const lowered = (value || "").toLowerCase()
+  if (lowered === "silver" || lowered === "golden" || lowered === "free") return lowered
+  return "free"
+}
+
+const getPlanConfig = (value?: string | null) => PLAN_CONFIG[normalizePlanName(value)]
+
+const addMonths = (date: Date, months: number) => {
+  const next = new Date(date)
+  next.setMonth(next.getMonth() + months)
+  return next
+}
+
+const buildBillingPayload = (user: {
+  planName: string | null
+  scansUsed: number | null
+  scanLimit: number | null
+  billingStartDate: Date | null
+}) => ({
+  planName: normalizePlanName(user.planName),
+  scansUsed: user.scansUsed ?? 0,
+  scanLimit: user.scanLimit ?? PLAN_CONFIG.free.scanLimit,
+  billingStartDate: user.billingStartDate?.toISOString() || null
+})
+
+const ensureBillingDefaults = async (userId: string) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  if (!user) return null
+  const planConfig = getPlanConfig(user.planName)
+  if (!user.planName || user.scanLimit === null || user.scanLimit === undefined) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        planName: planConfig.planName,
+        scanLimit: planConfig.scanLimit,
+        scansUsed: user.scansUsed ?? 0,
+        billingStartDate: user.billingStartDate ?? new Date()
+      }
+    })
+  }
+  return user
+}
+
+const resetUsageIfNeeded = async (userId: string, billingStartDate: Date | null) => {
+  if (!billingStartDate) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { scansUsed: 0, billingStartDate: new Date() }
+    })
+  }
+  const nextCycle = addMonths(billingStartDate, 1)
+  if (Date.now() >= nextCycle.getTime()) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { scansUsed: 0, billingStartDate: new Date() }
+    })
+  }
+  return null
+}
+
+app.post(
+  "/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    if (!stripe || !stripeWebhookSecret) {
+      return res.status(500).send("Stripe not configured")
+    }
+    const signature = req.headers["stripe-signature"]
+    if (!signature || typeof signature !== "string") {
+      return res.status(400).send("Missing signature")
+    }
+    let event: Stripe.Event
+    try {
+      event = stripe.webhooks.constructEvent(req.body, signature, stripeWebhookSecret)
+    } catch (error) {
+      return res.status(400).send(`Webhook Error: ${(error as Error).message}`)
+    }
+
+    const updateFromSubscription = async (subscription: Stripe.Subscription) => {
+      const customerId = subscription.customer as string
+      const priceId = subscription.items.data[0]?.price?.id || ""
+      const planConfig =
+        priceId === stripePriceSilver
+          ? PLAN_CONFIG.silver
+          : priceId === stripePriceGolden
+            ? PLAN_CONFIG.golden
+            : PLAN_CONFIG.free
+      const periodStartSeconds = subscription.current_period_start || Math.floor(Date.now() / 1000)
+      const billingStartDate = new Date(periodStartSeconds * 1000)
+      await prisma.user.updateMany({
+        where: { stripeCustomerId: customerId },
+        data: {
+          stripeSubscriptionId: subscription.id,
+          planName: planConfig.planName,
+          scanLimit: planConfig.scanLimit,
+          billingStartDate,
+          scansUsed: 0
+        }
+      })
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session
+          const subscriptionId = session.subscription as string | null
+          if (subscriptionId) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+            await updateFromSubscription(subscription)
+          }
+          break
+        }
+        case "invoice.paid": {
+          const invoice = event.data.object as Stripe.Invoice
+          const subscriptionId = invoice.subscription as string | null
+          if (subscriptionId) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+            await updateFromSubscription(subscription)
+          }
+          break
+        }
+        case "customer.subscription.updated": {
+          const subscription = event.data.object as Stripe.Subscription
+          await updateFromSubscription(subscription)
+          break
+        }
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object as Stripe.Subscription
+          const customerId = subscription.customer as string
+          await prisma.user.updateMany({
+            where: { stripeCustomerId: customerId },
+            data: {
+              stripeSubscriptionId: null,
+              planName: PLAN_CONFIG.free.planName,
+              scanLimit: PLAN_CONFIG.free.scanLimit,
+              scansUsed: 0,
+              billingStartDate: new Date()
+            }
+          })
+          break
+        }
+        default:
+          break
+      }
+    } catch (error) {
+      console.error("stripe webhook error", error)
+      return res.status(500).send("Webhook handler failed")
+    }
+
+    return res.json({ received: true })
+  }
+)
 
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true, limit: "1mb" }))
@@ -258,6 +427,10 @@ const profileSchema = z.object({
   avatarUrl: z.string().url().optional().nullable()
 })
 
+const billingCheckoutSchema = z.object({
+  planName: z.enum(["free", "silver", "golden"])
+})
+
 const conditionsSchema = z.object({
   conditions: z.array(
     z.object({
@@ -290,7 +463,11 @@ app.post("/auth/signup", async (req, res, next) => {
         fullName: payload.fullName,
         email: payload.email,
         passwordHash,
-        dailyCalorieGoal: 2000
+        dailyCalorieGoal: 2000,
+        planName: PLAN_CONFIG.free.planName,
+        scanLimit: PLAN_CONFIG.free.scanLimit,
+        scansUsed: 0,
+        billingStartDate: new Date()
       }
     })
 
@@ -310,7 +487,8 @@ app.post("/auth/signup", async (req, res, next) => {
         heightCm: user.heightCm,
         weightKg: user.weightKg,
         activityLevel: user.activityLevel,
-        dailyCalorieGoal: user.dailyCalorieGoal
+        dailyCalorieGoal: user.dailyCalorieGoal,
+        ...buildBillingPayload(user)
       }
     })
   } catch (error) {
@@ -329,23 +507,29 @@ app.post("/auth/login", async (req, res, next) => {
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials" })
     }
+    let billingUser = (await ensureBillingDefaults(user.id)) || user
+    const resetUser = await resetUsageIfNeeded(billingUser.id, billingUser.billingStartDate)
+    if (resetUser) {
+      billingUser = resetUser
+    }
     const token = signToken(user.id)
     return res.json({
       token,
       profile: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        avatarUrl: toPublicUrl(req, user.avatarUrl),
-        mobileNumber: user.mobileNumber,
-        age: user.age,
-        gender: user.gender,
-        race: user.race,
-        dietaryPreference: user.dietaryPreference,
-        heightCm: user.heightCm,
-        weightKg: user.weightKg,
-        activityLevel: user.activityLevel,
-        dailyCalorieGoal: user.dailyCalorieGoal
+        id: billingUser.id,
+        fullName: billingUser.fullName,
+        email: billingUser.email,
+        avatarUrl: toPublicUrl(req, billingUser.avatarUrl),
+        mobileNumber: billingUser.mobileNumber,
+        age: billingUser.age,
+        gender: billingUser.gender,
+        race: billingUser.race,
+        dietaryPreference: billingUser.dietaryPreference,
+        heightCm: billingUser.heightCm,
+        weightKg: billingUser.weightKg,
+        activityLevel: billingUser.activityLevel,
+        dailyCalorieGoal: billingUser.dailyCalorieGoal,
+        ...buildBillingPayload(billingUser)
       }
     })
   } catch (error) {
@@ -417,8 +601,13 @@ app.post("/auth/reset-password", async (req, res, next) => {
 app.get("/profile", requireAuth, async (req, res, next) => {
   try {
     const userId = getAuthUserId(req)
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user) return res.status(404).json({ error: "Profile not found" })
+    const found = await prisma.user.findUnique({ where: { id: userId } })
+    if (!found) return res.status(404).json({ error: "Profile not found" })
+    let user = (await ensureBillingDefaults(found.id)) || found
+    const resetUser = await resetUsageIfNeeded(user.id, user.billingStartDate)
+    if (resetUser) {
+      user = resetUser
+    }
     return res.json({
       id: user.id,
       fullName: user.fullName,
@@ -432,7 +621,8 @@ app.get("/profile", requireAuth, async (req, res, next) => {
       heightCm: user.heightCm,
       weightKg: user.weightKg,
       activityLevel: user.activityLevel,
-      dailyCalorieGoal: user.dailyCalorieGoal
+      dailyCalorieGoal: user.dailyCalorieGoal,
+      ...buildBillingPayload(user)
     })
   } catch (error) {
     return next(error)
@@ -475,8 +665,113 @@ app.put("/profile", requireAuth, async (req, res, next) => {
       heightCm: user.heightCm,
       weightKg: user.weightKg,
       activityLevel: user.activityLevel,
-      dailyCalorieGoal: user.dailyCalorieGoal
+      dailyCalorieGoal: user.dailyCalorieGoal,
+      ...buildBillingPayload(user)
     })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/billing/summary", requireAuth, async (req, res, next) => {
+  try {
+    const userId = getAuthUserId(req)
+    const baseUser = await ensureBillingDefaults(userId)
+    if (!baseUser) {
+      return res.status(404).json({ error: "Profile not found" })
+    }
+    const resetUser = await resetUsageIfNeeded(baseUser.id, baseUser.billingStartDate)
+    const user = resetUser || baseUser
+    return res.json(buildBillingPayload(user))
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.post("/billing/checkout", requireAuth, async (req, res, next) => {
+  try {
+    const userId = getAuthUserId(req)
+    const payload = billingCheckoutSchema.parse(req.body)
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      return res.status(404).json({ error: "Profile not found" })
+    }
+    if (payload.planName === "free") {
+      if (stripe && user.stripeSubscriptionId) {
+        await stripe.subscriptions.del(user.stripeSubscriptionId)
+      }
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          planName: PLAN_CONFIG.free.planName,
+          scanLimit: PLAN_CONFIG.free.scanLimit,
+          scansUsed: 0,
+          billingStartDate: new Date(),
+          stripeSubscriptionId: null
+        }
+      })
+      return res.json({ status: "free", ...buildBillingPayload(updated) })
+    }
+
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe not configured" })
+    }
+    const planConfig = getPlanConfig(payload.planName)
+    if (!planConfig.priceId) {
+      return res.status(400).json({ error: "Plan is not available" })
+    }
+
+    let customerId = user.stripeCustomerId
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.fullName || undefined,
+        metadata: { userId }
+      })
+      customerId = customer.id
+      await prisma.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customerId }
+      })
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      customer: customerId,
+      line_items: [{ price: planConfig.priceId, quantity: 1 }],
+      success_url: stripeSuccessUrl,
+      cancel_url: stripeCancelUrl,
+      metadata: {
+        userId,
+        planName: planConfig.planName
+      },
+      subscription_data: {
+        metadata: { userId, planName: planConfig.planName }
+      }
+    })
+
+    return res.json({ url: session.url })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.post("/billing/portal", requireAuth, async (req, res, next) => {
+  try {
+    if (!stripe) {
+      return res.status(500).json({ error: "Stripe not configured" })
+    }
+    const userId = getAuthUserId(req)
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user?.stripeCustomerId) {
+      return res.status(400).json({ error: "Billing account not found" })
+    }
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: webAppUrl
+    })
+    return res.json({ url: session.url })
   } catch (error) {
     return next(error)
   }
@@ -558,7 +853,11 @@ app.get("/auth/google/callback", async (req, res, next) => {
           fullName,
           email: profile.email,
           passwordHash,
-          dailyCalorieGoal: 2000
+          dailyCalorieGoal: 2000,
+          planName: PLAN_CONFIG.free.planName,
+          scanLimit: PLAN_CONFIG.free.scanLimit,
+          scansUsed: 0,
+          billingStartDate: new Date()
         }
       })
     }
@@ -656,7 +955,11 @@ app.get("/auth/microsoft/callback", async (req, res, next) => {
           fullName,
           email,
           passwordHash,
-          dailyCalorieGoal: 2000
+          dailyCalorieGoal: 2000,
+          planName: PLAN_CONFIG.free.planName,
+          scanLimit: PLAN_CONFIG.free.scanLimit,
+          scansUsed: 0,
+          billingStartDate: new Date()
         }
       })
     }
@@ -707,7 +1010,8 @@ app.post("/profile/photo", requireAuth, upload.single("photo"), async (req, res,
       heightCm: user.heightCm,
       weightKg: user.weightKg,
       activityLevel: user.activityLevel,
-      dailyCalorieGoal: user.dailyCalorieGoal
+      dailyCalorieGoal: user.dailyCalorieGoal,
+      ...buildBillingPayload(user)
     })
   } catch (error) {
     return next(error)
@@ -1368,6 +1672,28 @@ app.post(
       let dietaryPreference: string | null = null
       let conditions: Array<{ type: string; notes?: string | null }> = []
       const resolvedUserId = getOptionalUserId(req)
+      let billingUser: Awaited<ReturnType<typeof ensureBillingDefaults>> | null = null
+
+      if (resolvedUserId) {
+        const baseUser = await ensureBillingDefaults(resolvedUserId)
+        if (baseUser) {
+          const resetUser = await resetUsageIfNeeded(baseUser.id, baseUser.billingStartDate)
+          billingUser = resetUser || baseUser
+          const planConfig = getPlanConfig(billingUser.planName)
+          const scanLimit = billingUser.scanLimit ?? planConfig.scanLimit
+          const scansUsed = billingUser.scansUsed ?? 0
+          if (scansUsed >= scanLimit) {
+            return res.status(403).json({
+              error: "Plan limit reached",
+              code: "SCAN_LIMIT_REACHED",
+              message: "You reached your plan limit. Upgrade to continue.",
+              planName: planConfig.planName,
+              scansUsed,
+              scanLimit
+            })
+          }
+        }
+      }
 
       if (req.body.userPrefs) {
         try {
@@ -1407,6 +1733,13 @@ app.post(
         dietaryPreference,
         conditions
       })
+
+      if (billingUser) {
+        await prisma.user.update({
+          where: { id: billingUser.id },
+          data: { scansUsed: { increment: 1 } }
+        })
+      }
 
       return res.json({
         ...analysis,

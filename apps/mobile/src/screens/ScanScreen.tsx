@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { View, Text, StyleSheet, Pressable, Image, ScrollView } from "react-native"
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, Alert } from "react-native"
 import { Camera, CameraType } from "expo-camera"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
@@ -186,7 +186,20 @@ export default function ScanScreen() {
       setImage({})
       setStatus("Capture one clear food or label photo.")
     } catch (error) {
-      setStatus((error as Error).message || "Unable to analyze image.")
+      const err = error as Error & { code?: string }
+      if (err.code === "SCAN_LIMIT_REACHED") {
+        setStatus("Plan limit reached.")
+        Alert.alert(
+          "Plan limit reached",
+          "You reached your plan limit. Upgrade to continue.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => navigation.navigate("Pricing" as never) }
+          ]
+        )
+        return
+      }
+      setStatus(err.message || "Unable to analyze image.")
     }
   }
 

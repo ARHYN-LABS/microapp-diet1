@@ -5,11 +5,14 @@ import {
   getHistory,
   getProfile,
   getConditions,
+  getBillingSummary,
   getTodayCalories,
   getPrefs,
   getProfilePrefs,
   logIn,
   postHistory,
+  createBillingCheckout,
+  createBillingPortal,
   savePrefs,
   saveProfilePrefs,
   signUp,
@@ -116,6 +119,8 @@ export async function runAnalyze(formData: FormData) {
 
   const shouldRetry = (error: unknown) => {
     const message = (error as Error)?.message?.toLowerCase() || ""
+    const code = (error as Error & { code?: string })?.code || ""
+    if (code === "SCAN_LIMIT_REACHED") return false
     return (
       message.includes("network") ||
       message.includes("timeout") ||
@@ -228,4 +233,19 @@ export async function uploadProfilePhoto(uri: string) {
     throw new Error(payload?.error || "Failed to upload photo")
   }
   return response.json()
+}
+
+export async function fetchBillingSummary() {
+  const config = await getConfig()
+  return getBillingSummary(config)
+}
+
+export async function startBillingCheckout(planName: string) {
+  const config = await getConfig()
+  return createBillingCheckout(config, { planName })
+}
+
+export async function startBillingPortal() {
+  const config = await getConfig()
+  return createBillingPortal(config)
 }

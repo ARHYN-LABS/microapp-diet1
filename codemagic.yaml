@@ -11,6 +11,20 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Patch Expo Gradle compatibility
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          patched = 0
+          for gradle_file in Path("node_modules").glob("expo-*/android/build.gradle"):
+            text = gradle_file.read_text()
+            next_text = text.replace("classifier = 'sources'", "archiveClassifier.set('sources')")
+            next_text = next_text.replace('classifier = "sources"', 'archiveClassifier.set("sources")')
+            if next_text != text:
+              gradle_file.write_text(next_text)
+              patched += 1
+          print(f"Patched {patched} expo android build.gradle files")
+          PY
       - name: Build shared package
         script: |
           cd packages/shared
@@ -19,6 +33,16 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
+      - name: Force Gradle version for Expo SDK 49
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
+          text = wrapper.read_text()
+          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          wrapper.write_text(text)
+          print("Gradle wrapper pinned to 7.5.1")
+          PY
       - name: Build debug APK
         script: |
           cd apps/mobile/android
@@ -37,6 +61,20 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Patch Expo Gradle compatibility
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          patched = 0
+          for gradle_file in Path("node_modules").glob("expo-*/android/build.gradle"):
+            text = gradle_file.read_text()
+            next_text = text.replace("classifier = 'sources'", "archiveClassifier.set('sources')")
+            next_text = next_text.replace('classifier = "sources"', 'archiveClassifier.set("sources")')
+            if next_text != text:
+              gradle_file.write_text(next_text)
+              patched += 1
+          print(f"Patched {patched} expo android build.gradle files")
+          PY
       - name: Build shared package
         script: |
           cd packages/shared
@@ -45,6 +83,16 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
+      - name: Force Gradle version for Expo SDK 49
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
+          text = wrapper.read_text()
+          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          wrapper.write_text(text)
+          print("Gradle wrapper pinned to 7.5.1")
+          PY
       - name: Build release APK
         script: |
           cd apps/mobile/android
@@ -63,6 +111,20 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+      - name: Patch Expo Gradle compatibility
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          patched = 0
+          for gradle_file in Path("node_modules").glob("expo-*/android/build.gradle"):
+            text = gradle_file.read_text()
+            next_text = text.replace("classifier = 'sources'", "archiveClassifier.set('sources')")
+            next_text = next_text.replace('classifier = "sources"', 'archiveClassifier.set("sources")')
+            if next_text != text:
+              gradle_file.write_text(next_text)
+              patched += 1
+          print(f"Patched {patched} expo android build.gradle files")
+          PY
       - name: Build shared package
         script: |
           cd packages/shared
@@ -71,6 +133,16 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
+      - name: Force Gradle version for Expo SDK 49
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
+          text = wrapper.read_text()
+          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          wrapper.write_text(text)
+          print("Gradle wrapper pinned to 7.5.1")
+          PY
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_PATH" ]; then echo "Missing CM_KEYSTORE_PATH"; exit 1; fi
