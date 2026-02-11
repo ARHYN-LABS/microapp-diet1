@@ -1939,7 +1939,15 @@ app.get("/prefs", async (req, res, next) => {
   try {
     const userId = z.string().min(1).parse(req.query.userId)
     const prefs = await withDb(
-      () => prisma.userPrefs.findUnique({ where: { userId } }),
+      () =>
+        prisma.userPrefs.upsert({
+          where: { userId },
+          update: {},
+          create: {
+            userId,
+            halalCheckEnabled: false
+          }
+        }),
       "prefs read"
     )
     if (!prefs) {
