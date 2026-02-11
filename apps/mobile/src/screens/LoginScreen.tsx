@@ -1,11 +1,16 @@
 import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, Image } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import { fetchHistory, logInUser } from "../api/client"
+import * as AuthSession from "expo-auth-session"
+import * as WebBrowser from "expo-web-browser"
+import { fetchHistory, fetchProfile, logInUser } from "../api/client"
+import { apiBase } from "../api/config"
 import GradientButton from "../components/GradientButton"
 import { setProfile, setScanHistoryCache, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
 import { AuthContext } from "../auth"
+
+WebBrowser.maybeCompleteAuthSession()
 
 type Props = {
   navigation: any
@@ -28,6 +33,58 @@ export default function LoginScreen({ navigation }: Props) {
         const history = await fetchHistory(response.profile.id, response.profile.email || email)
         if (history && history.length) {
           await setScanHistoryCache(history)
+        }
+      } catch {
+        // ignore history prefetch failures
+      }
+      setIsAuthed(true)
+      setStatus("Signed in.")
+      navigation.replace("Main")
+    } catch (error) {
+      setStatus((error as Error).message)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setStatus("Opening Google...")
+    try {
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: "safeplate"
+      })
+      const authUrl = `${apiBase}/auth/google/start?redirect=${encodeURIComponent(redirectUri)}`
+      const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
+      if (result.type !== "success") {
+        setStatus("Google sign-in canceled.")
+        return
+      }
+      const token = result.params?.token as string | undefined
+      if (!token) {
+        setStatus("Google sign-in failed.")
+        return
+      }
+      await setToken(token)
+      const serverProfile = await fetchProfile().catch(() => null)
+      if (serverProfile) {
+        await setProfile(serverProfile)
+        await setUserId(serverProfile.id)
+      } else {
+        const fallbackProfile = {
+          id: (result.params?.userId as string) || "",
+          email: (result.params?.email as string) || "",
+          fullName: (result.params?.fullName as string) || ""
+        }
+        if (fallbackProfile.id) {
+          await setProfile(fallbackProfile as any)
+          await setUserId(fallbackProfile.id)
+        }
+      }
+      try {
+        const profile = await fetchProfile()
+        if (profile) {
+          const history = await fetchHistory(profile.id, profile.email)
+          if (history && history.length) {
+            await setScanHistoryCache(history)
+          }
         }
       } catch {
         // ignore history prefetch failures
@@ -78,7 +135,7 @@ export default function LoginScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.socialRow}>
-        <Pressable style={[styles.socialButton, styles.googleButton]}>
+        <Pressable style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
           <Ionicons name="logo-google" size={18} color="#EA4335" />
           <Text style={styles.socialText}>Google</Text>
         </Pressable>

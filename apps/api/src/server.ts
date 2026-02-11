@@ -115,6 +115,23 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
 const googleRedirectUri =
   process.env.GOOGLE_REDIRECT_URI || "https://api.safe-plate.ai/auth/google/callback"
 const webAppUrl = process.env.WEB_APP_URL || "https://safe-plate.ai"
+
+const isAllowedRedirect = (value: string) => {
+  if (!value) return false
+  if (value.startsWith("safeplate://")) return true
+  if (value.startsWith("exp://")) return true
+  try {
+    const url = new URL(value)
+    return url.origin === webAppUrl
+  } catch {
+    return false
+  }
+}
+
+const appendQuery = (base: string, params: Record<string, string>) => {
+  const joiner = base.includes("?") ? "&" : "?"
+  return `${base}${joiner}${querystring.stringify(params)}`
+}
 const corsOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -459,10 +476,14 @@ app.put("/profile", requireAuth, async (req, res, next) => {
   }
 })
 
-app.get("/auth/google/start", async (_req, res) => {
+app.get("/auth/google/start", async (req, res) => {
   if (!googleClientId || !googleClientSecret || !googleRedirectUri) {
     return res.status(500).json({ error: "Google auth is not configured." })
   }
+  const redirect =
+    typeof req.query.redirect === "string" && isAllowedRedirect(req.query.redirect)
+      ? req.query.redirect
+      : ""
   const params = {
     client_id: googleClientId,
     redirect_uri: googleRedirectUri,
@@ -470,7 +491,8 @@ app.get("/auth/google/start", async (_req, res) => {
     scope: "openid email profile",
     access_type: "offline",
     prompt: "consent",
-    include_granted_scopes: "true"
+    include_granted_scopes: "true",
+    ...(redirect ? { state: redirect } : {})
   }
   const url = `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(params)}`
   return res.redirect(url)
@@ -536,11 +558,17 @@ app.get("/auth/google/callback", async (req, res, next) => {
     }
 
     const token = signToken(user.id)
-    const redirectUrl = `${webAppUrl}/auth/google/callback?token=${encodeURIComponent(
-      token
-    )}&userId=${encodeURIComponent(user.id)}&email=${encodeURIComponent(
-      user.email
-    )}&fullName=${encodeURIComponent(user.fullName || "")}`
+    const state =
+      typeof req.query.state === "string" && isAllowedRedirect(req.query.state)
+        ? req.query.state
+        : ""
+    const baseRedirect = state || `${webAppUrl}/auth/google/callback`
+    const redirectUrl = appendQuery(baseRedirect, {
+      token,
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName || ""
+    })
     return res.redirect(redirectUrl)
   } catch (error) {
     return next(error)

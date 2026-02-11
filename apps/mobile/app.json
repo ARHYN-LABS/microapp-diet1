@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "SafePlate AI",
+    "scheme": "safeplate",
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
