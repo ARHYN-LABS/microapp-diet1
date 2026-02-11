@@ -51,6 +51,9 @@ export default function NavBar() {
           <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
             History
           </Link>
+          <Link className={router.pathname === "/pricing" ? "active" : ""} href="/pricing">
+            Pricing
+          </Link>
           <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
             Profile
           </Link>
@@ -97,6 +100,9 @@ export default function NavBar() {
         </Link>
         <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
           History
+        </Link>
+        <Link className={router.pathname === "/pricing" ? "active" : ""} href="/pricing">
+          Pricing
         </Link>
         <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
           Profile

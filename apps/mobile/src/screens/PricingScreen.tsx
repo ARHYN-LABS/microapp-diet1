@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react"
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking } from "react-native"
-import { fetchBillingSummary, startBillingCheckout } from "../api/client"
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native"
+import { fetchBillingSummary } from "../api/client"
 import { theme } from "../theme"
 
 const plans = [
   { key: "free", label: "Free", price: "$0", scans: 10, action: "Current Plan" },
-  { key: "silver", label: "Silver", price: "$9.99", scans: 150, action: "Upgrade" },
-  { key: "golden", label: "Golden", price: "$19.99", scans: 300, action: "Upgrade" }
+  { key: "silver", label: "Silver", price: "$9.99", scans: 150, action: "Upgrade (Soon)" },
+  { key: "golden", label: "Golden", price: "$19.99", scans: 300, action: "Upgrade (Soon)" }
 ]
 
 export default function PricingScreen() {
   const [loading, setLoading] = useState(true)
   const [planName, setPlanName] = useState("free")
   const [error, setError] = useState<string | null>(null)
-  const [processing, setProcessing] = useState<string | null>(null)
 
   const loadSummary = async () => {
     setLoading(true)
@@ -32,23 +31,6 @@ export default function PricingScreen() {
     loadSummary()
   }, [])
 
-  const handleUpgrade = async (planKey: string) => {
-    if (processing) return
-    setProcessing(planKey)
-    try {
-      const session = await startBillingCheckout(planKey)
-      if (session?.url) {
-        await Linking.openURL(session.url)
-      } else {
-        throw new Error("Checkout URL missing")
-      }
-    } catch (err) {
-      setError((err as Error).message || "Unable to start checkout")
-    } finally {
-      setProcessing(null)
-    }
-  }
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Pricing</Text>
@@ -63,17 +45,12 @@ export default function PricingScreen() {
       <View style={styles.cardGrid}>
         {plans.map((plan) => {
           const isCurrent = plan.key === planName
-          const disabled = processing !== null && processing !== plan.key
           return (
             <View key={plan.key} style={[styles.card, isCurrent && styles.cardActive]}>
               <Text style={styles.cardTitle}>{plan.label}</Text>
               <Text style={styles.cardPrice}>{plan.price} / month</Text>
               <Text style={styles.cardScans}>{plan.scans} scans</Text>
-              <Pressable
-                onPress={() => (isCurrent ? null : handleUpgrade(plan.key))}
-                disabled={isCurrent || disabled}
-                style={[styles.button, isCurrent && styles.buttonDisabled]}
-              >
+              <Pressable disabled style={[styles.button, styles.buttonDisabled]}>
                 <Text style={styles.buttonText}>{isCurrent ? "Current Plan" : plan.action}</Text>
               </Pressable>
             </View>
@@ -81,7 +58,7 @@ export default function PricingScreen() {
         })}
       </View>
 
-      <Text style={styles.disclaimer}>Billing is handled securely by Stripe.</Text>
+      <Text style={styles.disclaimer}>Checkout is disabled in test mode. Plans are display-only.</Text>
     </ScrollView>
   )
 }

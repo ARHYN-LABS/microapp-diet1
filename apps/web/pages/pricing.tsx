@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
+ï»¿import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
-import { createBillingCheckout, getBillingSummary } from "@wimf/shared"
+import { getBillingSummary } from "@wimf/shared"
 import { getToken } from "../lib/auth"
 import { apiBase } from "../lib/apiBase"
 
@@ -12,16 +12,16 @@ const plans = [
 
 export default function Pricing() {
   const router = useRouter()
+  const paymentsEnabled = false
   const [planName, setPlanName] = useState("free")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [busy, setBusy] = useState("")
 
   useEffect(() => {
     const load = async () => {
       const token = getToken()
       if (!token) {
-        setError("Please log in to manage billing.")
+        setError("Please log in to view plans.")
         setLoading(false)
         return
       }
@@ -37,26 +37,12 @@ export default function Pricing() {
     load()
   }, [])
 
-  const handleUpgrade = async (planKey: string) => {
-    const token = getToken()
-    if (!token) {
-      router.push("/login")
+  const handleUpgrade = async () => {
+    if (!paymentsEnabled) {
+      setError("Checkout is disabled in test mode.")
       return
     }
-    setBusy(planKey)
-    setError("")
-    try {
-      const session = await createBillingCheckout({ baseUrl: apiBase, token }, { planName: planKey })
-      if (session?.url) {
-        window.location.href = session.url
-      } else {
-        throw new Error("Checkout URL missing")
-      }
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setBusy("")
-    }
+    router.push("/settings")
   }
 
   return (
@@ -65,7 +51,7 @@ export default function Pricing() {
         <div>
           <h1>Pricing</h1>
           <p>Upgrade anytime to increase your monthly scan limit.</p>
-          {loading ? <p>Loading billing…</p> : null}
+          {loading ? <p>Loading billing...</p> : null}
           {error ? <p style={{ color: "#cc3b3b" }}>{error}</p> : null}
         </div>
       </section>
@@ -87,24 +73,28 @@ export default function Pricing() {
               <p style={{ fontSize: 20, fontWeight: 700 }}>{plan.price} / month</p>
               <p style={{ color: "#6b7a90" }}>{plan.scans} scans</p>
               <button
-                onClick={() => (isCurrent ? null : handleUpgrade(plan.key))}
-                disabled={isCurrent || !!busy}
+                onClick={() => (isCurrent ? null : handleUpgrade())}
+                disabled={isCurrent || !paymentsEnabled}
                 style={{
                   marginTop: 16,
                   padding: "10px 16px",
                   borderRadius: 999,
                   border: "none",
-                  background: isCurrent ? "#e6edf5" : "#16213e",
-                  color: isCurrent ? "#6b7a90" : "#ffffff",
-                  cursor: isCurrent ? "default" : "pointer"
+                  background: isCurrent || !paymentsEnabled ? "#e6edf5" : "#16213e",
+                  color: isCurrent ? "#6b7a90" : "#8a97ab",
+                  cursor: "default"
                 }}
               >
-                {isCurrent ? "Current Plan" : "Upgrade"}
+                {isCurrent ? "Current Plan" : "Upgrade (Soon)"}
               </button>
             </div>
           )
         })}
       </section>
+
+      <p style={{ marginTop: 16, color: "#6b7a90", textAlign: "center" }}>
+        Checkout is disabled in test mode. Plans are display-only.
+      </p>
     </main>
   )
 }
