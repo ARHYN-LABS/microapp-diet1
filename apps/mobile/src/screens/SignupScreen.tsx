@@ -9,7 +9,12 @@ import GradientButton from "../components/GradientButton"
 import { theme } from "../theme"
 
 WebBrowser.maybeCompleteAuthSession()
-const OAUTH_REDIRECT_URI = "safeplate://oauth"
+const OAUTH_REDIRECT_URI = AuthSession.makeRedirectUri({
+  native: "safeplate://oauth",
+  scheme: "safeplate",
+  path: "oauth",
+  useProxy: false
+})
 
 type Props = {
   navigation: any
@@ -21,6 +26,20 @@ export default function SignupScreen({ navigation }: Props) {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [status, setStatus] = useState("")
+
+  const getParamFromUrl = (url: string, key: string) => {
+    const queryIndex = url.indexOf("?")
+    if (queryIndex < 0) return undefined
+    const query = url.slice(queryIndex + 1)
+    const pairs = query.split("&")
+    for (const pair of pairs) {
+      const [rawKey, rawValue = ""] = pair.split("=")
+      if (decodeURIComponent(rawKey) === key) {
+        return decodeURIComponent(rawValue)
+      }
+    }
+    return undefined
+  }
 
   const handleContinue = () => {
     const trimmedName = fullName.trim()
@@ -49,12 +68,13 @@ export default function SignupScreen({ navigation }: Props) {
     try {
       const redirectUri = OAUTH_REDIRECT_URI
       const authUrl = `${apiBase}/auth/google/start?redirect=${encodeURIComponent(redirectUri)}`
-      const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri)
       if (result.type !== "success") {
         setStatus("Google sign-up canceled.")
         return
       }
-      const token = result.params?.token as string | undefined
+      const callbackUrl = result.url || ""
+      const token = getParamFromUrl(callbackUrl, "token")
       if (!token) {
         setStatus("Google sign-up failed.")
         return
@@ -62,9 +82,9 @@ export default function SignupScreen({ navigation }: Props) {
 
       const serverProfile = await fetchProfile().catch(() => null)
       const fallbackProfile = {
-        id: (result.params?.userId as string) || "",
-        email: (result.params?.email as string) || "",
-        fullName: (result.params?.fullName as string) || ""
+        id: getParamFromUrl(callbackUrl, "userId") || "",
+        email: getParamFromUrl(callbackUrl, "email") || "",
+        fullName: getParamFromUrl(callbackUrl, "fullName") || ""
       }
 
       navigation.navigate("Onboarding", {
