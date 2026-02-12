@@ -20,6 +20,7 @@ import SettingsScreen from "./src/screens/SettingsScreen"
 import JournalScreen from "./src/screens/JournalScreen"
 import LoginScreen from "./src/screens/LoginScreen"
 import SignupScreen from "./src/screens/SignupScreen"
+import OnboardingScreen from "./src/screens/OnboardingScreen"
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen"
 import ResetPasswordScreen from "./src/screens/ResetPasswordScreen"
 import PricingScreen from "./src/screens/PricingScreen"
@@ -162,6 +163,7 @@ function AuthStackScreen() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="Onboarding" component={OnboardingScreen} />
       <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
     </AuthStack.Navigator>

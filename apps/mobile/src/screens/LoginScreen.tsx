@@ -96,56 +96,6 @@ export default function LoginScreen({ navigation }: Props) {
     }
   }
 
-  const handleMicrosoftLogin = async () => {
-    setStatus("Opening Microsoft...")
-    try {
-      const redirectUri = OAUTH_REDIRECT_URI
-      const authUrl = `${apiBase}/auth/microsoft/start?redirect=${encodeURIComponent(redirectUri)}`
-      const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
-      if (result.type !== "success") {
-        setStatus("Microsoft sign-in canceled.")
-        return
-      }
-      const token = result.params?.token as string | undefined
-      if (!token) {
-        setStatus("Microsoft sign-in failed.")
-        return
-      }
-      await setToken(token)
-      const serverProfile = await fetchProfile().catch(() => null)
-      if (serverProfile) {
-        await setProfile(serverProfile)
-        await setUserId(serverProfile.id)
-      } else {
-        const fallbackProfile = {
-          id: (result.params?.userId as string) || "",
-          email: (result.params?.email as string) || "",
-          fullName: (result.params?.fullName as string) || ""
-        }
-        if (fallbackProfile.id) {
-          await setProfile(fallbackProfile as any)
-          await setUserId(fallbackProfile.id)
-        }
-      }
-      try {
-        const profile = await fetchProfile()
-        if (profile) {
-          const history = await fetchHistory(profile.id, profile.email)
-          if (history && history.length) {
-            await setScanHistoryCache(history)
-          }
-        }
-      } catch {
-        // ignore history prefetch failures
-      }
-      setIsAuthed(true)
-      setStatus("Signed in.")
-      navigation.replace("Main")
-    } catch (error) {
-      setStatus((error as Error).message)
-    }
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.logoWrap}>
@@ -177,29 +127,28 @@ export default function LoginScreen({ navigation }: Props) {
         <Text style={styles.primaryButtonText}>Log in</Text>
       </GradientButton>
 
-      <View style={styles.dividerRow}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or continue with</Text>
-        <View style={styles.dividerLine} />
+      <Pressable style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
+        <Ionicons name="logo-google" size={18} color="#EA4335" />
+        <Text style={styles.socialText}>Continue with Google</Text>
+      </Pressable>
+
+      <Text style={styles.continueText}>or continue with</Text>
+
+      <View style={styles.linkRow}>
+        <Pressable onPress={() => navigation.navigate("Signup")}>
+          <Text style={styles.link}>Create an account</Text>
+        </Pressable>
+        <Pressable onPress={() => navigation.navigate("ForgotPassword")}>
+          <Text style={styles.link}>Forgot password?</Text>
+        </Pressable>
       </View>
 
-      <View style={styles.socialRow}>
-        <Pressable style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
-          <Ionicons name="logo-google" size={18} color="#EA4335" />
-          <Text style={styles.socialText}>Google</Text>
-        </Pressable>
-        <Pressable style={[styles.socialButton, styles.microsoftButton]} onPress={handleMicrosoftLogin}>
-          <Ionicons name="logo-microsoft" size={18} color="#2563EB" />
-          <Text style={styles.socialText}>Microsoft</Text>
+      <View style={styles.registerRow}>
+        <Text style={styles.registerText}>Don&apos;t have an account? </Text>
+        <Pressable onPress={() => navigation.navigate("Signup")}>
+          <Text style={[styles.registerText, styles.registerLink]}>Register</Text>
         </Pressable>
       </View>
-
-      <Pressable onPress={() => navigation.navigate("Signup")}>
-        <Text style={styles.link}>Create an account</Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate("ForgotPassword")}>
-        <Text style={styles.link}>Forgot password?</Text>
-      </Pressable>
 
       {status ? <Text style={styles.status}>{status}</Text> : null}
     </View>
@@ -248,29 +197,15 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "700"
   },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 18,
-    marginBottom: 12
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: theme.colors.border
-  },
-  dividerText: {
-    marginHorizontal: 12,
+  continueText: {
+    marginTop: 14,
+    marginBottom: 12,
+    textAlign: "center",
     color: theme.colors.muted,
     fontSize: 12,
     fontWeight: "600"
   },
-  socialRow: {
-    flexDirection: "row",
-    gap: 12
-  },
   socialButton: {
-    flex: 1,
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: 999,
@@ -284,16 +219,31 @@ const styles = StyleSheet.create({
   googleButton: {
     backgroundColor: "#ffffff"
   },
-  microsoftButton: {
-    backgroundColor: "#ffffff"
-  },
   socialText: {
     color: theme.colors.text,
     fontWeight: "600"
   },
+  linkRow: {
+    marginTop: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
   link: {
+    color: theme.colors.accent2
+  },
+  registerRow: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  registerText: {
+    color: theme.colors.muted
+  },
+  registerLink: {
     color: theme.colors.accent2,
-    marginTop: 16
+    fontWeight: "700"
   },
   status: {
     color: theme.colors.muted,

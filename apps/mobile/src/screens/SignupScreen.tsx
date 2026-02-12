@@ -1,269 +1,146 @@
-import { useContext, useMemo, useRef, useState } from "react"
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, Image, Animated } from "react-native"
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
-import { signUpUser } from "../api/client"
+import { useState } from "react"
+import { View, Text, TextInput, StyleSheet, Pressable, Image } from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import * as AuthSession from "expo-auth-session"
+import * as WebBrowser from "expo-web-browser"
+import { fetchProfile } from "../api/client"
+import { apiBase } from "../api/config"
 import GradientButton from "../components/GradientButton"
-import { setHealthPrefs, setProfile, setToken, setUserId } from "../storage/cache"
 import { theme } from "../theme"
-import { AuthContext } from "../auth"
+
+WebBrowser.maybeCompleteAuthSession()
+const OAUTH_REDIRECT_URI = "safeplate://oauth"
 
 type Props = {
   navigation: any
 }
 
-const dietaryOptions = [
-  { key: "halal", label: "Halal", icon: "checkmark-circle", color: "#1ABC9C", type: "ion" },
-  { key: "kosher", label: "Kosher", icon: "shield-checkmark", color: "#2C7BE5", type: "ion" },
-  { key: "vegetarian", label: "Vegetarian", icon: "leaf", color: "#22C55E", type: "ion" },
-  { key: "vegan", label: "Vegan", icon: "leaf-outline", color: "#16A34A", type: "ion" },
-  { key: "pescatarian", label: "Pescatarian", icon: "fish", color: "#3B82F6", type: "mci" },
-  { key: "keto", label: "Keto", icon: "flame", color: "#F97316", type: "ion" },
-  { key: "low_carb", label: "Low Carb", icon: "speedometer", color: "#14B8A6", type: "ion" },
-  { key: "low_sodium", label: "Low Sodium", icon: "water", color: "#0EA5E9", type: "ion" },
-  { key: "low_sugar", label: "Low Sugar", icon: "fitness", color: "#E11D48", type: "ion" },
-  { key: "high_protein", label: "High Protein", icon: "barbell", color: "#2563EB", type: "ion" },
-  { key: "gluten_free", label: "Gluten-Free", icon: "gf", color: "#F59E0B", type: "gf" },
-  { key: "dairy_free", label: "Dairy-Free", icon: "nutrition", color: "#8B5CF6", type: "ion" }
-]
-
-const allergyOptions = [
-  { key: "peanuts", label: "Peanuts", icon: "warning", color: "#E63946", type: "ion" },
-  { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309", type: "ion" },
-  { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB", type: "ion" },
-  { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B", type: "ion" },
-  { key: "shellfish", label: "Shellfish", icon: "shrimp", color: "#EF4444", type: "mci" },
-  { key: "fish", label: "Fish", icon: "fish", color: "#3B82F6", type: "mci" },
-  { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E", type: "ion" },
-  { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316", type: "ion" },
-  { key: "sesame", label: "Sesame", icon: "nutrition-outline", color: "#F59E0B", type: "ion" },
-  { key: "sulfites", label: "Sulfites", icon: "alert", color: "#EF4444", type: "ion" }
-]
-
 export default function SignupScreen({ navigation }: Props) {
-  const { setIsAuthed } = useContext(AuthContext)
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [status, setStatus] = useState("")
-  const [dietary, setDietary] = useState<Record<string, boolean>>({})
-  const [allergies, setAllergies] = useState<Record<string, boolean>>({})
-  const [allergyOther, setAllergyOther] = useState("")
-  const [step, setStep] = useState(1)
-  const fadeAnim = useRef(new Animated.Value(1)).current
-  const slideAnim = useRef(new Animated.Value(0)).current
 
-  const animateStep = () => {
-    fadeAnim.setValue(0)
-    slideAnim.setValue(16)
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true })
-    ]).start()
+  const handleContinue = () => {
+    const trimmedName = fullName.trim()
+    const trimmedEmail = email.trim()
+    if (!trimmedName || !trimmedEmail || password.length < 6) {
+      setStatus("Please complete all fields (password min 6 chars).")
+      return
+    }
+    if (password !== confirmPassword) {
+      setStatus("Passwords do not match.")
+      return
+    }
+    setStatus("")
+    navigation.navigate("Onboarding", {
+      flow: "email",
+      signupData: {
+        fullName: trimmedName,
+        email: trimmedEmail,
+        password
+      }
+    })
   }
 
-  const canContinue = useMemo(() => {
-    if (step !== 1) return true
-    return fullName.trim() && email.trim() && password.trim().length >= 6
-  }, [step, fullName, email, password])
-
-  const handleSignup = async () => {
-    setStatus("Creating account...")
+  const handleGoogleSignup = async () => {
+    setStatus("Opening Google...")
     try {
-      const response = await signUpUser({ fullName, email, password })
-      await setToken(response.token)
-      await setProfile(response.profile)
-      await setUserId(response.profile.id)
-      const restrictions = Object.entries(dietary)
-        .filter(([, value]) => value)
-        .map(([key]) => key)
-      const allergens = Object.entries(allergies)
-        .filter(([, value]) => value)
-        .map(([key]) => key)
-      await setHealthPrefs({ restrictions, allergens, allergyOther })
-      setIsAuthed(true)
-      setStatus("Account created.")
-      navigation.replace("Main")
+      const redirectUri = OAUTH_REDIRECT_URI
+      const authUrl = `${apiBase}/auth/google/start?redirect=${encodeURIComponent(redirectUri)}`
+      const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
+      if (result.type !== "success") {
+        setStatus("Google sign-up canceled.")
+        return
+      }
+      const token = result.params?.token as string | undefined
+      if (!token) {
+        setStatus("Google sign-up failed.")
+        return
+      }
+
+      const serverProfile = await fetchProfile().catch(() => null)
+      const fallbackProfile = {
+        id: (result.params?.userId as string) || "",
+        email: (result.params?.email as string) || "",
+        fullName: (result.params?.fullName as string) || ""
+      }
+
+      navigation.navigate("Onboarding", {
+        flow: "google",
+        token,
+        profile: serverProfile || fallbackProfile
+      })
     } catch (error) {
       setStatus((error as Error).message)
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <View style={styles.logoWrap}>
         <Image source={require("../../assets/icon.png")} style={styles.logoImage} />
       </View>
       <Text style={styles.title}>Sign up</Text>
-      <Text style={styles.subtitle}>Create your profile.</Text>
+      <Text style={styles.subtitle}>Create your account.</Text>
 
-      <View style={styles.stepRow}>
-        {[1, 2, 3].map((index) => (
-          <View key={index} style={[styles.stepDot, step === index && styles.stepDotActive]} />
-        ))}
+      <View style={styles.card}>
+        <TextInput
+          style={styles.input}
+          placeholder="Full Name"
+          placeholderTextColor={theme.colors.muted}
+          value={fullName}
+          onChangeText={setFullName}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor={theme.colors.muted}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          placeholderTextColor={theme.colors.muted}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Confirm Password"
+          placeholderTextColor={theme.colors.muted}
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+
+        <GradientButton onPress={handleContinue} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Sign Up</Text>
+        </GradientButton>
+
+        <Pressable style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleSignup}>
+          <Ionicons name="logo-google" size={18} color="#EA4335" />
+          <Text style={styles.socialText}>Continue with Google</Text>
+        </Pressable>
       </View>
-
-      <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        {step === 1 && (
-          <>
-            <Text style={styles.sectionTitle}>Basic Info</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Full name"
-              placeholderTextColor={theme.colors.muted}
-              value={fullName}
-              onChangeText={setFullName}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={theme.colors.muted}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={theme.colors.muted}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-            <GradientButton
-              onPress={() => {
-                setStep(2)
-                animateStep()
-              }}
-              style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
-              disabled={!canContinue}
-            >
-              <Text style={styles.primaryButtonText}>Next</Text>
-            </GradientButton>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.sectionTitle}>Dietary restrictions</Text>
-              <Pressable
-                style={styles.skipButton}
-                onPress={() => {
-                  setStep(3)
-                  animateStep()
-                }}
-              >
-                <Text style={styles.skipText}>Skip</Text>
-              </Pressable>
-            </View>
-            {dietaryOptions.map((item) => (
-              <Pressable
-                key={item.key}
-                style={styles.checkRow}
-                onPress={() => setDietary((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-              >
-                <Ionicons
-                  name={dietary[item.key] ? "checkbox" : "square-outline"}
-                  size={20}
-                  color={dietary[item.key] ? theme.colors.accent : theme.colors.muted}
-                />
-                {item.type === "gf" ? (
-                  <View style={styles.gfIcon}>
-                    <Text style={styles.gfText}>GF</Text>
-                    <View style={styles.gfSlash} />
-                  </View>
-                ) : item.type === "mci" ? (
-                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-                ) : (
-                  <Ionicons name={item.icon as any} size={16} color={item.color} />
-                )}
-                <Text style={styles.checkLabel}>{item.label}</Text>
-              </Pressable>
-            ))}
-            <View style={styles.stepActions}>
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={() => {
-                  setStep(1)
-                  animateStep()
-                }}
-              >
-                <Text style={styles.secondaryButtonText}>Previous</Text>
-              </Pressable>
-              <GradientButton
-                onPress={() => {
-                  setStep(3)
-                  animateStep()
-                }}
-                style={styles.primaryButton}
-              >
-                <Text style={styles.primaryButtonText}>Next</Text>
-              </GradientButton>
-            </View>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <Text style={styles.sectionTitle}>Allergies</Text>
-            {allergyOptions.map((item) => (
-              <Pressable
-                key={item.key}
-                style={styles.checkRow}
-                onPress={() => setAllergies((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-              >
-                <Ionicons
-                  name={allergies[item.key] ? "checkbox" : "square-outline"}
-                  size={20}
-                  color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
-                />
-                {item.type === "mci" ? (
-                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-                ) : (
-                  <Ionicons name={item.icon as any} size={16} color={item.color} />
-                )}
-                <Text style={styles.checkLabel}>{item.label}</Text>
-              </Pressable>
-            ))}
-            <Text style={styles.label}>Other (custom)</Text>
-            <TextInput
-              style={styles.input}
-              value={allergyOther}
-              onChangeText={setAllergyOther}
-              placeholder="Add custom allergy"
-              placeholderTextColor={theme.colors.muted}
-            />
-            <View style={styles.stepActions}>
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={() => {
-                  setStep(2)
-                  animateStep()
-                }}
-              >
-                <Text style={styles.secondaryButtonText}>Previous</Text>
-              </Pressable>
-              <GradientButton onPress={handleSignup} style={styles.primaryButton}>
-                <Ionicons name="person-add-outline" size={18} color="#ffffff" />
-                <Text style={styles.primaryButtonText}>Create account</Text>
-              </GradientButton>
-            </View>
-          </>
-        )}
-      </Animated.View>
 
       <Pressable onPress={() => navigation.goBack()}>
         <Text style={styles.link}>Back to login</Text>
       </Pressable>
 
       {status ? <Text style={styles.status}>{status}</Text> : null}
-    </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: theme.spacing.lg,
     paddingTop: theme.spacing.xl + 12,
     backgroundColor: theme.colors.bg
@@ -287,20 +164,13 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     marginBottom: 24
   },
-  stepRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16
-  },
-  stepDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.border
-  },
-  stepDotActive: {
-    backgroundColor: theme.colors.accent2,
-    width: 20
+  card: {
+    backgroundColor: theme.colors.panel,
+    borderRadius: theme.radius.lg,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border
   },
   input: {
     backgroundColor: theme.colors.glass,
@@ -311,107 +181,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border
   },
-  card: {
-    backgroundColor: theme.colors.panel,
-    borderRadius: theme.radius.lg,
-    padding: 16,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border
-  },
-  cardHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4
-  },
-  skipButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: theme.colors.glass
-  },
-  skipText: {
-    color: theme.colors.muted,
-    fontWeight: "600"
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: theme.colors.text,
-    marginBottom: 12
-  },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingVertical: 8
-  },
-  checkLabel: {
-    color: theme.colors.text,
-    fontWeight: "600"
-  },
-  gfIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: "#F59E0B",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative"
-  },
-  gfText: {
-    fontSize: 8,
-    fontWeight: "700",
-    color: "#F59E0B"
-  },
-  gfSlash: {
-    position: "absolute",
-    width: 22,
-    height: 2,
-    backgroundColor: "#F59E0B",
-    transform: [{ rotate: "-35deg" }]
-  },
-  label: {
-    fontWeight: "600",
-    color: theme.colors.text,
-    marginTop: 8,
-    marginBottom: 6
-  },
   primaryButton: {
     marginTop: 8
-  },
-  primaryButtonDisabled: {
-    opacity: 0.6
   },
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"
   },
-  stepActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    marginTop: 8
-  },
-  secondaryButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
+  socialButton: {
     borderWidth: 1,
     borderColor: theme.colors.border,
+    borderRadius: 999,
+    paddingVertical: 12,
+    marginTop: 12,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.colors.glass,
-    alignItems: "center"
+    flexDirection: "row",
+    gap: 8
   },
-  secondaryButtonText: {
-    fontWeight: "700",
-    color: theme.colors.text
+  googleButton: {
+    backgroundColor: "#ffffff"
+  },
+  socialText: {
+    color: theme.colors.text,
+    fontWeight: "600"
   },
   link: {
-    color: theme.colors.accent2,
-    marginTop: 16
+    color: theme.colors.accent2
   },
   status: {
     color: theme.colors.muted,
