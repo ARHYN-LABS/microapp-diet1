@@ -142,6 +142,10 @@ export default function LoginScreen({ navigation }: Props) {
         onChangeText={setPassword}
       />
 
+      <Pressable style={styles.forgotInline} onPress={() => navigation.navigate("ForgotPassword")}>
+        <Text style={styles.link}>Forgot password?</Text>
+      </Pressable>
+
       <GradientButton onPress={handleLogin} style={styles.primaryButton}>
         <Ionicons name="log-in-outline" size={18} color="#ffffff" />
         <Text style={styles.primaryButtonText}>Log in</Text>
@@ -149,18 +153,13 @@ export default function LoginScreen({ navigation }: Props) {
 
       <Pressable style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
         <Ionicons name="logo-google" size={18} color="#EA4335" />
-        <Text style={styles.socialText}>Continue with Google</Text>
+        <Text style={styles.socialText}>Google</Text>
       </Pressable>
 
-      <Text style={styles.continueText}>or continue with</Text>
-
-      <View style={styles.linkRow}>
-        <Pressable onPress={() => navigation.navigate("Signup")}>
-          <Text style={styles.link}>Create an account</Text>
-        </Pressable>
-        <Pressable onPress={() => navigation.navigate("ForgotPassword")}>
-          <Text style={styles.link}>Forgot password?</Text>
-        </Pressable>
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>Or continue with</Text>
+        <View style={styles.dividerLine} />
       </View>
 
       <View style={styles.registerRow}>
@@ -213,14 +212,28 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 8
   },
+  forgotInline: {
+    alignItems: "flex-end",
+    marginTop: -2,
+    marginBottom: 8
+  },
   primaryButtonText: {
     color: "#ffffff",
     fontWeight: "700"
   },
-  continueText: {
+  dividerRow: {
     marginTop: 14,
     marginBottom: 12,
-    textAlign: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#E8C84A"
+  },
+  dividerText: {
     color: theme.colors.muted,
     fontSize: 12,
     fontWeight: "600"
@@ -237,17 +250,12 @@ const styles = StyleSheet.create({
     gap: 8
   },
   googleButton: {
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
+    marginTop: 12
   },
   socialText: {
     color: theme.colors.text,
     fontWeight: "600"
-  },
-  linkRow: {
-    marginTop: 4,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center"
   },
   link: {
     color: theme.colors.accent2
