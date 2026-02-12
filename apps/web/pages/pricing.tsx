@@ -1,18 +1,29 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
 import { getBillingSummary } from "@wimf/shared"
 import { getToken } from "../lib/auth"
 import { apiBase } from "../lib/apiBase"
 
-const plans = [
-  { key: "free", label: "Free", price: "$0", scans: 10 },
-  { key: "silver", label: "Silver", price: "$9.99", scans: 150 },
-  { key: "golden", label: "Golden", price: "$19.99", scans: 300 }
+type PlanDef = {
+  key: string
+  label: string
+  monthlyPrice: number
+  scans: number
+}
+
+const plans: PlanDef[] = [
+  { key: "free", label: "Free", monthlyPrice: 0, scans: 10 },
+  { key: "silver", label: "Silver", monthlyPrice: 2.99, scans: 150 },
+  { key: "golden", label: "Golden", monthlyPrice: 6.99, scans: 300 }
 ]
+
+const formatPrice = (value: number) =>
+  `$${value.toFixed(value % 1 === 0 ? 0 : 2)}`
 
 export default function Pricing() {
   const router = useRouter()
   const paymentsEnabled = false
+  const [isAnnual, setIsAnnual] = useState(false)
   const [planName, setPlanName] = useState("free")
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -39,7 +50,7 @@ export default function Pricing() {
     load()
   }, [])
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     if (!paymentsEnabled) {
       setError("Checkout is disabled in test mode.")
       return
@@ -48,60 +59,110 @@ export default function Pricing() {
   }
 
   return (
-    <main className="container page-shell">
-      <section className="hero">
-        <div>
-          <h1>Pricing</h1>
-          <p>Upgrade anytime to increase your monthly scan limit.</p>
-          {planExpiresAt ? (
-            <p style={{ color: "#6b7a90" }}>
-              Current plan expires on {new Date(planExpiresAt).toLocaleDateString()}.
-            </p>
-          ) : null}
-          {loading ? <p>Loading billing...</p> : null}
-          {error ? <p style={{ color: "#cc3b3b" }}>{error}</p> : null}
+    <main className="container page-shell pricing-shell">
+      <section className="pricing-hero">
+        <h1>Simple, Transparent Pricing</h1>
+        <p>Choose the plan that fits your scan needs. Upgrade or downgrade anytime.</p>
+
+        <div className="pricing-toggle">
+          <span className={!isAnnual ? "active" : ""}>Monthly</span>
+          <button
+            type="button"
+            className={`toggle-switch ${isAnnual ? "annual" : ""}`}
+            onClick={() => setIsAnnual((v) => !v)}
+            aria-label="Toggle annual billing"
+          >
+            <span />
+          </button>
+          <span className={isAnnual ? "active" : ""}>Annual</span>
+          <span className="save-chip">Save 20%</span>
         </div>
+
+        {planExpiresAt ? (
+          <p className="pricing-expiry">
+            Current plan expires on {new Date(planExpiresAt).toLocaleDateString()}.
+          </p>
+        ) : null}
+        {loading ? <p className="pricing-info">Loading billing...</p> : null}
+        {error ? <p className="pricing-error">{error}</p> : null}
       </section>
 
-      <section className="grid" style={{ display: "grid", gap: 24, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-        {plans.map((plan) => {
-          const isCurrent = plan.key === planName
-          return (
-            <div
-              key={plan.key}
-              style={{
-                border: "1px solid #e6edf5",
-                borderRadius: 20,
-                padding: 24,
-                background: "#ffffff"
-              }}
-            >
-              <h3 style={{ marginBottom: 6 }}>{plan.label}</h3>
-              <p style={{ fontSize: 20, fontWeight: 700 }}>{plan.price} / month</p>
-              <p style={{ color: "#6b7a90" }}>{plan.scans} scans</p>
-              <button
-                onClick={() => (isCurrent ? null : handleUpgrade())}
-                disabled={isCurrent || !paymentsEnabled}
-                style={{
-                  marginTop: 16,
-                  padding: "10px 16px",
-                  borderRadius: 999,
-                  border: "none",
-                  background: isCurrent || !paymentsEnabled ? "#e6edf5" : "#16213e",
-                  color: isCurrent ? "#6b7a90" : "#8a97ab",
-                  cursor: "default"
-                }}
-              >
-                {isCurrent ? "Current Plan" : "Upgrade (Soon)"}
-              </button>
-            </div>
-          )
-        })}
+      <section className="pricing-table-wrap">
+        <table className="pricing-table">
+          <thead>
+            <tr>
+              <th />
+              {plans.map((plan) => (
+                <th key={plan.key} className={plan.key === planName ? "current-col" : ""}>
+                  {plan.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="row-head">Price</td>
+              {plans.map((plan) => {
+                const isCurrent = plan.key === planName
+                const amount = isAnnual ? plan.monthlyPrice * 12 * 0.8 : plan.monthlyPrice
+                return (
+                  <td key={plan.key} className={isCurrent ? "current-col" : ""}>
+                    <div className="price-cell">
+                      <strong>{formatPrice(amount)}</strong>
+                      <span>{isAnnual ? "/year" : "/month"}</span>
+                    </div>
+                    <button
+                      onClick={() => (isCurrent ? null : handleUpgrade())}
+                      disabled={isCurrent || !paymentsEnabled}
+                      className={`plan-btn ${isCurrent ? "is-current" : ""}`}
+                    >
+                      {isCurrent ? "Current Plan" : "Upgrade (Soon)"}
+                    </button>
+                  </td>
+                )
+              })}
+            </tr>
+
+            <tr>
+              <td className="row-head">Monthly scan limit</td>
+              {plans.map((plan) => (
+                <td key={plan.key} className={plan.key === planName ? "current-col" : ""}>
+                  {plan.scans} scans
+                </td>
+              ))}
+            </tr>
+
+            <tr>
+              <td className="row-head">History sync across devices</td>
+              {plans.map((plan) => (
+                <td key={plan.key} className={plan.key === planName ? "current-col check" : "check"}>
+                  ✓
+                </td>
+              ))}
+            </tr>
+
+            <tr>
+              <td className="row-head">Profile + image storage</td>
+              {plans.map((plan) => (
+                <td key={plan.key} className={plan.key === planName ? "current-col check" : "check"}>
+                  ✓
+                </td>
+              ))}
+            </tr>
+
+            <tr>
+              <td className="row-head">Priority support</td>
+              <td>-</td>
+              <td className="check">✓</td>
+              <td className={planName === "golden" ? "current-col check" : "check"}>✓</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
 
-      <p style={{ marginTop: 16, color: "#6b7a90", textAlign: "center" }}>
-        Checkout is disabled in test mode. Plans are display-only.
-      </p>
+      {!paymentsEnabled ? (
+        <p className="pricing-note">Checkout is disabled in test mode. Plans are display-only.</p>
+      ) : null}
     </main>
   )
 }
