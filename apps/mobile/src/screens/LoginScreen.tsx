@@ -11,6 +11,7 @@ import { theme } from "../theme"
 import { AuthContext } from "../auth"
 
 WebBrowser.maybeCompleteAuthSession()
+const OAUTH_REDIRECT_URI = "safeplate://oauth"
 
 type Props = {
   navigation: any
@@ -48,11 +49,7 @@ export default function LoginScreen({ navigation }: Props) {
   const handleGoogleLogin = async () => {
     setStatus("Opening Google...")
     try {
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "safeplate",
-        path: "oauth",
-        useProxy: false
-      })
+      const redirectUri = OAUTH_REDIRECT_URI
       const authUrl = `${apiBase}/auth/google/start?redirect=${encodeURIComponent(redirectUri)}`
       const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
       if (result.type !== "success") {
@@ -102,11 +99,7 @@ export default function LoginScreen({ navigation }: Props) {
   const handleMicrosoftLogin = async () => {
     setStatus("Opening Microsoft...")
     try {
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "safeplate",
-        path: "oauth",
-        useProxy: false
-      })
+      const redirectUri = OAUTH_REDIRECT_URI
       const authUrl = `${apiBase}/auth/microsoft/start?redirect=${encodeURIComponent(redirectUri)}`
       const result = await AuthSession.startAsync({ authUrl, returnUrl: redirectUri })
       if (result.type !== "success") {
