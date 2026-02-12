@@ -1,6 +1,7 @@
 import { useContext, useState } from "react"
 import { View, Text, TextInput, StyleSheet, Pressable, ScrollView } from "react-native"
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { fetchHistory, fetchProfile, signUpUser } from "../api/client"
 import GradientButton from "../components/GradientButton"
 import { AuthContext } from "../auth"
@@ -49,6 +50,7 @@ const allergyOptions = [
 
 export default function OnboardingScreen({ navigation, route }: Props) {
   const { setIsAuthed } = useContext(AuthContext)
+  const insets = useSafeAreaInsets()
   const flow = route.params?.flow || "email"
   const [step, setStep] = useState(1)
   const [status, setStatus] = useState("")
@@ -113,93 +115,113 @@ export default function OnboardingScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Onboarding</Text>
-      <Text style={styles.subtitle}>
-        {step === 1 ? "Step 1: Common Dietary Restrictions" : "Step 2: Allergens"}
-      </Text>
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.container, { paddingBottom: Math.max(insets.bottom, 12) + 88 }]}
+      >
+        <Text style={styles.title}>Onboarding</Text>
+        <Text style={styles.subtitle}>
+          {step === 1 ? "Step 1: Common Dietary Restrictions" : "Step 2: Allergens"}
+        </Text>
 
-      <View style={styles.stepRow}>
-        <View style={[styles.stepDot, step === 1 && styles.stepDotActive]} />
-        <View style={[styles.stepDot, step === 2 && styles.stepDotActive]} />
-      </View>
+        <View style={styles.stepRow}>
+          <View style={[styles.stepDot, step === 1 && styles.stepDotActive]} />
+          <View style={[styles.stepDot, step === 2 && styles.stepDotActive]} />
+        </View>
 
-      {step === 1 ? (
-        <View style={styles.card}>
-          {dietaryOptions.map((item) => (
-            <Pressable
-              key={item.key}
-              style={styles.checkRow}
-              onPress={() => setDietary((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-            >
-              <Ionicons
-                name={dietary[item.key] ? "checkbox" : "square-outline"}
-                size={20}
-                color={dietary[item.key] ? theme.colors.accent2 : theme.colors.muted}
-              />
-              {item.type === "gf" ? (
-                <View style={styles.gfIcon}>
-                  <Text style={styles.gfText}>GF</Text>
-                  <View style={styles.gfSlash} />
-                </View>
-              ) : item.type === "mci" ? (
-                <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-              ) : (
-                <Ionicons name={item.icon as any} size={16} color={item.color} />
-              )}
-              <Text style={styles.checkLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
-          <GradientButton onPress={() => setStep(2)} style={styles.primaryButton}>
+        {step === 1 ? (
+          <View style={styles.card}>
+            {dietaryOptions.map((item) => (
+              <Pressable
+                key={item.key}
+                style={styles.checkRow}
+                onPress={() => setDietary((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+              >
+                <Ionicons
+                  name={dietary[item.key] ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={dietary[item.key] ? theme.colors.accent2 : theme.colors.muted}
+                />
+                {item.type === "gf" ? (
+                  <View style={styles.gfIcon}>
+                    <Text style={styles.gfText}>GF</Text>
+                    <View style={styles.gfSlash} />
+                  </View>
+                ) : item.type === "mci" ? (
+                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+                ) : (
+                  <Ionicons name={item.icon as any} size={16} color={item.color} />
+                )}
+                <Text style={styles.checkLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.card}>
+            {allergyOptions.map((item) => (
+              <Pressable
+                key={item.key}
+                style={styles.checkRow}
+                onPress={() => setAllergies((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+              >
+                <Ionicons
+                  name={allergies[item.key] ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
+                />
+                {item.type === "mci" ? (
+                  <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
+                ) : (
+                  <Ionicons name={item.icon as any} size={16} color={item.color} />
+                )}
+                <Text style={styles.checkLabel}>{item.label}</Text>
+              </Pressable>
+            ))}
+            <Text style={styles.label}>Other (optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={allergyOther}
+              onChangeText={setAllergyOther}
+              placeholder="Add custom allergy"
+              placeholderTextColor={theme.colors.muted}
+            />
+          </View>
+        )}
+
+        {status ? <Text style={styles.status}>{status}</Text> : null}
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        {step === 1 ? (
+          <GradientButton onPress={() => setStep(2)} style={styles.footerPrimaryButton}>
             <Text style={styles.primaryButtonText}>Next</Text>
           </GradientButton>
-        </View>
-      ) : (
-        <View style={styles.card}>
-          {allergyOptions.map((item) => (
-            <Pressable
-              key={item.key}
-              style={styles.checkRow}
-              onPress={() => setAllergies((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-            >
-              <Ionicons
-                name={allergies[item.key] ? "checkbox" : "square-outline"}
-                size={20}
-                color={allergies[item.key] ? theme.colors.warning : theme.colors.muted}
-              />
-              {item.type === "mci" ? (
-                <MaterialCommunityIcons name={item.icon as any} size={16} color={item.color} />
-              ) : (
-                <Ionicons name={item.icon as any} size={16} color={item.color} />
-              )}
-              <Text style={styles.checkLabel}>{item.label}</Text>
-            </Pressable>
-          ))}
-          <Text style={styles.label}>Other (optional)</Text>
-          <TextInput
-            style={styles.input}
-            value={allergyOther}
-            onChangeText={setAllergyOther}
-            placeholder="Add custom allergy"
-            placeholderTextColor={theme.colors.muted}
-          />
+        ) : (
           <View style={styles.stepActions}>
             <Pressable style={styles.secondaryButton} onPress={completeAuth}>
               <Text style={styles.secondaryButtonText}>Skip</Text>
             </Pressable>
-            <GradientButton onPress={completeAuth} style={styles.primaryButton}>
-              <Text style={styles.primaryButtonText}>Finish</Text>
-            </GradientButton>
+            <View style={styles.footerButtonWrap}>
+              <GradientButton onPress={completeAuth} style={styles.footerPrimaryButton}>
+                <Text style={styles.primaryButtonText}>Finish</Text>
+              </GradientButton>
+            </View>
           </View>
-        </View>
-      )}
-
-      {status ? <Text style={styles.status}>{status}</Text> : null}
-    </ScrollView>
+        )}
+      </View>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: theme.colors.bg
+  },
+  scroll: {
+    flex: 1
+  },
   container: {
     padding: theme.spacing.lg,
     paddingTop: theme.spacing.xl + 12,
@@ -288,25 +310,39 @@ const styles = StyleSheet.create({
   },
   stepActions: {
     flexDirection: "row",
+    alignItems: "stretch",
     gap: 12
+  },
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.bg,
+    paddingHorizontal: 20,
+    paddingTop: 12
+  },
+  footerButtonWrap: {
+    flex: 1
   },
   secondaryButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
+    minHeight: 48,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.glass,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    paddingHorizontal: 12
   },
   secondaryButtonText: {
     fontWeight: "700",
     color: theme.colors.text
   },
-  primaryButton: {
-    flex: 1,
-    marginTop: 0
+  footerPrimaryButton: {
+    width: "100%",
+    minHeight: 48,
+    borderRadius: 12,
+    paddingVertical: 0
   },
   primaryButtonText: {
     color: "#ffffff",
