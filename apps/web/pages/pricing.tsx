@@ -14,6 +14,7 @@ export default function Pricing() {
   const router = useRouter()
   const paymentsEnabled = false
   const [planName, setPlanName] = useState("free")
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -28,6 +29,7 @@ export default function Pricing() {
       try {
         const summary = await getBillingSummary({ baseUrl: apiBase, token })
         setPlanName(summary.planName || "free")
+        setPlanExpiresAt(summary.planExpiresAt || null)
       } catch (err) {
         setError((err as Error).message)
       } finally {
@@ -51,6 +53,11 @@ export default function Pricing() {
         <div>
           <h1>Pricing</h1>
           <p>Upgrade anytime to increase your monthly scan limit.</p>
+          {planExpiresAt ? (
+            <p style={{ color: "#6b7a90" }}>
+              Current plan expires on {new Date(planExpiresAt).toLocaleDateString()}.
+            </p>
+          ) : null}
           {loading ? <p>Loading billing...</p> : null}
           {error ? <p style={{ color: "#cc3b3b" }}>{error}</p> : null}
         </div>

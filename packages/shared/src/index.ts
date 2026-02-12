@@ -99,6 +99,7 @@ export type UserProfile = {
   scansUsed?: number | null
   scanLimit?: number | null
   billingStartDate?: string | null
+  planExpiresAt?: string | null
 }
 
 export type BillingSummary = {
@@ -106,6 +107,7 @@ export type BillingSummary = {
   scansUsed: number
   scanLimit: number
   billingStartDate: string | null
+  planExpiresAt: string | null
 }
 
 export type CalorieSummary = {

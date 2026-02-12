@@ -187,22 +187,61 @@ const addMonths = (date: Date, months: number) => {
   return next
 }
 
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
 const buildBillingPayload = (user: {
   planName: string | null
   scansUsed: number | null
   scanLimit: number | null
   billingStartDate: Date | null
+  planExpiresAt: Date | null
 }) => ({
   planName: normalizePlanName(user.planName),
   scansUsed: user.scansUsed ?? 0,
   scanLimit: user.scanLimit ?? PLAN_CONFIG.free.scanLimit,
-  billingStartDate: user.billingStartDate?.toISOString() || null
+  billingStartDate: user.billingStartDate?.toISOString() || null,
+  planExpiresAt: user.planExpiresAt?.toISOString() || null
 })
 
 const ensureBillingDefaults = async (userId: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) return null
   const planConfig = getPlanConfig(user.planName)
+  const planName = normalizePlanName(user.planName)
+  const now = new Date()
+
+  if (
+    planName !== "free" &&
+    user.planExpiresAt &&
+    now.getTime() >= user.planExpiresAt.getTime()
+  ) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        planName: PLAN_CONFIG.free.planName,
+        scanLimit: PLAN_CONFIG.free.scanLimit,
+        scansUsed: 0,
+        billingStartDate: now,
+        planExpiresAt: null,
+        stripeSubscriptionId: null
+      }
+    })
+  }
+
+  if (planName !== "free" && !user.planExpiresAt) {
+    const fallbackStart = user.billingStartDate ?? now
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        planExpiresAt: addMonths(fallbackStart, 1)
+      }
+    })
+  }
+
   if (!user.planName || user.scanLimit === null || user.scanLimit === undefined) {
     return prisma.user.update({
       where: { id: userId },
@@ -210,7 +249,9 @@ const ensureBillingDefaults = async (userId: string) => {
         planName: planConfig.planName,
         scanLimit: planConfig.scanLimit,
         scansUsed: user.scansUsed ?? 0,
-        billingStartDate: user.billingStartDate ?? new Date()
+        billingStartDate: user.billingStartDate ?? now,
+        planExpiresAt:
+          planConfig.planName === "free" ? null : user.planExpiresAt ?? addMonths(now, 1)
       }
     })
   }
@@ -234,101 +275,60 @@ const resetUsageIfNeeded = async (userId: string, billingStartDate: Date | null)
   return null
 }
 
-app.post(
-  "/stripe/webhook",
-  express.raw({ type: "application/json" }),
-  async (req, res) => {
-    if (!billingEnabled) {
-      return res.status(503).send("Billing is disabled")
-    }
-    if (!stripe || !stripeWebhookSecret) {
-      return res.status(500).send("Stripe not configured")
-    }
-    const signature = req.headers["stripe-signature"]
-    if (!signature || typeof signature !== "string") {
-      return res.status(400).send("Missing signature")
-    }
-    let event: Stripe.Event
-    try {
-      event = stripe.webhooks.constructEvent(req.body, signature, stripeWebhookSecret)
-    } catch (error) {
-      return res.status(400).send(`Webhook Error: ${(error as Error).message}`)
-    }
-
-    const updateFromSubscription = async (subscription: Stripe.Subscription) => {
-      const customerId = subscription.customer as string
-      const priceId = subscription.items.data[0]?.price?.id || ""
-      const planConfig =
-        priceId === stripePriceSilver
-          ? PLAN_CONFIG.silver
-          : priceId === stripePriceGolden
-            ? PLAN_CONFIG.golden
-            : PLAN_CONFIG.free
-      const periodStartSeconds = subscription.current_period_start || Math.floor(Date.now() / 1000)
-      const billingStartDate = new Date(periodStartSeconds * 1000)
-      await prisma.user.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: {
-          stripeSubscriptionId: subscription.id,
-          planName: planConfig.planName,
-          scanLimit: planConfig.scanLimit,
-          billingStartDate,
-          scansUsed: 0
-        }
-      })
-    }
-
-    try {
-      switch (event.type) {
-        case "checkout.session.completed": {
-          const session = event.data.object as Stripe.Checkout.Session
-          const subscriptionId = session.subscription as string | null
-          if (subscriptionId) {
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-            await updateFromSubscription(subscription)
-          }
-          break
-        }
-        case "invoice.paid": {
-          const invoice = event.data.object as Stripe.Invoice
-          const subscriptionId = invoice.subscription as string | null
-          if (subscriptionId) {
-            const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-            await updateFromSubscription(subscription)
-          }
-          break
-        }
-        case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription
-          await updateFromSubscription(subscription)
-          break
-        }
-        case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription
-          const customerId = subscription.customer as string
-          await prisma.user.updateMany({
-            where: { stripeCustomerId: customerId },
-            data: {
-              stripeSubscriptionId: null,
-              planName: PLAN_CONFIG.free.planName,
-              scanLimit: PLAN_CONFIG.free.scanLimit,
-              scansUsed: 0,
-              billingStartDate: new Date()
-            }
-          })
-          break
-        }
-        default:
-          break
-      }
-    } catch (error) {
-      console.error("stripe webhook error", error)
-      return res.status(500).send("Webhook handler failed")
-    }
-
-    return res.json({ received: true })
+const handleStripeWebhook: express.RequestHandler = async (req, res) => {
+  if (!billingEnabled) {
+    return res.status(503).send("Billing is disabled")
   }
-)
+  if (!stripe || !stripeWebhookSecret) {
+    return res.status(500).send("Stripe not configured")
+  }
+  const signature = req.headers["stripe-signature"]
+  if (!signature || typeof signature !== "string") {
+    return res.status(400).send("Missing signature")
+  }
+  let event: Stripe.Event
+  try {
+    event = stripe.webhooks.constructEvent(req.body, signature, stripeWebhookSecret)
+  } catch (error) {
+    return res.status(400).send(`Webhook Error: ${(error as Error).message}`)
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session
+        const userId = session.metadata?.userId
+        const planName = normalizePlanName(session.metadata?.planName)
+        const planConfig = PLAN_CONFIG[planName]
+        if (!userId) break
+        const now = new Date()
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            stripeCustomerId: typeof session.customer === "string" ? session.customer : undefined,
+            stripeSubscriptionId: null,
+            planName: planConfig.planName,
+            scanLimit: planConfig.scanLimit,
+            scansUsed: 0,
+            billingStartDate: now,
+            planExpiresAt: planConfig.planName === "free" ? null : addDays(now, 30)
+          }
+        })
+        break
+      }
+      default:
+        break
+    }
+  } catch (error) {
+    console.error("stripe webhook error", error)
+    return res.status(500).send("Webhook handler failed")
+  }
+
+  return res.json({ received: true })
+}
+
+app.post("/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook)
+app.post("/billing/webhook", express.raw({ type: "application/json" }), handleStripeWebhook)
 
 app.use(express.json({ limit: "1mb" }))
 app.use(express.urlencoded({ extended: true, limit: "1mb" }))
@@ -471,7 +471,8 @@ app.post("/auth/signup", async (req, res, next) => {
         planName: PLAN_CONFIG.free.planName,
         scanLimit: PLAN_CONFIG.free.scanLimit,
         scansUsed: 0,
-        billingStartDate: new Date()
+        billingStartDate: new Date(),
+        planExpiresAt: null
       }
     })
 
@@ -710,9 +711,6 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
       return res.status(404).json({ error: "Profile not found" })
     }
     if (payload.planName === "free") {
-      if (stripe && user.stripeSubscriptionId) {
-        await stripe.subscriptions.cancel(user.stripeSubscriptionId)
-      }
       const updated = await prisma.user.update({
         where: { id: userId },
         data: {
@@ -720,7 +718,8 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
           scanLimit: PLAN_CONFIG.free.scanLimit,
           scansUsed: 0,
           billingStartDate: new Date(),
-          stripeSubscriptionId: null
+          stripeSubscriptionId: null,
+          planExpiresAt: null
         }
       })
       return res.json({ status: "free", ...buildBillingPayload(updated) })
@@ -749,7 +748,7 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: "payment",
       payment_method_types: ["card"],
       customer: customerId,
       line_items: [{ price: planConfig.priceId, quantity: 1 }],
@@ -758,9 +757,6 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
       metadata: {
         userId,
         planName: planConfig.planName
-      },
-      subscription_data: {
-        metadata: { userId, planName: planConfig.planName }
       }
     })
 
@@ -772,25 +768,7 @@ app.post("/billing/checkout", requireAuth, async (req, res, next) => {
 
 app.post("/billing/portal", requireAuth, async (req, res, next) => {
   try {
-    if (!billingEnabled) {
-      return res.status(503).json({ error: "Billing is disabled" })
-    }
-    if (!stripe) {
-      return res.status(500).json({ error: "Stripe not configured" })
-    }
-    const userId = getAuthUserId(req)
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" })
-    }
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user?.stripeCustomerId) {
-      return res.status(400).json({ error: "Billing account not found" })
-    }
-    const session = await stripe.billingPortal.sessions.create({
-      customer: user.stripeCustomerId,
-      return_url: webAppUrl
-    })
-    return res.json({ url: session.url })
+    return res.status(400).json({ error: "Billing portal is unavailable for one-time plans." })
   } catch (error) {
     return next(error)
   }
@@ -876,7 +854,8 @@ app.get("/auth/google/callback", async (req, res, next) => {
           planName: PLAN_CONFIG.free.planName,
           scanLimit: PLAN_CONFIG.free.scanLimit,
           scansUsed: 0,
-          billingStartDate: new Date()
+          billingStartDate: new Date(),
+          planExpiresAt: null
         }
       })
     }
@@ -978,7 +957,8 @@ app.get("/auth/microsoft/callback", async (req, res, next) => {
           planName: PLAN_CONFIG.free.planName,
           scanLimit: PLAN_CONFIG.free.scanLimit,
           scansUsed: 0,
-          billingStartDate: new Date()
+          billingStartDate: new Date(),
+          planExpiresAt: null
         }
       })
     }
@@ -1701,8 +1681,8 @@ app.post(
           const planConfig = getPlanConfig(billingUser.planName)
           const scanLimit = billingUser.scanLimit ?? planConfig.scanLimit
           const scansUsed = billingUser.scansUsed ?? 0
-          if (billingEnabled && scansUsed >= scanLimit) {
-            return res.status(403).json({
+          if (scansUsed >= scanLimit) {
+            return res.status(402).json({
               error: "Plan limit reached",
               code: "SCAN_LIMIT_REACHED",
               message: "You reached your plan limit. Upgrade to continue.",

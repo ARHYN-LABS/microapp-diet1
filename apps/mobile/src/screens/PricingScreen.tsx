@@ -12,6 +12,7 @@ const plans = [
 export default function PricingScreen() {
   const [loading, setLoading] = useState(true)
   const [planName, setPlanName] = useState("free")
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadSummary = async () => {
@@ -19,6 +20,7 @@ export default function PricingScreen() {
     try {
       const summary = await fetchBillingSummary()
       setPlanName(summary.planName || "free")
+      setPlanExpiresAt(summary.planExpiresAt || null)
       setError(null)
     } catch (err) {
       setError((err as Error).message || "Unable to load billing")
@@ -35,6 +37,9 @@ export default function PricingScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Pricing</Text>
       <Text style={styles.subtitle}>Pick a plan that matches your scan needs.</Text>
+      {planExpiresAt ? (
+        <Text style={styles.subtitle}>Current plan expires on {new Date(planExpiresAt).toLocaleDateString()}.</Text>
+      ) : null}
 
       {loading ? (
         <ActivityIndicator size="large" color={theme.colors.accent} style={styles.loading} />

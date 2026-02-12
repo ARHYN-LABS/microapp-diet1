@@ -30,6 +30,7 @@ model User {
   scansUsed       Int     @default(0)
   scanLimit       Int     @default(10)
   billingStartDate DateTime?
+  planExpiresAt   DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   history         ScanHistory[]
