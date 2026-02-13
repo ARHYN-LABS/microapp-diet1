@@ -30,6 +30,7 @@ export default function ScanScreen() {
   const isFocused = useIsFocused()
   const [cameraKey, setCameraKey] = useState(0)
   const [lastAnalysis, setLastAnalysisState] = useState<AnalyzeFromImagesResponse | null>(null)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const navigation = useNavigation()
   const nutritionOverlay = (() => {
     if (!lastAnalysis) return null
@@ -113,17 +114,49 @@ export default function ScanScreen() {
       setStatus("Please capture a clear food or label photo.")
       return
     }
+    if (isAnalyzing) return
 
+    setIsAnalyzing(true)
     setStatus("Analyzing image...")
-    const formData = new FormData()
-      formData.append("frontImage", image.label as unknown as Blob)
-    const profile = await getProfile()
-    if (profile?.id) {
-      formData.append("userId", profile.id)
-    }
 
     try {
-      const analysis = await runAnalyze(formData)
+      const profile = await getProfile()
+      const maxAttempts = 3
+      let analysis: AnalyzeFromImagesResponse | null = null
+      let lastError: unknown
+
+      const isRetryable = (error: unknown) => {
+        const err = error as Error & { code?: string }
+        const message = (err.message || "").toLowerCase()
+        if (err.code === "SCAN_LIMIT_REACHED") return false
+        if (err.code?.startsWith("HTTP_5")) return true
+        return (
+          message.includes("network") ||
+          message.includes("timed out") ||
+          message.includes("timeout") ||
+          message.includes("failed to analyze") ||
+          message.includes("request failed")
+        )
+      }
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        try {
+          const formData = new FormData()
+          formData.append("frontImage", image.label as unknown as Blob)
+          if (profile?.id) formData.append("userId", profile.id)
+          analysis = await runAnalyze(formData)
+          break
+        } catch (error) {
+          lastError = error
+          if (attempt >= maxAttempts || !isRetryable(error)) break
+          setStatus(`Analyzing image... retry ${attempt}/${maxAttempts - 1}`)
+          await new Promise((resolve) => setTimeout(resolve, 700 * attempt))
+        }
+      }
+
+      if (!analysis) {
+        throw lastError instanceof Error ? lastError : new Error("Unable to analyze image.")
+      }
 
       const isLikelyFood =
         !!analysis.productName ||
@@ -196,6 +229,8 @@ export default function ScanScreen() {
         return
       }
       setStatus(err.message || "Unable to analyze image.")
+    } finally {
+      setIsAnalyzing(false)
     }
   }
 
@@ -274,11 +309,11 @@ export default function ScanScreen() {
         )}
         <Pressable
           onPress={handleAnalyze}
-          disabled={!image.label}
-          style={[styles.primaryAction, !image.label ? styles.primaryActionDisabled : null]}
+          disabled={!image.label || isAnalyzing}
+          style={[styles.primaryAction, !image.label || isAnalyzing ? styles.primaryActionDisabled : null]}
         >
           <Ionicons name="search" size={20} color={theme.colors.accent2} />
-          <Text style={styles.primaryActionText}>Analyze</Text>
+          <Text style={styles.primaryActionText}>{isAnalyzing ? "Analyzing..." : "Analyze"}</Text>
         </Pressable>
       </View>
 
