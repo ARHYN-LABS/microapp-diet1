@@ -6,6 +6,7 @@ import type { AnalyzeFromImagesResponse, UserPrefs } from "@wimf/shared"
 import { theme } from "../theme"
 import { getHealthPrefs, getProfilePrefs, getProfilePrefsCached, getUserPrefs } from "../storage/cache"
 import ScoreRing from "../components/ScoreRing"
+import { normalizeImageUrl } from "../utils/normalizeImageUrl"
 
 type ResultsParams = {
   analysis: AnalyzeFromImagesResponse
@@ -34,7 +35,14 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 export default function ResultsScreen({ route }: Props) {
   const { analysis } = route.params
-  const imageUri = route.params.imageUri
+  const imageCandidates = useMemo(
+    () =>
+      [route.params.imageUri, normalizeImageUrl(analysis.imageUrl)]
+        .filter((item): item is string => !!item),
+    [analysis.imageUrl, route.params.imageUri]
+  )
+  const [imageIndex, setImageIndex] = useState(0)
+  const imageUri = imageCandidates[imageIndex]
   const insets = useSafeAreaInsets()
   const [prefs, setPrefs] = useState<UserPrefs | null>(null)
   const [healthPrefs, setHealthPrefs] = useState({ restrictions: [], allergens: [] as string[] })
@@ -213,6 +221,10 @@ export default function ResultsScreen({ route }: Props) {
     loadPrefs()
   }, [])
 
+  useEffect(() => {
+    setImageIndex(0)
+  }, [route.params.imageUri, analysis.imageUrl])
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -230,7 +242,13 @@ export default function ResultsScreen({ route }: Props) {
       {imageUri ? (
         <Card style={styles.previewCard}>
           <View style={styles.previewWrap}>
-            <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+              onError={() => {
+                setImageIndex((prev) => (prev + 1 < imageCandidates.length ? prev + 1 : prev))
+              }}
+            />
             {nutritionOverlay ? (
               <View style={styles.nutritionOverlay}>
                 {nutritionOverlay.map((item) => (

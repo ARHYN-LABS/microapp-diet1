@@ -33,8 +33,7 @@ const defaults: ProfilePrefs = {
     processed: true,
     highSodiumSugar: true,
     push: true,
-    email: true,
-    sms: true
+    email: true
   },
   sensitivities: {
     hypertension: false,

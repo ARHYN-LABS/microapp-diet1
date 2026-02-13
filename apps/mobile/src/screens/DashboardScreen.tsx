@@ -40,6 +40,7 @@ export default function DashboardScreen() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
 
   const mergeHistoryImages = useCallback((items: Array<any>) => {
+    const isLocalUri = (uri: string) => uri.startsWith("file:") || uri.startsWith("content:")
     const next: Record<string, string> = {}
     items.forEach((entry) => {
       const uri = normalizeImageUrl(entry.imageUrl) || normalizeImageUrl(entry.analysisSnapshot?.imageUrl)
@@ -48,7 +49,20 @@ export default function DashboardScreen() {
       const fallbackKey = `${entry.createdAt || ""}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
       next[fallbackKey] = uri
     })
-    setImageMap((prev) => ({ ...prev, ...next }))
+    setImageMap((prev) => {
+      const merged = { ...prev }
+      for (const [key, uri] of Object.entries(next)) {
+        const existing = merged[key]
+        if (!existing) {
+          merged[key] = uri
+          continue
+        }
+        if (!isLocalUri(existing) && isLocalUri(uri)) {
+          merged[key] = uri
+        }
+      }
+      return merged
+    })
   }, [])
 
   const load = useCallback(async () => {

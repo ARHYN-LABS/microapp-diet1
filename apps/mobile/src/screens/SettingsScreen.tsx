@@ -279,8 +279,7 @@ const alertOptions = [
   { key: "processed", label: "Highly Processed Foods" },
   { key: "highSodiumSugar", label: "High Sodium / Sugar" },
   { key: "push", label: "Push Notifications" },
-  { key: "email", label: "Email Alerts" },
-  { key: "sms", label: "SMS Alerts" }
+  { key: "email", label: "Email Alerts" }
 ]
 
 const sensitivityOptions = [
@@ -335,8 +334,7 @@ export default function SettingsScreen() {
       processed: true,
       highSodiumSugar: true,
       push: true,
-      email: true,
-      sms: true
+      email: true
     },
     sensitivities: {
       hypertension: false,

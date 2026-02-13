@@ -264,8 +264,7 @@ const alertToggles = [
   { key: "processed", label: "Highly Processed Foods" },
   { key: "highSodiumSugar", label: "High Sodium / Sugar" },
   { key: "push", label: "Push Notifications" },
-  { key: "email", label: "Email Alerts" },
-  { key: "sms", label: "SMS Alerts" }
+  { key: "email", label: "Email Alerts" }
 ]
 
 const sensitivityToggles = [
