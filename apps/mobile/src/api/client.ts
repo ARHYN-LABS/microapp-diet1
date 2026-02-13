@@ -97,9 +97,6 @@ export async function runExtract(formData: FormData) {
 
 export async function runAnalyze(formData: FormData) {
   const config = await getConfig()
-  const maxAttempts = 4
-  let attempt = 0
-  let lastError: unknown
 
   const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number) => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -117,34 +114,7 @@ export async function runAnalyze(formData: FormData) {
     }
   }
 
-  const shouldRetry = (error: unknown) => {
-    const message = (error as Error)?.message?.toLowerCase() || ""
-    const code = (error as Error & { code?: string })?.code || ""
-    if (code === "SCAN_LIMIT_REACHED") return false
-    return (
-      message.includes("network") ||
-      message.includes("timeout") ||
-      message.includes("timed out") ||
-      message.includes("failed to analyze") ||
-      message.includes("server error")
-    )
-  }
-
-  while (attempt < maxAttempts) {
-    try {
-      return await withTimeout(analyzeFromImages(config, formData), 45000)
-    } catch (error) {
-      lastError = error
-      attempt += 1
-      if (attempt >= maxAttempts || !shouldRetry(error)) {
-        throw error
-      }
-      const delayMs = 600 * attempt
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("Failed to analyze images")
+  return withTimeout(analyzeFromImages(config, formData), 30000)
 }
 
 export async function fetchPrefs(userId: string): Promise<UserPrefs> {

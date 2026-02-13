@@ -1554,14 +1554,36 @@ app.post(
         return res.status(400).json({ error: "At least one label image is required." })
       }
 
+      const isFrontOnly = !!frontFile && !ingredientsFile && !nutritionFile
+
       let extracted = {
         ingredientsText: "",
         nutritionText: "",
         frontText: ""
       }
       let confidence = 0
+      let parsed: ParsedData | null = null
 
-      if (ingredientsFile || nutritionFile) {
+      if (isFrontOnly) {
+        try {
+          parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
+          extracted = buildVisionExtraction(parsed)
+          confidence = 1
+        } catch (visionError) {
+          // Fast path is vision-first for photo scans. If vision fails, fallback to OCR for resilience.
+          const frontOcr = await runOcr(frontFile.buffer)
+          extracted = {
+            ingredientsText: frontOcr.text,
+            nutritionText: frontOcr.text,
+            frontText: frontOcr.text
+          }
+          confidence = frontOcr.confidence
+          parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
+          if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
+            throw visionError
+          }
+        }
+      } else if (ingredientsFile || nutritionFile) {
         const [ingredientsOcr, nutritionOcr, frontOcr] = await Promise.all([
           ingredientsFile ? runOcr(ingredientsFile.buffer) : Promise.resolve({ text: "", confidence: 0 }),
           nutritionFile ? runOcr(nutritionFile.buffer) : Promise.resolve({ text: "", confidence: 0 }),
@@ -1583,16 +1605,18 @@ app.post(
         confidence = frontOcr.confidence
       }
 
-      let parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
-      const needsVision =
-        !!frontFile &&
-        (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed))
+      if (!parsed) {
+        parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
+        const needsVision =
+          !!frontFile &&
+          (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed))
 
-      if (needsVision) {
-        parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
-        extracted = buildVisionExtraction(parsed)
-      } else if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
-        throw new OcrError("Image is not clear. Upload again.")
+        if (needsVision) {
+          parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
+          extracted = buildVisionExtraction(parsed)
+        } else if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
+          throw new OcrError("Image is not clear. Upload again.")
+        }
       }
 
       return res.json({
@@ -1722,6 +1746,10 @@ app.post(
             type: condition.type,
             notes: condition.notes
           })) || []
+      }
+
+      if (!parsed) {
+        throw new OcrError("Unable to analyze image.")
       }
 
       const analysis = analyzeFromParsed(parsed, userPrefs ?? undefined, extracted)

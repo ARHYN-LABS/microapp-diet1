@@ -24,6 +24,18 @@ export default function HistoryScreen() {
   const [filterDate, setFilterDate] = useState("")
   const [filterName, setFilterName] = useState("")
 
+  const mergeHistoryImages = useCallback((items: ScanHistory[]) => {
+    const next: Record<string, string> = {}
+    items.forEach((entry) => {
+      const uri = normalizeImageUrl(entry.imageUrl) || normalizeImageUrl(entry.analysisSnapshot?.imageUrl)
+      if (!uri) return
+      next[entry.id] = uri
+      const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
+      next[fallbackKey] = uri
+    })
+    setImageMap((prev) => ({ ...prev, ...next }))
+  }, [])
+
   const toLocalDateKey = (value: string | Date) => {
     const date = new Date(value)
     const year = date.getFullYear()
@@ -72,6 +84,7 @@ export default function HistoryScreen() {
       if (fresh.length) {
         setHistory(fresh)
         setScanHistoryCache(fresh)
+        mergeHistoryImages(fresh)
         setStatus("")
       } else if (!cached.length) {
         setHistory([])
@@ -83,7 +96,7 @@ export default function HistoryScreen() {
         setStatus("Unable to reach API")
       }
     }
-  }, [])
+  }, [mergeHistoryImages])
 
   useEffect(() => {
     loadHistory()

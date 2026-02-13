@@ -39,6 +39,18 @@ export default function DashboardScreen() {
   const [history, setHistory] = useState<Array<any>>([])
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
 
+  const mergeHistoryImages = useCallback((items: Array<any>) => {
+    const next: Record<string, string> = {}
+    items.forEach((entry) => {
+      const uri = normalizeImageUrl(entry.imageUrl) || normalizeImageUrl(entry.analysisSnapshot?.imageUrl)
+      if (!uri) return
+      next[entry.id] = uri
+      const fallbackKey = `${entry.createdAt || ""}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
+      next[fallbackKey] = uri
+    })
+    setImageMap((prev) => ({ ...prev, ...next }))
+  }, [])
+
   const load = useCallback(async () => {
       const cachedProfile = getProfileCached()
       if (cachedProfile?.fullName) {
@@ -68,6 +80,7 @@ export default function DashboardScreen() {
       const cachedImages = await getScanImageMap()
       setHistory(cachedHistory)
       setImageMap(cachedImages)
+      mergeHistoryImages(cachedHistory)
       setTotals({
         calories: log.totals.calories,
         missingNutritionCount: log.missingNutritionCount,
@@ -101,12 +114,13 @@ export default function DashboardScreen() {
           if (fresh.length) {
             setHistory(fresh)
             await setScanHistoryCache(fresh)
+            mergeHistoryImages(fresh)
           }
         }
       } catch {
         // keep cached history if API fails
       }
-  }, [date])
+  }, [date, mergeHistoryImages])
 
   useEffect(() => {
     load()

@@ -121,7 +121,7 @@ export default function ScanScreen() {
 
     try {
       const profile = await getProfile()
-      const maxAttempts = 3
+      const maxAttempts = 2
       let analysis: AnalyzeFromImagesResponse | null = null
       let lastError: unknown
 
@@ -150,7 +150,7 @@ export default function ScanScreen() {
           lastError = error
           if (attempt >= maxAttempts || !isRetryable(error)) break
           setStatus(`Analyzing image... retry ${attempt}/${maxAttempts - 1}`)
-          await new Promise((resolve) => setTimeout(resolve, 700 * attempt))
+          await new Promise((resolve) => setTimeout(resolve, 300 * attempt))
         }
       }
 
