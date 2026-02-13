@@ -102,6 +102,7 @@ export function scoreFromParsed(
   const features = extractFeatures(ingredients, nutrition)
   let raw = model.bias
   const contributions: ScoreExplanation[] = []
+  const normalizedIngredients = ingredients.map((item) => item.toLowerCase())
 
   Object.entries(model.weights).forEach(([feature, weight]) => {
     const value = (features as Record<string, number>)[feature] ?? 0
@@ -115,6 +116,56 @@ export function scoreFromParsed(
       reason: featureReasons[feature] || "Model contribution."
     })
   })
+
+  // Whole-fruit guardrail:
+  // Vision nutrition estimates for single fruits can look "high sugar" despite being minimally processed.
+  // Give a bounded uplift when signals strongly match whole fruit.
+  const fruitTokens = [
+    "apple",
+    "banana",
+    "orange",
+    "pear",
+    "grape",
+    "mango",
+    "papaya",
+    "pineapple",
+    "kiwi",
+    "peach",
+    "plum",
+    "apricot",
+    "berry",
+    "strawberry",
+    "blueberry",
+    "blackberry",
+    "raspberry"
+  ]
+  const processedFruitTerms = ["juice", "jam", "jelly", "syrup", "honey", "nectar", "preserve"]
+  const mentionsFruit = normalizedIngredients.some((item) =>
+    fruitTokens.some((token) => item.includes(token))
+  )
+  const mentionsProcessedFruit = normalizedIngredients.some((item) =>
+    processedFruitTerms.some((term) => item.includes(term))
+  )
+  const looksWholeFruit =
+    mentionsFruit &&
+    !mentionsProcessedFruit &&
+    features.ingredient_count <= 3 &&
+    features.ultra_processed_additive_count === 0 &&
+    features.has_artificial_dye === 0 &&
+    features.has_hydrogenated_oil === 0 &&
+    features.has_uncertain_ingredients === 0 &&
+    features.addedSugar_g <= 0.5 &&
+    features.sodium_mg <= 60
+
+  if (looksWholeFruit) {
+    raw += 0.45
+    contributions.push({
+      label: "Whole fruit profile",
+      direction: "up",
+      points: 45,
+      reason: "Single-ingredient fruit with no processing additives."
+    })
+  }
 
   const value = Math.round(clamp(raw, 0, 1) * 100)
   const category: ScoreCategory =

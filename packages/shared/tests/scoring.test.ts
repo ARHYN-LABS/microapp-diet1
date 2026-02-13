@@ -31,4 +31,31 @@ describe("scoreProduct", () => {
     })
     expect(result.value).toBeLessThan(70)
   })
+
+  it("boosts whole fruit profiles into high score range", () => {
+    const result = scoreFromParsed(["Apple"], {
+      calories: 52,
+      protein_g: 0.3,
+      carbs_g: 14,
+      sugar_g: 10.4,
+      addedSugar_g: 0,
+      sodium_mg: 1,
+      fiber_g: 2.4
+    })
+    expect(result.value).toBeGreaterThanOrEqual(90)
+    expect(result.category).toBe("Good")
+  })
+
+  it("does not apply whole-fruit boost to processed fruit products", () => {
+    const result = scoreFromParsed(["Orange juice", "Sugar"], {
+      calories: 120,
+      protein_g: 1,
+      carbs_g: 28,
+      sugar_g: 24,
+      addedSugar_g: 18,
+      sodium_mg: 25,
+      fiber_g: 0.2
+    })
+    expect(result.value).toBeLessThan(80)
+  })
 })
