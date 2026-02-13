@@ -167,8 +167,15 @@ export default function DashboardScreen() {
   const recentScans = history.slice(0, 2)
   const popularScans = history.slice(0, 2)
 
+  const getPreviewUri = (scan: any) =>
+    imageMap[scan.id] ||
+    normalizeImageUrl(scan.imageUrl) ||
+    normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
+    null
+
   const withCacheBuster = (uri: string | null | undefined, entry: any) => {
     if (!uri) return null
+    if (uri.startsWith("file:") || uri.startsWith("content:")) return uri
     const joiner = uri.includes("?") ? "&" : "?"
     return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt || "")}`
   }
@@ -276,29 +283,16 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri:
-                      withCacheBuster(
-                        normalizeImageUrl(scan.imageUrl) ||
-                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                          imageMap[scan.id],
-                        scan
-                      ),
+                    imageUri: withCacheBuster(getPreviewUri(scan), scan),
                     fromHistory: true
                   } as never
                 )
               }
             >
               <View style={styles.scanThumb}>
-                {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
+                {getPreviewUri(scan) ? (
                   <Image
-                    source={{
-                      uri: withCacheBuster(
-                        normalizeImageUrl(scan.imageUrl) ||
-                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                          imageMap[scan.id],
-                        scan
-                      )
-                    }}
+                    source={{ uri: withCacheBuster(getPreviewUri(scan), scan) || undefined }}
                     style={styles.scanThumbImage}
                   />
                 ) : null}
@@ -333,29 +327,16 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri:
-                      withCacheBuster(
-                        normalizeImageUrl(scan.imageUrl) ||
-                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                          imageMap[scan.id],
-                        scan
-                      ),
+                    imageUri: withCacheBuster(getPreviewUri(scan), scan),
                     fromHistory: true
                   } as never
                 )
               }
             >
               <View style={styles.popularThumb}>
-                {(scan.imageUrl || scan.analysisSnapshot?.imageUrl || imageMap[scan.id]) ? (
+                {getPreviewUri(scan) ? (
                   <Image
-                    source={{
-                      uri: withCacheBuster(
-                        normalizeImageUrl(scan.imageUrl) ||
-                          normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
-                          imageMap[scan.id],
-                        scan
-                      )
-                    }}
+                    source={{ uri: withCacheBuster(getPreviewUri(scan), scan) || undefined }}
                     style={styles.popularImage}
                   />
                 ) : null}

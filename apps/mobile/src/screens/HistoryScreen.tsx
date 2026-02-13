@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from "react-native"
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker"
 import { fetchHistory, fetchProfile } from "../api/client"
 import {
   getProfile,
@@ -22,6 +23,14 @@ export default function HistoryScreen() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
   const [filterDate, setFilterDate] = useState("")
   const [filterName, setFilterName] = useState("")
+
+  const toLocalDateKey = (value: string | Date) => {
+    const date = new Date(value)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
 
   const loadHistory = useCallback(async () => {
     const cached = await getScanHistoryCache()
@@ -88,29 +97,41 @@ export default function HistoryScreen() {
 
   const filteredHistory = history.filter((entry) => {
     const name = (entry.productName || entry.analysisSnapshot?.productName || "").toLowerCase()
-    const dateKey = new Date(entry.createdAt).toISOString().slice(0, 10)
+    const dateKey = toLocalDateKey(entry.createdAt)
     const matchName = filterName ? name.includes(filterName.toLowerCase()) : true
     const matchDate = filterDate ? dateKey === filterDate : true
     return matchName && matchDate
   })
-  const visibleHistory =
-    filterName || filterDate ? filteredHistory : filteredHistory.slice(0, 10)
+  const visibleHistory = filteredHistory
 
   const getPreviewUri = (entry: ScanHistory) => {
     const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
     return (
-      normalizeImageUrl(entry.imageUrl) ||
-      normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
       imageMap[entry.id] ||
       imageMap[fallbackKey] ||
+      normalizeImageUrl(entry.imageUrl) ||
+      normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
       null
     )
   }
 
   const withCacheBuster = (uri: string | null | undefined, entry: ScanHistory) => {
     if (!uri) return null
+    if (uri.startsWith("file:") || uri.startsWith("content:")) return uri
     const joiner = uri.includes("?") ? "&" : "?"
     return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt)}`
+  }
+
+  const openDatePicker = () => {
+    const initial = filterDate ? new Date(`${filterDate}T00:00:00`) : new Date()
+    DateTimePickerAndroid.open({
+      value: initial,
+      mode: "date",
+      onChange: (event, selectedDate) => {
+        if (event.type !== "set" || !selectedDate) return
+        setFilterDate(toLocalDateKey(selectedDate))
+      }
+    })
   }
 
   useEffect(() => {
@@ -134,13 +155,11 @@ export default function HistoryScreen() {
           placeholder="Filter by name"
           placeholderTextColor={theme.colors.muted}
         />
-        <TextInput
-          style={[styles.input, { width: 140 }]}
-          value={filterDate}
-          onChangeText={setFilterDate}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={theme.colors.muted}
-        />
+        <Pressable style={[styles.input, styles.dateInput]} onPress={openDatePicker}>
+          <Text style={filterDate ? styles.dateText : styles.datePlaceholder}>
+            {filterDate || "YYYY-MM-DD"}
+          </Text>
+        </Pressable>
       </View>
 
       {visibleHistory.map((entry) => {
@@ -216,9 +235,6 @@ export default function HistoryScreen() {
       {!visibleHistory.length && (
         <Text style={styles.empty}>{status || "No scans yet."}</Text>
       )}
-      {!filterName && !filterDate && filteredHistory.length > visibleHistory.length ? (
-        <Text style={styles.empty}>Showing latest 10 scans.</Text>
-      ) : null}
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
     </ScrollView>
   )
@@ -242,6 +258,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: theme.colors.panel,
     color: theme.colors.text
+  },
+  dateInput: {
+    width: 140,
+    justifyContent: "center"
+  },
+  dateText: {
+    color: theme.colors.text
+  },
+  datePlaceholder: {
+    color: theme.colors.muted
   },
   card: {
     padding: 14,
