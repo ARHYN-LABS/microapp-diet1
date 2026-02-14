@@ -112,6 +112,7 @@ const scanFallback = (process.env.SCAN_FALLBACK || "").toLowerCase()
 const visionTimeoutMs = Math.max(10000, Number(process.env.VISION_TIMEOUT_MS || 45000))
 const jwtSecret = process.env.JWT_SECRET || "change-me"
 const logHistory = process.env.LOG_HISTORY === "1"
+const logScanTiming = process.env.LOG_SCAN_TIMING === "1"
 const googleClientId = process.env.GOOGLE_CLIENT_ID || ""
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ""
 const googleRedirectUri =
@@ -1675,6 +1676,9 @@ app.post(
     { name: "frontImage", maxCount: 1 }
   ]),
   async (req, res, next) => {
+    const startedAt = Date.now()
+    let ocrMs = 0
+    let visionMs = 0
     try {
       const files = extractImagesSchema.parse(req.files || {})
       const ingredientsFile = files.ingredientsImage?.[0]
@@ -1692,21 +1696,53 @@ app.post(
         frontText: ""
       }
       let confidence = 0
+      let parsed: ParsedData | null = null
+      const isFrontOnly = !!frontFile && !ingredientsFile && !nutritionFile
 
-      if (ingredientsFile || nutritionFile) {
+      if (isFrontOnly) {
+        const visionStartedAt = Date.now()
+        try {
+          parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
+          extracted = buildVisionExtraction(parsed)
+          confidence = 1
+          visionMs += Date.now() - visionStartedAt
+        } catch (visionError) {
+          visionMs += Date.now() - visionStartedAt
+          // Fallback to OCR only when vision fails.
+          const ocrStartedAt = Date.now()
+          const frontOcr = await runOcr(frontFile.buffer)
+          ocrMs += Date.now() - ocrStartedAt
+          extracted = {
+            ingredientsText: frontOcr.text,
+            nutritionText: frontOcr.text,
+            frontText: frontOcr.text
+          }
+          confidence = frontOcr.confidence
+          parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
+          if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
+            throw visionError
+          }
+        }
+      }
+
+      if (!isFrontOnly && (ingredientsFile || nutritionFile)) {
+        const ocrStartedAt = Date.now()
         const [ingredientsOcr, nutritionOcr, frontOcr] = await Promise.all([
           ingredientsFile ? runOcr(ingredientsFile.buffer) : Promise.resolve({ text: "", confidence: 0 }),
           nutritionFile ? runOcr(nutritionFile.buffer) : Promise.resolve({ text: "", confidence: 0 }),
           frontFile ? runOcr(frontFile.buffer) : Promise.resolve(null)
         ])
+        ocrMs += Date.now() - ocrStartedAt
         extracted = {
           ingredientsText: ingredientsOcr.text,
           nutritionText: nutritionOcr.text,
           frontText: frontOcr?.text || ""
         }
         confidence = Math.max(ingredientsOcr.confidence, nutritionOcr.confidence, frontOcr?.confidence || 0)
-      } else if (frontFile) {
+      } else if (!isFrontOnly && frontFile) {
+        const ocrStartedAt = Date.now()
         const frontOcr = await runOcr(frontFile.buffer)
+        ocrMs += Date.now() - ocrStartedAt
         extracted = {
           ingredientsText: frontOcr.text,
           nutritionText: frontOcr.text,
@@ -1715,16 +1751,20 @@ app.post(
         confidence = frontOcr.confidence
       }
 
-      let parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
-      const needsVision =
-        !!frontFile &&
-        (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed))
+      if (!parsed) {
+        parsed = parseExtraction(extracted.ingredientsText, extracted.nutritionText, extracted.frontText)
+        const needsVision =
+          !!frontFile &&
+          (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed))
 
-      if (needsVision) {
-        parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
-        extracted = buildVisionExtraction(parsed)
-      } else if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
-        throw new OcrError("Image is not clear. Upload again.")
+        if (needsVision) {
+          const visionStartedAt = Date.now()
+          parsed = await runVisionEstimate(frontFile.buffer, frontFile.mimetype)
+          visionMs += Date.now() - visionStartedAt
+          extracted = buildVisionExtraction(parsed)
+        } else if (confidence < IMAGE_CONFIDENCE_MIN || isParsedEmpty(parsed)) {
+          throw new OcrError("Image is not clear. Upload again.")
+        }
       }
 
       let userPrefs = undefined as any
@@ -1804,9 +1844,21 @@ app.post(
         })
       }
 
+      const processingMs = Date.now() - startedAt
+      if (logScanTiming) {
+        console.log("scan timing", {
+          totalMs: processingMs,
+          ocrMs,
+          visionMs,
+          provider: scanProvider,
+          fallback: scanFallback || undefined
+        })
+      }
+
       return res.json({
         ...analysis,
         imageUrl: toPublicUrl(req, imageUrl),
+        processingMs,
         suitability,
         parsing: {
           extractedText: extracted,

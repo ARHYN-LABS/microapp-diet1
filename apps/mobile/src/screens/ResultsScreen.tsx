@@ -110,6 +110,11 @@ export default function ResultsScreen({ route }: Props) {
     return average.toFixed(2)
   }, [analysis.parsing.confidences])
 
+  const scanTimeText = useMemo(() => {
+    if (!analysis.processingMs || analysis.processingMs <= 0) return null
+    return `${(analysis.processingMs / 1000).toFixed(1)}s`
+  }, [analysis.processingMs])
+
   const showHalal =
     !!prefs?.halalCheckEnabled || healthPrefs.restrictions.includes("halal")
 
@@ -237,6 +242,7 @@ export default function ResultsScreen({ route }: Props) {
       <View style={styles.headerBlock}>
         <Text style={styles.title}>{analysis.productName || "Unknown product"}</Text>
         <Text style={styles.subtitle}>Label read confidence: {labelConfidence}</Text>
+        {scanTimeText ? <Text style={styles.subtitle}>Scan time: {scanTimeText}</Text> : null}
       </View>
 
       {imageUri ? (
