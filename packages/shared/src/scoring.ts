@@ -103,11 +103,31 @@ export function scoreFromParsed(
   let raw = model.bias
   const contributions: ScoreExplanation[] = []
   const normalizedIngredients = ingredients.map((item) => item.toLowerCase())
+  const dessertTerms = [
+    "donut",
+    "doughnut",
+    "cake",
+    "cookie",
+    "biscuit",
+    "pastry",
+    "brownie",
+    "muffin",
+    "cupcake",
+    "ice cream",
+    "chocolate",
+    "candy"
+  ]
+  const looksDessert = normalizedIngredients.some((item) =>
+    dessertTerms.some((term) => item.includes(term))
+  )
+  const softenedPenaltyFeatures = new Set(["sugar_g", "addedSugar_g", "calories"])
 
   Object.entries(model.weights).forEach(([feature, weight]) => {
     const value = (features as Record<string, number>)[feature] ?? 0
     if (!value) return
-    const points = weight * value
+    const adjustedWeight =
+      looksDessert && weight < 0 && softenedPenaltyFeatures.has(feature) ? weight * 0.65 : weight
+    const points = adjustedWeight * value
     raw += points
     contributions.push({
       label: featureLabels[feature] || feature,
@@ -167,7 +187,7 @@ export function scoreFromParsed(
     })
   }
 
-  const value = Math.round(clamp(raw, 0, 1) * 100)
+  const value = Math.round(clamp(raw, 0.1, 1) * 100)
   const category: ScoreCategory =
     value >= 70 ? "Good" : value >= 40 ? "Moderate" : "Lower"
 
