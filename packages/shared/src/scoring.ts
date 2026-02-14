@@ -120,13 +120,24 @@ export function scoreFromParsed(
   const looksDessert = normalizedIngredients.some((item) =>
     dessertTerms.some((term) => item.includes(term))
   )
-  const softenedPenaltyFeatures = new Set(["sugar_g", "addedSugar_g", "calories"])
+  const softenedPenaltyFeatures = new Set(["sugar_g", "addedSugar_g", "calories", "sodium_mg"])
 
   Object.entries(model.weights).forEach(([feature, weight]) => {
     const value = (features as Record<string, number>)[feature] ?? 0
     if (!value) return
-    const adjustedWeight =
-      looksDessert && weight < 0 && softenedPenaltyFeatures.has(feature) ? weight * 0.65 : weight
+    let adjustedWeight = weight
+    if (weight < 0) {
+      // Global softening so scores are less punitive for imperfect estimates.
+      adjustedWeight = weight * 0.8
+    }
+    if (weight < 0 && softenedPenaltyFeatures.has(feature)) {
+      // Nutrition-estimate-heavy penalties get extra softening.
+      adjustedWeight = adjustedWeight * 0.75
+    }
+    if (looksDessert && weight < 0 && softenedPenaltyFeatures.has(feature)) {
+      // Desserts remain low, but avoid hard floor collisions too often.
+      adjustedWeight = adjustedWeight * 0.75
+    }
     const points = adjustedWeight * value
     raw += points
     contributions.push({
