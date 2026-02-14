@@ -114,7 +114,7 @@ export async function runAnalyze(formData: FormData) {
     }
   }
 
-  return withTimeout(analyzeFromImages(config, formData), 30000)
+  return withTimeout(analyzeFromImages(config, formData), 65000)
 }
 
 export async function fetchPrefs(userId: string): Promise<UserPrefs> {

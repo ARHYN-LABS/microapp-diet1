@@ -109,6 +109,7 @@ const geminiModel = process.env.GEMINI_VISION_MODEL || "gemini-1.5-flash"
 const gemini = geminiKey ? new GoogleGenerativeAI(geminiKey) : null
 const scanProvider = (process.env.SCAN_PROVIDER || "openai").toLowerCase()
 const scanFallback = (process.env.SCAN_FALLBACK || "").toLowerCase()
+const visionTimeoutMs = Math.max(10000, Number(process.env.VISION_TIMEOUT_MS || 45000))
 const jwtSecret = process.env.JWT_SECRET || "change-me"
 const logHistory = process.env.LOG_HISTORY === "1"
 const googleClientId = process.env.GOOGLE_CLIENT_ID || ""
@@ -1440,12 +1441,39 @@ const buildVisionPrompt = () =>
     "Include confidence 0-1."
   ].join(" ")
 
+const withVisionTimeout = async <T>(promise: Promise<T>) => {
+  let timeoutId: NodeJS.Timeout | null = null
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new OcrError("Vision AI timed out. Please retry."))
+    }, visionTimeoutMs)
+  })
+  try {
+    return await Promise.race([promise, timeoutPromise])
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
+}
+
+const isRetryableVisionError = (error: unknown) => {
+  const message = (error as Error)?.message?.toLowerCase?.() || ""
+  return (
+    message.includes("timed out") ||
+    message.includes("timeout") ||
+    message.includes("network") ||
+    message.includes("fetch") ||
+    message.includes("429") ||
+    message.includes("503") ||
+    message.includes("500")
+  )
+}
+
 const runOpenAiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   if (!openai) {
     throw new OcrError("Vision AI is not configured. Set OPENAI_API_KEY.")
   }
 
-  const response = await openai.responses.create({
+  const response = await withVisionTimeout(openai.responses.create({
     model: openAiModel,
     input: [
       {
@@ -1464,7 +1492,7 @@ const runOpenAiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
     text: {
       format: { type: "json_object" }
     }
-  })
+  }))
 
   const responseText = getResponseText(response)
   if (!responseText) {
@@ -1484,7 +1512,7 @@ const runGeminiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   }
 
   const model = gemini.getGenerativeModel({ model: geminiModel })
-  const response = await model.generateContent([
+  const response = await withVisionTimeout(model.generateContent([
     { text: buildVisionPrompt() },
     {
       inlineData: {
@@ -1492,7 +1520,7 @@ const runGeminiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
         mimeType: mimeType || "image/jpeg"
       }
     }
-  ])
+  ]))
 
   const responseText = response.response.text()
   if (!responseText) {
@@ -1508,21 +1536,29 @@ const runGeminiVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
 
 const runVisionEstimate = async (buffer: Buffer, mimeType?: string) => {
   const providers = [scanProvider, scanFallback].filter(Boolean)
+  if (scanProvider === "gemini" && !scanFallback && openai) {
+    providers.push("openai")
+  }
   const uniqueProviders = Array.from(new Set(providers))
   if (!uniqueProviders.length) uniqueProviders.push("openai")
 
   let lastError: unknown = null
   for (const provider of uniqueProviders) {
-    try {
-      if (provider === "gemini") {
-        return await runGeminiVisionEstimate(buffer, mimeType)
+    const maxAttempts = 2
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        if (provider === "gemini") {
+          return await runGeminiVisionEstimate(buffer, mimeType)
+        }
+        if (provider === "openai") {
+          return await runOpenAiVisionEstimate(buffer, mimeType)
+        }
+        throw new OcrError(`Unknown scan provider: ${provider}`)
+      } catch (error) {
+        lastError = error
+        if (attempt >= maxAttempts || !isRetryableVisionError(error)) break
+        await new Promise((resolve) => setTimeout(resolve, 300 * attempt))
       }
-      if (provider === "openai") {
-        return await runOpenAiVisionEstimate(buffer, mimeType)
-      }
-      throw new OcrError(`Unknown scan provider: ${provider}`)
-    } catch (error) {
-      lastError = error
     }
   }
   throw lastError instanceof Error ? lastError : new OcrError("Vision AI failed.")
