@@ -1231,9 +1231,16 @@ const getResponseText = (response: any) => {
 }
 
 const buildVisionParsed = (payload: z.infer<typeof visionSchema>): ParsedData => {
-  const ingredients = (payload.ingredients || []).map((item) => item.trim()).filter(Boolean)
+  const rawIngredients = (payload.ingredients || []).map((item) => item.trim()).filter(Boolean)
   const nutrition = payload.nutrition ?? null
-  const inferredName = guessDishName(payload.productName ?? null, ingredients)
+  const inferredName = guessDishName(payload.productName ?? null, rawIngredients)
+  // Vision can return empty ingredients for whole-food photos (e.g., fruits).
+  // Keep inferred product name as a fallback ingredient hint for scoring.
+  const ingredients = rawIngredients.length
+    ? rawIngredients
+    : inferredName
+      ? [inferredName]
+      : []
   const confidence = typeof payload.confidence === "number" ? payload.confidence : 0.4
   const ingredientConfidence = ingredients.length ? Math.min(0.9, confidence) : 0.2
   const nutritionFields = nutrition
