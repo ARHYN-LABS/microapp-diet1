@@ -9,7 +9,6 @@ import {
   setScanHistoryCache,
   setProfile,
   getToken,
-  getUserId
 } from "../storage/cache"
 import type { ScanHistory } from "@wimf/shared"
 import { theme } from "../theme"
@@ -62,12 +61,6 @@ export default function HistoryScreen() {
   }
 
   const loadHistory = useCallback(async () => {
-    const cached = await getScanHistoryCache()
-    if (cached.length) {
-      setHistory(cached)
-      setStatus("")
-    }
-
     try {
       const storedImages = await getScanImageMap()
       setImageMap(storedImages)
@@ -88,24 +81,20 @@ export default function HistoryScreen() {
         setStatus("Please log in.")
         return
       }
-      let fresh = await fetchHistory(profile.id, profile.email)
-      if (!fresh.length) {
-        const storedUserId = await getUserId()
-        if (storedUserId && storedUserId !== profile.id) {
-          const fallback = await fetchHistory(storedUserId, profile.email)
-          if (fallback.length) {
-            fresh = fallback
-          }
-        }
+      const cached = await getScanHistoryCache(profile.id)
+      if (cached.length) {
+        setHistory(cached)
+        setStatus("")
       }
+      let fresh = await fetchHistory(profile.id, profile.email)
       if (fresh.length) {
         setHistory(fresh)
-        setScanHistoryCache(fresh)
+        setScanHistoryCache(fresh, profile.id)
         mergeHistoryImages(fresh)
         setStatus("")
       } else if (!cached.length) {
         setHistory([])
-        setScanHistoryCache([])
+        setScanHistoryCache([], profile.id)
         setStatus("No scans yet.")
       }
     } catch {

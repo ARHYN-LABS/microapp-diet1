@@ -183,9 +183,9 @@ export default function ScanScreen() {
           parsedNutrition: analysis.nutritionHighlights,
           analysisSnapshot: analysis
         }
-        const cached = await getScanHistoryCache()
+        const cached = await getScanHistoryCache(profile.id)
         const optimistic = [localEntry, ...cached.filter((entry) => entry.id !== localId)]
-        await setScanHistoryCache(optimistic)
+        await setScanHistoryCache(optimistic, profile.id)
         if (image.label?.previewUri && !image.label.previewUri.startsWith("data:")) {
           await setScanImageForId(localId, image.label.previewUri)
           const key = `${localEntry.createdAt}|${localEntry.productName || ""}`
@@ -206,9 +206,9 @@ export default function ScanScreen() {
             const key = `${saved.createdAt}|${saved.productName || saved.analysisSnapshot?.productName || ""}`
             await setScanImageForKey(key, image.label.previewUri)
           }
-          const refreshed = await getScanHistoryCache()
+          const refreshed = await getScanHistoryCache(profile.id)
           const next = [saved, ...refreshed.filter((entry) => entry.id !== localId && entry.id !== saved.id)]
-          await setScanHistoryCache(next)
+          await setScanHistoryCache(next, profile.id)
         }
       }
 

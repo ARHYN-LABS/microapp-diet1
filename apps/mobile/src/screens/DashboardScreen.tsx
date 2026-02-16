@@ -13,8 +13,7 @@ import {
   getScanImageMap,
   setProfile,
   setScanHistoryCache,
-  getToken,
-  getUserId
+  getToken
 } from "../storage/cache"
 import { theme } from "../theme"
 import ScoreRing from "../components/ScoreRing"
@@ -91,7 +90,7 @@ export default function DashboardScreen() {
         allergies: profilePrefs.allergies || {}
       })
       const log = await getJournalForDate(date)
-      const cachedHistory = await getScanHistoryCache()
+      const cachedHistory = profile?.id ? await getScanHistoryCache(profile.id) : []
       const cachedImages = await getScanImageMap()
       setHistory(cachedHistory)
       setImageMap(cachedImages)
@@ -117,18 +116,9 @@ export default function DashboardScreen() {
         }
         if (serverProfile?.id) {
           let fresh = await fetchHistory(serverProfile.id, serverProfile.email)
-          if (!fresh.length) {
-            const storedUserId = await getUserId()
-            if (storedUserId && storedUserId !== serverProfile.id) {
-              const fallback = await fetchHistory(storedUserId, serverProfile.email)
-              if (fallback.length) {
-                fresh = fallback
-              }
-            }
-          }
           if (fresh.length) {
             setHistory(fresh)
-            await setScanHistoryCache(fresh)
+            await setScanHistoryCache(fresh, serverProfile.id)
             mergeHistoryImages(fresh)
           }
         }

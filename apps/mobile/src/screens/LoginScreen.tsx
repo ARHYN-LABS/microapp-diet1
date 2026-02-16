@@ -51,9 +51,7 @@ export default function LoginScreen({ navigation }: Props) {
       await setUserId(response.profile.id)
       try {
         const history = await fetchHistory(response.profile.id, response.profile.email || email)
-        if (history && history.length) {
-          await setScanHistoryCache(history)
-        }
+        await setScanHistoryCache(history || [], response.profile.id)
       } catch {
         // ignore history prefetch failures
       }
@@ -101,9 +99,7 @@ export default function LoginScreen({ navigation }: Props) {
         const profile = await fetchProfile()
         if (profile) {
           const history = await fetchHistory(profile.id, profile.email)
-          if (history && history.length) {
-            await setScanHistoryCache(history)
-          }
+          await setScanHistoryCache(history || [], profile.id)
         }
       } catch {
         // ignore history prefetch failures

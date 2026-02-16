@@ -100,9 +100,7 @@ export default function OnboardingScreen({ navigation, route }: Props) {
 
       try {
         const history = await fetchHistory(profile.id, profile.email)
-        if (history && history.length) {
-          await setScanHistoryCache(history)
-        }
+        await setScanHistoryCache(history || [], profile.id)
       } catch {
         // ignore history prefetch failures
       }

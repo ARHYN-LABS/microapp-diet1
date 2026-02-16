@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage"
 import type { ScanHistory, UserPrefs, UserProfile } from "@wimf/shared"
 
 const HISTORY_KEY = "wimf.history"
+const HISTORY_KEY_PREFIX = "wimf.history."
 const PREFS_KEY = "wimf.prefs"
 const USER_KEY = "wimf.user_id"
 const TOKEN_KEY = "wimf.token"
@@ -212,18 +213,43 @@ export async function getScanImageForId(id: string): Promise<string | null> {
   return map[id] || null
 }
 
-export async function getScanHistoryCache(): Promise<ScanHistory[]> {
-  const raw = await AsyncStorage.getItem(HISTORY_KEY)
-  if (!raw) return []
-  try {
-    return JSON.parse(raw) as ScanHistory[]
-  } catch {
-    return []
-  }
+const getHistoryCacheKey = async (userId?: string | null) => {
+  const resolvedUserId = userId || (await AsyncStorage.getItem(USER_KEY))
+  if (resolvedUserId) return `${HISTORY_KEY_PREFIX}${resolvedUserId}`
+  return HISTORY_KEY
 }
 
-export async function setScanHistoryCache(items: ScanHistory[]): Promise<void> {
-  await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(items))
+export async function getScanHistoryCache(userId?: string | null): Promise<ScanHistory[]> {
+  const cacheKey = await getHistoryCacheKey(userId)
+  const raw = await AsyncStorage.getItem(cacheKey)
+  if (raw) {
+    try {
+      return JSON.parse(raw) as ScanHistory[]
+    } catch {
+      return []
+    }
+  }
+
+  // Legacy one-key cache fallback. Keep only entries for current user.
+  if (cacheKey !== HISTORY_KEY) {
+    const legacyRaw = await AsyncStorage.getItem(HISTORY_KEY)
+    if (!legacyRaw) return []
+    try {
+      const all = JSON.parse(legacyRaw) as ScanHistory[]
+      const resolvedUserId = userId || (await AsyncStorage.getItem(USER_KEY))
+      const filtered = resolvedUserId ? all.filter((item) => item.userId === resolvedUserId) : all
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(filtered))
+      return filtered
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+export async function setScanHistoryCache(items: ScanHistory[], userId?: string | null): Promise<void> {
+  const cacheKey = await getHistoryCacheKey(userId)
+  await AsyncStorage.setItem(cacheKey, JSON.stringify(items))
 }
 
 export async function cleanupScanImageCache(): Promise<void> {
