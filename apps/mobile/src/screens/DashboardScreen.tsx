@@ -57,7 +57,8 @@ export default function DashboardScreen() {
           merged[key] = uri
           continue
         }
-        if (!isLocalUri(existing) && isLocalUri(uri)) {
+        // Prefer stable remote upload URLs over temporary local file/content URIs.
+        if (isLocalUri(existing) && !isLocalUri(uri)) {
           merged[key] = uri
         }
       }

@@ -23,6 +23,8 @@ export default function HistoryScreen() {
   const [imageMap, setImageMap] = useState<Record<string, string>>({})
   const [filterDate, setFilterDate] = useState("")
   const [filterName, setFilterName] = useState("")
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const mergeHistoryImages = useCallback((items: ScanHistory[]) => {
     const isLocalUri = (uri: string) => uri.startsWith("file:") || uri.startsWith("content:")
@@ -42,7 +44,8 @@ export default function HistoryScreen() {
           merged[key] = uri
           continue
         }
-        if (!isLocalUri(existing) && isLocalUri(uri)) {
+        // Prefer stable remote upload URLs over temporary local file/content URIs.
+        if (isLocalUri(existing) && !isLocalUri(uri)) {
           merged[key] = uri
         }
       }
@@ -129,7 +132,9 @@ export default function HistoryScreen() {
     const matchDate = filterDate ? dateKey === filterDate : true
     return matchName && matchDate
   })
-  const visibleHistory = filteredHistory
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+  const visibleHistory = filteredHistory.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   const getPreviewUri = (entry: ScanHistory) => {
     const fallbackKey = `${entry.createdAt}|${entry.productName || entry.analysisSnapshot?.productName || ""}`
@@ -160,6 +165,16 @@ export default function HistoryScreen() {
       }
     })
   }
+
+  useEffect(() => {
+    setPage(1)
+  }, [filterDate, filterName])
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages)
+    }
+  }, [page, totalPages])
 
   useEffect(() => {
     const unique = new Set<string>()
@@ -262,6 +277,27 @@ export default function HistoryScreen() {
       {!visibleHistory.length && (
         <Text style={styles.empty}>{status || "No scans yet."}</Text>
       )}
+      {filteredHistory.length > pageSize && (
+        <View style={styles.paginationRow}>
+          <Pressable
+            style={[styles.pageButton, safePage <= 1 ? styles.pageButtonDisabled : null]}
+            onPress={() => setPage((value) => Math.max(1, value - 1))}
+            disabled={safePage <= 1}
+          >
+            <Text style={styles.pageButtonText}>Previous</Text>
+          </Pressable>
+          <Text style={styles.pageText}>
+            Page {safePage} of {totalPages}
+          </Text>
+          <Pressable
+            style={[styles.pageButton, safePage >= totalPages ? styles.pageButtonDisabled : null]}
+            onPress={() => setPage((value) => Math.min(totalPages, value + 1))}
+            disabled={safePage >= totalPages}
+          >
+            <Text style={styles.pageButtonText}>Next</Text>
+          </Pressable>
+        </View>
+      )}
       <Text style={styles.disclaimer}>Educational, not medical advice.</Text>
     </ScrollView>
   )
@@ -350,6 +386,33 @@ const styles = StyleSheet.create({
   empty: {
     color: theme.colors.muted,
     marginTop: 16
+  },
+  paginationRow: {
+    marginTop: 8,
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10
+  },
+  pageButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.panel,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  pageButtonDisabled: {
+    opacity: 0.5
+  },
+  pageButtonText: {
+    color: theme.colors.text,
+    fontWeight: "600"
+  },
+  pageText: {
+    color: theme.colors.muted,
+    fontSize: 12
   },
   disclaimer: {
     marginTop: 16,
