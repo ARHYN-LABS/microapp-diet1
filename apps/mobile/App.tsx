@@ -7,7 +7,7 @@ import {
 } from "@react-navigation/drawer"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { StatusBar } from "expo-status-bar"
-import { Image, Pressable, Text, View } from "react-native"
+import { Alert, Image, Linking, Pressable, Text, View } from "react-native"
 import { useEffect, useState, useContext } from "react"
 import { Ionicons } from "@expo/vector-icons"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -46,6 +46,13 @@ const tabConfig: Array<{
   { name: "History", label: "History", icon: "time-outline" },
   { name: "Settings", label: "Profile", icon: "settings-outline" }
 ]
+
+const legalLinks = {
+  privacyPolicy: "https://safe-plate.ai/privacy-policy",
+  adsDisclosure: "https://safe-plate.ai/ads-disclosure",
+  dataSafety: "https://safe-plate.ai/data-safety",
+  contentRating: "https://safe-plate.ai/content-rating"
+} as const
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
@@ -229,6 +236,14 @@ function MainTabs() {
 function DrawerContent({ navigation }: { navigation: any }) {
   const { setIsAuthed } = useContext(AuthContext)
   const insets = useSafeAreaInsets()
+  const openLegalUrl = async (url: string) => {
+    navigation.closeDrawer()
+    try {
+      await Linking.openURL(url)
+    } catch {
+      Alert.alert("Unable to open link", "Please try again in a moment.")
+    }
+  }
 
   return (
     <DrawerContentScrollView
@@ -273,6 +288,26 @@ function DrawerContent({ navigation }: { navigation: any }) {
         label="Pricing"
         onPress={() => navigation.navigate("Pricing")}
         icon={({ color, size }) => <Ionicons name="card-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Privacy Policy"
+        onPress={() => openLegalUrl(legalLinks.privacyPolicy)}
+        icon={({ color, size }) => <Ionicons name="document-text-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Ads Disclosure"
+        onPress={() => openLegalUrl(legalLinks.adsDisclosure)}
+        icon={({ color, size }) => <Ionicons name="megaphone-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Data Safety"
+        onPress={() => openLegalUrl(legalLinks.dataSafety)}
+        icon={({ color, size }) => <Ionicons name="shield-checkmark-outline" color={color} size={size} />}
+      />
+      <DrawerItem
+        label="Content Rating"
+        onPress={() => openLegalUrl(legalLinks.contentRating)}
+        icon={({ color, size }) => <Ionicons name="checkmark-done-outline" color={color} size={size} />}
       />
       <DrawerItem
         label="Logout"
