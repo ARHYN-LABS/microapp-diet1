@@ -9,6 +9,7 @@ export default function NavBar() {
   const [isAuthed, setIsAuthed] = useState(false)
   const [name, setName] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const token = getToken()
@@ -16,6 +17,7 @@ export default function NavBar() {
     setIsAuthed(!!token)
     setName(profile?.fullName || profile?.email || null)
     setAvatarUrl(normalizeImageUrl(profile?.avatarUrl) || null)
+    setMenuOpen(false)
   }, [router.asPath])
 
   const handleLogout = () => {
@@ -32,7 +34,7 @@ export default function NavBar() {
             <img src="/favicon.png" alt="SafePlate AI" />
           </Link>
         </div>
-        <div className="app-links d-none d-lg-flex">
+        <div className="app-links app-links-desktop d-none d-lg-flex">
           <Link className={router.pathname === "/" ? "active" : ""} href="/">
             Home
           </Link>
@@ -59,6 +61,66 @@ export default function NavBar() {
           </Link>
         </div>
         <div className="app-actions">
+          <button
+            type="button"
+            className="hamburger-btn d-inline-flex d-lg-none"
+            aria-label="Toggle navigation"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          {!isAuthed && (
+            <>
+              <Link className="app-store-badge d-none d-md-inline-flex" href="/login">
+                Log in
+              </Link>
+              <Link className="app-store-badge is-primary d-none d-md-inline-flex" href="/signup">
+                Sign up
+              </Link>
+            </>
+          )}
+          {isAuthed && (
+            <>
+              {avatarUrl ? (
+                <img className="nav-avatar" src={avatarUrl} alt="Profile" />
+              ) : null}
+              <span className="chip d-none d-md-inline">{name || "Account"}</span>
+              <button className="app-store-badge d-none d-md-inline-flex" onClick={handleLogout}>
+                Logout
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className={`container mobile-nav-panel ${menuOpen ? "is-open" : ""}`}>
+        <div className="app-links app-links-mobile">
+          <Link className={router.pathname === "/" ? "active" : ""} href="/">
+            Home
+          </Link>
+          <Link className={router.pathname === "/dashboard" ? "active" : ""} href="/dashboard">
+            Dashboard
+          </Link>
+          <Link className={router.pathname === "/scan" ? "active" : ""} href="/scan">
+            Scan
+          </Link>
+          <Link className={router.pathname === "/results" ? "active" : ""} href="/results">
+            Results
+          </Link>
+          <Link className={router.pathname === "/journal" ? "active" : ""} href="/journal">
+            Journal
+          </Link>
+          <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
+            History
+          </Link>
+          <Link className={router.pathname === "/pricing" ? "active" : ""} href="/pricing">
+            Pricing
+          </Link>
+          <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
+            Profile
+          </Link>
           {!isAuthed && (
             <>
               <Link className="app-store-badge" href="/login">
@@ -70,43 +132,11 @@ export default function NavBar() {
             </>
           )}
           {isAuthed && (
-            <>
-              {avatarUrl ? (
-                <img className="nav-avatar" src={avatarUrl} alt="Profile" />
-              ) : null}
-              <span className="chip d-none d-md-inline">{name || "Account"}</span>
-              <button className="app-store-badge" onClick={handleLogout}>
-                Logout
-              </button>
-            </>
+            <button className="app-store-badge" onClick={handleLogout}>
+              Logout
+            </button>
           )}
         </div>
-      </div>
-      <div className="container app-links d-flex d-lg-none mt-2">
-        <Link className={router.pathname === "/" ? "active" : ""} href="/">
-          Home
-        </Link>
-        <Link className={router.pathname === "/dashboard" ? "active" : ""} href="/dashboard">
-          Dashboard
-        </Link>
-        <Link className={router.pathname === "/scan" ? "active" : ""} href="/scan">
-          Scan
-        </Link>
-        <Link className={router.pathname === "/results" ? "active" : ""} href="/results">
-          Results
-        </Link>
-        <Link className={router.pathname === "/journal" ? "active" : ""} href="/journal">
-          Journal
-        </Link>
-        <Link className={router.pathname === "/history" ? "active" : ""} href="/history">
-          History
-        </Link>
-        <Link className={router.pathname === "/pricing" ? "active" : ""} href="/pricing">
-          Pricing
-        </Link>
-        <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
-          Profile
-        </Link>
       </div>
     </nav>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/router"
-import { getBillingSummary } from "@wimf/shared"
+import { createBillingCheckout, getBillingSummary } from "@wimf/shared"
 import { getToken } from "../lib/auth"
 import { apiBase } from "../lib/apiBase"
 
@@ -22,12 +22,12 @@ const formatPrice = (value: number) =>
 
 export default function Pricing() {
   const router = useRouter()
-  const paymentsEnabled = false
   const [isAnnual, setIsAnnual] = useState(false)
   const [planName, setPlanName] = useState("free")
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -50,12 +50,28 @@ export default function Pricing() {
     load()
   }, [])
 
-  const handleUpgrade = () => {
-    if (!paymentsEnabled) {
-      setError("Checkout is disabled in test mode.")
+  const handleUpgrade = async (targetPlan: string) => {
+    const token = getToken()
+    if (!token) {
+      router.push("/login")
       return
     }
-    router.push("/settings")
+    try {
+      setError("")
+      setCheckoutPlan(targetPlan)
+      const response = await createBillingCheckout(
+        { baseUrl: apiBase, token },
+        { planName: targetPlan }
+      )
+      if (!response?.url) {
+        throw new Error("Checkout URL not returned.")
+      }
+      window.location.href = response.url
+    } catch (err) {
+      setError((err as Error).message || "Unable to start checkout.")
+    } finally {
+      setCheckoutPlan(null)
+    }
   }
 
   return (
@@ -112,11 +128,15 @@ export default function Pricing() {
                       <span>{isAnnual ? "/year" : "/month"}</span>
                     </div>
                     <button
-                      onClick={() => (isCurrent ? null : handleUpgrade())}
-                      disabled={isCurrent || !paymentsEnabled}
+                      onClick={() => (isCurrent ? null : handleUpgrade(plan.key))}
+                      disabled={isCurrent || checkoutPlan !== null}
                       className={`plan-btn ${isCurrent ? "is-current" : ""}`}
                     >
-                      {isCurrent ? "Current Plan" : "Upgrade (Soon)"}
+                      {isCurrent
+                        ? "Current Plan"
+                        : checkoutPlan === plan.key
+                          ? "Redirecting..."
+                          : "Upgrade"}
                     </button>
                   </td>
                 )
@@ -136,7 +156,7 @@ export default function Pricing() {
               <td className="row-head">History sync across devices</td>
               {plans.map((plan) => (
                 <td key={plan.key} className={plan.key === planName ? "current-col check" : "check"}>
-                  ✓
+                  &#10003;
                 </td>
               ))}
             </tr>
@@ -145,7 +165,7 @@ export default function Pricing() {
               <td className="row-head">Profile + image storage</td>
               {plans.map((plan) => (
                 <td key={plan.key} className={plan.key === planName ? "current-col check" : "check"}>
-                  ✓
+                  &#10003;
                 </td>
               ))}
             </tr>
@@ -153,16 +173,12 @@ export default function Pricing() {
             <tr>
               <td className="row-head">Priority support</td>
               <td>-</td>
-              <td className="check">✓</td>
-              <td className={planName === "golden" ? "current-col check" : "check"}>✓</td>
+              <td className="check">&#10003;</td>
+              <td className={planName === "golden" ? "current-col check" : "check"}>&#10003;</td>
             </tr>
           </tbody>
         </table>
       </section>
-
-      {!paymentsEnabled ? (
-        <p className="pricing-note">Checkout is disabled in test mode. Plans are display-only.</p>
-      ) : null}
     </main>
   )
 }
