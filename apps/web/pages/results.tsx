@@ -77,6 +77,55 @@ export default function Results() {
   }, [analysis])
 
   const showHalal = !!prefs?.halalCheckEnabled || healthPrefs.restrictions.includes("halal")
+  const detectedAllergens = useMemo(() => {
+    if (!analysis) return []
+    const selectedAllergens = [...healthPrefs.allergens]
+    if (healthPrefs.allergyOther?.trim()) {
+      selectedAllergens.push(healthPrefs.allergyOther.trim().toLowerCase())
+    }
+    if (!selectedAllergens.length) return []
+
+    const ingredientNames = analysis.ingredientBreakdown.map((item) => item.name.toLowerCase())
+    const matchers: Record<string, string[]> = {
+      peanuts: ["peanut"],
+      tree_nuts: ["almond", "walnut", "pecan", "cashew", "nut"],
+      dairy: ["milk", "cheese", "butter", "cream", "whey", "yogurt"],
+      eggs: ["egg"],
+      shellfish: ["shrimp", "crab", "lobster", "shellfish"],
+      fish: ["fish", "salmon", "tuna", "cod"],
+      soy: ["soy", "soya"],
+      wheat_gluten: ["wheat", "gluten", "barley", "rye"],
+      sesame: ["sesame"],
+      sulfites: ["sulfite", "sulphite"]
+    }
+
+    return selectedAllergens.filter((allergen) =>
+      ingredientNames.some((name) =>
+        (matchers[allergen] || [allergen]).some((term) => name.includes(term))
+      )
+    )
+  }, [analysis, healthPrefs.allergens, healthPrefs.allergyOther])
+
+  const dietaryDetectionKeys = useMemo(() => {
+    const keys = new Set<string>()
+    if (!analysis) return keys
+
+    analysis.personalizedFlags.forEach((item) => {
+      if (item.status !== "warn" && item.status !== "fail") return
+      if (item.flag === "Vegan") keys.add("vegan")
+      if (item.flag === "Vegetarian") keys.add("vegetarian")
+      if (item.flag === "Halal check") keys.add("halal")
+    })
+
+    if (showHalal && (analysis.halal.status === "haram" || analysis.halal.status === "unclear")) {
+      keys.add("halal")
+    }
+
+    return keys
+  }, [analysis, showHalal])
+
+  const hasDietaryDetection = dietaryDetectionKeys.size > 0
+  const hasAllergenDetection = detectedAllergens.length > 0
 
   if (!analysis) {
     return (
@@ -104,9 +153,9 @@ export default function Results() {
         </div>
       )}
 
-      <section className="glass-card mb-4">
+      <section className={`glass-card mb-4 ${hasDietaryDetection ? "result-card-alert" : ""}`}>
         <div className="d-flex justify-content-between align-items-center mb-2">
-          <h2 className="h5 mb-0">Dietary focus</h2>
+          <h2 className={`h5 mb-0 ${hasDietaryDetection ? "section-alert-title" : ""}`}>Dietary focus</h2>
           <span className="text-muted small">Preferences</span>
         </div>
         <div className="mb-3">
@@ -116,18 +165,33 @@ export default function Results() {
               <span className="text-muted small">None selected</span>
             )}
             {healthPrefs.restrictions.map((item) => (
-              <span key={item} className="chip">{formatTag(item)}</span>
+              <span
+                key={item}
+                className={`chip ${dietaryDetectionKeys.has(item.toLowerCase()) ? "chip-danger" : ""}`}
+              >
+                {formatTag(item)}
+              </span>
             ))}
           </div>
         </div>
+        {hasDietaryDetection && (
+          <div className="alert-note">
+            Potential restriction conflict detected.
+          </div>
+        )}
+      </section>
+
+      <section className={`glass-card mb-4 ${hasAllergenDetection ? "result-card-alert" : ""}`}>
         <div>
-          <div className="text-muted small mb-2">Allergens</div>
+          <div className={`small mb-2 ${hasAllergenDetection ? "section-alert-title" : "text-muted"}`}>
+            Allergens detected
+          </div>
           <div className="d-flex flex-wrap gap-2">
-            {healthPrefs.allergens.length === 0 && (
-              <span className="text-muted small">None selected</span>
+            {detectedAllergens.length === 0 && (
+              <span className="text-muted small">None detected based on ingredients.</span>
             )}
-            {healthPrefs.allergens.map((item) => (
-              <span key={item} className="chip">{formatTag(item)}</span>
+            {detectedAllergens.map((item) => (
+              <span key={item} className="chip chip-danger">{formatTag(item)}</span>
             ))}
           </div>
         </div>

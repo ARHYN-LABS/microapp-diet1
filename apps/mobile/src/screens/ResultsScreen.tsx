@@ -29,8 +29,8 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: object }
   <View style={[styles.card, style]}>{children}</View>
 )
 
-const SectionHeader = ({ title }: { title: string }) => (
-  <Text style={styles.sectionHeader}>{title}</Text>
+const SectionHeader = ({ title, alert }: { title: string; alert?: boolean }) => (
+  <Text style={[styles.sectionHeader, alert && styles.sectionHeaderAlert]}>{title}</Text>
 )
 
 export default function ResultsScreen({ route }: Props) {
@@ -208,6 +208,24 @@ export default function ResultsScreen({ route }: Props) {
     }))
   }, [analysis.ingredientBreakdown, analysis.nutritionHighlights, analysis.productName, caloriesPer100g, profilePrefs.sensitivities])
 
+  const dietaryDetections = useMemo(() => {
+    const hits = analysis.personalizedFlags
+      .filter((item) =>
+        ["Vegan", "Vegetarian", "Halal check"].includes(item.flag) &&
+        (item.status === "warn" || item.status === "fail")
+      )
+      .map((item) => item.flag)
+
+    if (showHalal && (analysis.halal.status === "haram" || analysis.halal.status === "unclear")) {
+      hits.push("Halal")
+    }
+
+    return Array.from(new Set(hits))
+  }, [analysis.halal.status, analysis.personalizedFlags, showHalal])
+
+  const hasDietaryDetection = dietaryDetections.length > 0
+  const hasAllergenDetection = detectedAllergens.length > 0
+
   useEffect(() => {
     const loadPrefs = async () => {
       const cached = await getUserPrefs()
@@ -271,8 +289,8 @@ export default function ResultsScreen({ route }: Props) {
         </Card>
       ) : null}
 
-      <Card>
-        <SectionHeader title="Dietary preferences & alerts" />
+      <Card style={hasDietaryDetection ? styles.cardAlert : undefined}>
+        <SectionHeader title="Dietary preferences & alerts" alert={hasDietaryDetection} />
         <View style={styles.chipWrap}>
           {Object.entries(profilePrefs.dietary || {})
             .filter(([, value]) => value)
@@ -287,15 +305,20 @@ export default function ResultsScreen({ route }: Props) {
             </View>
           ) : null}
         </View>
+        {hasDietaryDetection ? (
+          <Text style={styles.alertText}>
+            Potential restriction conflict detected: {dietaryDetections.join(", ")}.
+          </Text>
+        ) : null}
       </Card>
 
-      <Card>
-        <SectionHeader title="Allergens detected" />
-        {detectedAllergens.length ? (
+      <Card style={hasAllergenDetection ? styles.cardAlert : undefined}>
+        <SectionHeader title="Allergens detected" alert={hasAllergenDetection} />
+        {hasAllergenDetection ? (
           <View style={styles.chipWrap}>
             {detectedAllergens.map((item) => (
               <View key={item} style={[styles.chip, styles.chipDanger]}>
-                <Text style={styles.chipText}>{formatTag(item)}</Text>
+                <Text style={[styles.chipText, styles.chipDangerText]}>{formatTag(item)}</Text>
               </View>
             ))}
           </View>
@@ -396,6 +419,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     fontFamily: theme.font.heading
   },
+  sectionHeaderAlert: {
+    color: theme.colors.warning
+  },
   card: {
     backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
@@ -403,6 +429,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     marginBottom: spacing.md
+  },
+  cardAlert: {
+    borderColor: "rgba(230,57,70,0.36)",
+    backgroundColor: "rgba(230,57,70,0.08)"
   },
   scoreRow: {
     flexDirection: "row",
@@ -489,6 +519,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(230,57,70,0.4)",
     backgroundColor: "rgba(230,57,70,0.12)"
   },
+  chipDangerText: {
+    color: "#B4232D",
+    fontWeight: "700"
+  },
   chipText: {
     color: theme.colors.text,
     fontSize: 12
@@ -523,6 +557,12 @@ const styles = StyleSheet.create({
   bodyMuted: {
     color: theme.colors.muted,
     fontSize: 12
+  },
+  alertText: {
+    color: "#B4232D",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: spacing.sm
   },
   disclaimer: {
     color: theme.colors.muted,
