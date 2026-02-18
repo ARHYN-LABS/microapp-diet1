@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react"
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native"
-import { fetchBillingSummary } from "../api/client"
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  Linking
+} from "react-native"
+import { fetchBillingSummary, startBillingCheckout } from "../api/client"
 import { theme } from "../theme"
 
 const plans = [
   { key: "free", label: "Free", price: "$0", scans: 10, action: "Current Plan" },
-  { key: "silver", label: "Silver", price: "$9.99", scans: 150, action: "Upgrade (Soon)" },
-  { key: "golden", label: "Golden", price: "$19.99", scans: 300, action: "Upgrade (Soon)" }
+  { key: "silver", label: "Silver", price: "$2.99", scans: 150, action: "Upgrade" },
+  { key: "golden", label: "Golden", price: "$6.99", scans: 300, action: "Upgrade" }
 ]
 
 export default function PricingScreen() {
@@ -14,6 +23,7 @@ export default function PricingScreen() {
   const [planName, setPlanName] = useState("free")
   const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
 
   const loadSummary = async () => {
     setLoading(true)
@@ -32,6 +42,22 @@ export default function PricingScreen() {
   useEffect(() => {
     loadSummary()
   }, [])
+
+  const handleUpgrade = async (selectedPlan: string) => {
+    setCheckoutPlan(selectedPlan)
+    try {
+      const { url } = await startBillingCheckout(selectedPlan)
+      const canOpen = await Linking.canOpenURL(url)
+      if (!canOpen) {
+        throw new Error("Unable to open checkout link")
+      }
+      await Linking.openURL(url)
+    } catch (err) {
+      Alert.alert("Checkout unavailable", (err as Error).message || "Unable to start checkout")
+    } finally {
+      setCheckoutPlan(null)
+    }
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -55,15 +81,22 @@ export default function PricingScreen() {
               <Text style={styles.cardTitle}>{plan.label}</Text>
               <Text style={styles.cardPrice}>{plan.price} / month</Text>
               <Text style={styles.cardScans}>{plan.scans} scans</Text>
-              <Pressable disabled style={[styles.button, styles.buttonDisabled]}>
-                <Text style={styles.buttonText}>{isCurrent ? "Current Plan" : plan.action}</Text>
+              <Pressable
+                disabled={isCurrent || checkoutPlan === plan.key}
+                onPress={() => handleUpgrade(plan.key)}
+                style={[
+                  styles.button,
+                  isCurrent || checkoutPlan === plan.key ? styles.buttonDisabled : null
+                ]}
+              >
+                <Text style={styles.buttonText}>
+                  {isCurrent ? "Current Plan" : checkoutPlan === plan.key ? "Opening..." : plan.action}
+                </Text>
               </Pressable>
             </View>
           )
         })}
       </View>
-
-      <Text style={styles.disclaimer}>Checkout is disabled in test mode. Plans are display-only.</Text>
     </ScrollView>
   )
 }
@@ -136,10 +169,5 @@ const styles = StyleSheet.create({
   buttonText: {
     color: theme.colors.accent2,
     fontWeight: "700"
-  },
-  disclaimer: {
-    marginTop: theme.spacing.lg,
-    color: theme.colors.muted,
-    textAlign: "center"
   }
 })

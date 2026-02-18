@@ -679,21 +679,21 @@ a {
 }
 
 .pref-icon {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .gfco-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   border: 1.5px solid #f59e0b;
   display: inline-flex;
@@ -703,17 +703,61 @@ a {
 }
 
 .gfco-text {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: #f59e0b;
 }
 
 .gfco-slash {
   position: absolute;
-  width: 22px;
+  width: 26px;
   height: 2px;
   background-color: #f59e0b;
   transform: rotate(-35deg);
+}
+
+.prefs-grid .col-md-6 {
+  display: flex;
+}
+
+.pref-option {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+}
+
+.pref-option-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pref-label-text {
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.pref-option-switch {
+  justify-content: space-between;
+}
+
+.pref-switch {
+  margin: 0 !important;
+}
+
+.pref-option-check {
+  gap: 10px;
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.pref-checkbox {
+  margin: 0 !important;
 }
 
 .pricing-shell {

@@ -40,7 +40,7 @@ const allergyOptions = [
   { key: "tree_nuts", label: "Tree Nuts", icon: "leaf", color: "#B45309", type: "ion" },
   { key: "dairy", label: "Dairy", icon: "cafe", color: "#2563EB", type: "ion" },
   { key: "eggs", label: "Eggs", icon: "nutrition", color: "#F59E0B", type: "ion" },
-  { key: "shellfish", label: "Shellfish", icon: "shrimp", color: "#EF4444", type: "mci" },
+  { key: "shellfish", label: "Shellfish", icon: "fish-outline", color: "#EF4444", type: "ion" },
   { key: "fish", label: "Fish", icon: "fish", color: "#3B82F6", type: "mci" },
   { key: "soy", label: "Soy", icon: "leaf-outline", color: "#22C55E", type: "ion" },
   { key: "wheat_gluten", label: "Wheat / Gluten", icon: "pizza", color: "#F97316", type: "ion" },

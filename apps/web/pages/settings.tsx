@@ -249,7 +249,7 @@ const allergyChecks = [
   { key: "tree_nuts", label: "Tree Nuts", icon: <span aria-hidden>{emoji(0x1f330)}</span>, color: "#B45309" },
   { key: "dairy", label: "Dairy", icon: <span aria-hidden>{emoji(0x1f95b)}</span>, color: "#2563EB" },
   { key: "eggs", label: "Eggs", icon: <span aria-hidden>{emoji(0x1f95a)}</span>, color: "#F59E0B" },
-  { key: "shellfish", label: "Shellfish", icon: <span className="material-icons" aria-hidden>set_meal</span>, color: "#EF4444" },
+  { key: "shellfish", label: "Shellfish", icon: <span aria-hidden>{emoji(0x1f990)}</span>, color: "#EF4444" },
   { key: "fish", label: "Fish", icon: <span aria-hidden>{emoji(0x1f41f)}</span>, color: "#3B82F6" },
   { key: "soy", label: "Soy", icon: <span aria-hidden>{emoji(0x1fadb)}</span>, color: "#22C55E" },
   { key: "wheat_gluten", label: "Wheat / Gluten", icon: <span aria-hidden>{emoji(0x1f33e)}</span>, color: "#F97316" },
@@ -645,19 +645,20 @@ export default function Settings() {
 
           <div className="glass-card mb-3">
             <h2 className="h5 mb-3">Dietary restrictions</h2>
-            <div className="row g-2">
+            <div className="row g-2 prefs-grid">
               {dietaryToggles.map((item) => (
                 <div className="col-md-6" key={item.key}>
-                  <div className="form-check form-switch d-flex align-items-center justify-content-between">
-                    <div className="d-flex align-items-center gap-2">
+                  <div className="pref-option pref-option-switch">
+                    <div className="pref-option-main">
                       <span className="pref-icon" style={{ backgroundColor: item.color }}>{item.icon}</span>
-                      <label className="form-check-label">{item.label}</label>
+                      <span className="pref-label-text">{item.label}</span>
                     </div>
                     <input
-                      className="form-check-input"
+                      className="form-check-input pref-switch"
                       type="checkbox"
                       checked={!!profilePrefs.dietary?.[item.key]}
                       onChange={(event) => setDietaryToggle(item.key, event.target.checked)}
+                      aria-label={item.label}
                     />
                   </div>
                 </div>
@@ -676,19 +677,19 @@ export default function Settings() {
 
           <div className="glass-card mb-3">
             <h2 className="h5 mb-3">Allergies & intolerances</h2>
-            <div className="row g-2">
+            <div className="row g-2 prefs-grid">
               {allergyChecks.map((item) => (
                 <div className="col-md-6" key={item.key}>
-                  <div className="form-check d-flex align-items-center gap-2">
+                  <label className="pref-option pref-option-check">
                     <input
-                      className="form-check-input"
+                      className="form-check-input pref-checkbox"
                       type="checkbox"
                       checked={!!profilePrefs.allergies?.[item.key]}
                       onChange={(event) => setAllergyToggle(item.key, event.target.checked)}
                     />
                     <span className="pref-icon" style={{ backgroundColor: item.color }}>{item.icon}</span>
-                    <label className="form-check-label">{item.label}</label>
-                  </div>
+                    <span className="pref-label-text">{item.label}</span>
+                  </label>
                 </div>
               ))}
             </div>
