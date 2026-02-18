@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/router"
 import { getPrefs, getProfile, getProfilePrefs, savePrefs, saveProfilePrefs, updateProfile } from "@wimf/shared"
 import type { ProfilePrefs, UserPrefs, UserProfile } from "@wimf/shared"
@@ -289,6 +289,7 @@ const withCacheBuster = (url: string) => {
 
 export default function Settings() {
   const router = useRouter()
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [prefs, setPrefs] = useState<UserPrefs>(emptyPrefs)
@@ -495,25 +496,40 @@ export default function Settings() {
         <div className="col-lg-7">
           <div className="glass-card mb-3">
             <h2 className="h5 mb-3">Personal information</h2>
-            <div className="d-flex align-items-center gap-3 mb-3">
-              <div
-                className="rounded-circle border d-flex align-items-center justify-content-center"
-                style={{ width: 64, height: 64, overflow: "hidden" }}
-              >
-                {profile.avatarUrl ? (
-                  <img
-                    src={normalizeImageUrl(profile.avatarUrl) || ""}
-                    alt="Profile"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : (
-                  <span className="text-muted small">Photo</span>
-                )}
+            <div className="profile-photo-row mb-3">
+              <div className="profile-avatar-wrap">
+                <div className="profile-avatar-frame rounded-circle border d-flex align-items-center justify-content-center">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={normalizeImageUrl(profile.avatarUrl) || ""}
+                      alt="Profile"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <span className="text-muted small">Photo</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="profile-avatar-edit"
+                  onClick={() => photoInputRef.current?.click()}
+                  aria-label="Edit photo"
+                >
+                  ✎
+                </button>
               </div>
+              <button
+                type="button"
+                className="btn btn-primary profile-photo-trigger"
+                onClick={() => photoInputRef.current?.click()}
+              >
+                🖼 Upload photo
+              </button>
               <input
+                ref={photoInputRef}
                 type="file"
                 accept="image/*"
-                className="form-control"
+                className="d-none"
                 onChange={(event) => handlePhoto(event.target.files?.[0] || null)}
               />
             </div>
@@ -531,20 +547,6 @@ export default function Settings() {
               <div className="col-md-6">
                 <label className="form-label">Email address *</label>
                 <input className="form-control" value={profile.email ?? ""} disabled />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Phone number</label>
-                <input
-                  className="form-control"
-                  value={phoneNumber}
-                  onChange={(event) => {
-                    setPhoneNumber(event.target.value)
-                    setProfile((prev) =>
-                      prev ? { ...prev, mobileNumber: event.target.value.trim() } : prev
-                    )
-                  }}
-                  placeholder="Phone number"
-                />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Date of birth</label>
@@ -589,6 +591,20 @@ export default function Settings() {
                   <option value="female">Female</option>
                   <option value="other">Other</option>
                 </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Phone number</label>
+                <input
+                  className="form-control"
+                  value={phoneNumber}
+                  onChange={(event) => {
+                    setPhoneNumber(event.target.value)
+                    setProfile((prev) =>
+                      prev ? { ...prev, mobileNumber: event.target.value.trim() } : prev
+                    )
+                  }}
+                  placeholder="Phone number"
+                />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Height (cm)</label>
@@ -812,7 +828,4 @@ export default function Settings() {
     </main>
   )
 }
-
-
-
 

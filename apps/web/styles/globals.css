@@ -760,6 +760,48 @@ a {
   margin: 0 !important;
 }
 
+.profile-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+}
+
+.profile-avatar-frame {
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.profile-avatar-edit {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-photo-trigger {
+  min-height: 40px;
+}
+
 .pricing-shell {
   max-width: 1200px;
 }
