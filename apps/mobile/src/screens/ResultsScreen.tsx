@@ -29,8 +29,23 @@ const Card = ({ children, style }: { children: React.ReactNode; style?: object }
   <View style={[styles.card, style]}>{children}</View>
 )
 
-const SectionHeader = ({ title, alert }: { title: string; alert?: boolean }) => (
-  <Text style={[styles.sectionHeader, alert && styles.sectionHeaderAlert]}>{title}</Text>
+const SectionHeader = ({
+  title,
+  alert,
+  alertTone = "danger"
+}: {
+  title: string
+  alert?: boolean
+  alertTone?: "danger" | "warning"
+}) => (
+  <Text
+    style={[
+      styles.sectionHeader,
+      alert && (alertTone === "warning" ? styles.sectionHeaderWarning : styles.sectionHeaderAlert)
+    ]}
+  >
+    {title}
+  </Text>
 )
 
 export default function ResultsScreen({ route }: Props) {
@@ -289,8 +304,12 @@ export default function ResultsScreen({ route }: Props) {
         </Card>
       ) : null}
 
-      <Card style={hasDietaryDetection ? styles.cardAlert : undefined}>
-        <SectionHeader title="Dietary preferences & alerts" alert={hasDietaryDetection} />
+      <Card style={hasDietaryDetection ? styles.cardWarning : undefined}>
+        <SectionHeader
+          title="Dietary preferences & alerts"
+          alert={hasDietaryDetection}
+          alertTone="warning"
+        />
         <View style={styles.chipWrap}>
           {Object.entries(profilePrefs.dietary || {})
             .filter(([, value]) => value)
@@ -306,7 +325,7 @@ export default function ResultsScreen({ route }: Props) {
           ) : null}
         </View>
         {hasDietaryDetection ? (
-          <Text style={styles.alertText}>
+          <Text style={[styles.alertText, styles.alertTextWarning]}>
             Potential restriction conflict detected: {dietaryDetections.join(", ")}.
           </Text>
         ) : null}
@@ -422,6 +441,9 @@ const styles = StyleSheet.create({
   sectionHeaderAlert: {
     color: theme.colors.warning
   },
+  sectionHeaderWarning: {
+    color: "#B45309"
+  },
   card: {
     backgroundColor: theme.colors.glass,
     borderRadius: theme.radius.lg,
@@ -433,6 +455,10 @@ const styles = StyleSheet.create({
   cardAlert: {
     borderColor: "rgba(230,57,70,0.36)",
     backgroundColor: "rgba(230,57,70,0.08)"
+  },
+  cardWarning: {
+    borderColor: "rgba(245,158,11,0.42)",
+    backgroundColor: "rgba(245,158,11,0.11)"
   },
   scoreRow: {
     flexDirection: "row",
@@ -563,6 +589,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     marginTop: spacing.sm
+  },
+  alertTextWarning: {
+    color: "#92400E"
   },
   disclaimer: {
     color: theme.colors.muted,
