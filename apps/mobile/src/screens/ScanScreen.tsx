@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { View, Text, StyleSheet, Pressable, Image, ScrollView, Alert } from "react-native"
 import { Camera, CameraType } from "expo-camera"
+import * as FileSystem from "expo-file-system"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { runAnalyze, saveHistory } from "../api/client"
 import GradientButton from "../components/GradientButton"
@@ -57,11 +58,15 @@ export default function ScanScreen() {
         quality: 0.4,
         skipProcessing: true
       })
+      const scansDir = `${FileSystem.documentDirectory}scans/`
+      await FileSystem.makeDirectoryAsync(scansDir, { intermediates: true })
+      const permanentUri = `${scansDir}${Date.now()}.jpg`
+      await FileSystem.copyAsync({ from: photo.uri, to: permanentUri })
       const file = {
-        uri: photo.uri,
+        uri: permanentUri,
         name: "label.jpg",
         type: "image/jpeg",
-        previewUri: photo.uri
+        previewUri: permanentUri
       }
 
       setImage({ label: file })
