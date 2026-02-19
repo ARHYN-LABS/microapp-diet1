@@ -26,7 +26,6 @@ export default function HistoryScreen() {
   const pageSize = 10
 
   const mergeHistoryImages = useCallback((items: ScanHistory[]) => {
-    const isLocalUri = (uri: string) => uri.startsWith("file:") || uri.startsWith("content:")
     const next: Record<string, string> = {}
     items.forEach((entry) => {
       const uri = normalizeImageUrl(entry.imageUrl) || normalizeImageUrl(entry.analysisSnapshot?.imageUrl)
@@ -38,13 +37,10 @@ export default function HistoryScreen() {
     setImageMap((prev) => {
       const merged = { ...prev }
       for (const [key, uri] of Object.entries(next)) {
-        const existing = merged[key]
-        if (!existing) {
-          merged[key] = uri
-          continue
-        }
-        // Prefer stable remote upload URLs over temporary local file/content URIs.
-        if (isLocalUri(existing) && !isLocalUri(uri)) {
+        // Only add server URLs for entries with no local URI; never overwrite
+        // existing local URIs (permanent file:// paths survive, server URL is
+        // already covered by the normalizeImageUrl fallback in getPreviewUri).
+        if (!merged[key]) {
           merged[key] = uri
         }
       }
