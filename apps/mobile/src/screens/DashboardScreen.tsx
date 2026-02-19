@@ -188,13 +188,6 @@ export default function DashboardScreen() {
     normalizeImageUrl(scan.analysisSnapshot?.imageUrl) ||
     null
 
-  const withCacheBuster = (uri: string | null | undefined, entry: any) => {
-    if (!uri) return null
-    if (uri.startsWith("file:") || uri.startsWith("content:")) return uri
-    const joiner = uri.includes("?") ? "&" : "?"
-    return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt || "")}`
-  }
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.welcomeCard}>
@@ -298,7 +291,7 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: withCacheBuster(getPreviewUri(scan), scan),
+                    imageUri: getPreviewUri(scan),
                     fromHistory: true
                   } as never
                 )
@@ -307,7 +300,7 @@ export default function DashboardScreen() {
               <View style={styles.scanThumb}>
                 {getPreviewUri(scan) ? (
                   <Image
-                    source={{ uri: withCacheBuster(getPreviewUri(scan), scan) || undefined }}
+                    source={{ uri: getPreviewUri(scan) || undefined }}
                     style={styles.scanThumbImage}
                   />
                 ) : null}
@@ -342,7 +335,7 @@ export default function DashboardScreen() {
                   "Results" as never,
                   {
                     analysis: scan.analysisSnapshot,
-                    imageUri: withCacheBuster(getPreviewUri(scan), scan),
+                    imageUri: getPreviewUri(scan),
                     fromHistory: true
                   } as never
                 )
@@ -351,7 +344,7 @@ export default function DashboardScreen() {
               <View style={styles.popularThumb}>
                 {getPreviewUri(scan) ? (
                   <Image
-                    source={{ uri: withCacheBuster(getPreviewUri(scan), scan) || undefined }}
+                    source={{ uri: getPreviewUri(scan) || undefined }}
                     style={styles.popularImage}
                   />
                 ) : null}

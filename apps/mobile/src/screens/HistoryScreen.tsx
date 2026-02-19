@@ -57,6 +57,7 @@ export default function HistoryScreen() {
   }
 
   const loadHistory = useCallback(async () => {
+    let cached: ScanHistory[] = []
     try {
       const storedImages = await getScanImageMap()
       setImageMap(storedImages)
@@ -77,7 +78,7 @@ export default function HistoryScreen() {
         setStatus("Please log in.")
         return
       }
-      const cached = await getScanHistoryCache(profile.id)
+      cached = await getScanHistoryCache(profile.id)
       if (cached.length) {
         setHistory(cached)
         setStatus("")
@@ -130,13 +131,6 @@ export default function HistoryScreen() {
       normalizeImageUrl(entry.analysisSnapshot?.imageUrl) ||
       null
     )
-  }
-
-  const withCacheBuster = (uri: string | null | undefined, entry: ScanHistory) => {
-    if (!uri) return null
-    if (uri.startsWith("file:") || uri.startsWith("content:")) return uri
-    const joiner = uri.includes("?") ? "&" : "?"
-    return `${uri}${joiner}v=${encodeURIComponent(entry.createdAt)}`
   }
 
   const openDatePicker = () => {
@@ -213,7 +207,7 @@ export default function HistoryScreen() {
         const name = entry.productName || entry.analysisSnapshot?.productName || "Scan"
         const scoreValue = typeof score === "number" ? score : null
         const scoreColor = scoreValue === null ? theme.colors.muted : scoreValue >= 70 ? "#22C55E" : scoreValue >= 40 ? "#F59E0B" : theme.colors.warning
-        const previewUri = withCacheBuster(getPreviewUri(entry), entry)
+        const previewUri = getPreviewUri(entry)
         return (
           <Pressable
             style={[styles.card, { borderLeftColor: scoreColor }]}
