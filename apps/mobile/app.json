@@ -9,9 +9,8 @@
       "backgroundColor": "#F8FAFC"
     },
     "slug": "whats-in-my-food",
-    "version": "0.1.0",
+    "version": "1.0.5",
     "orientation": "portrait",
-    "sdkVersion": "49.0.0",
     "platforms": [
       "ios",
       "android",
@@ -48,7 +47,8 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#F8FAFC"
       },
-      "package": "com.askmobisoft55.whatsinmyfood"
+      "package": "com.askmobisoft55.whatsinmyfood",
+      "versionCode": 13
     },
     "extra": {
       "apiBase": "${EXPO_PUBLIC_API_BASE}",
