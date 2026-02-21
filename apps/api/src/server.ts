@@ -23,6 +23,7 @@ import jwt from "jsonwebtoken"
 import crypto from "crypto"
 import querystring from "querystring"
 import Stripe from "stripe"
+import nodemailer from "nodemailer"
 
 class OcrError extends Error {
   constructor(message: string) {
@@ -133,6 +134,26 @@ const microsoftClientSecret = process.env.MICROSOFT_CLIENT_SECRET || ""
 const microsoftRedirectUri =
   process.env.MICROSOFT_REDIRECT_URI || "https://api.safe-plate.ai/auth/microsoft/callback"
 const microsoftTenant = process.env.MICROSOFT_TENANT || "common"
+const smtpHost = process.env.SMTP_HOST || ""
+const smtpPort = Number(process.env.SMTP_PORT || 587)
+const smtpSecure = process.env.SMTP_SECURE === "1"
+const smtpUser = process.env.SMTP_USER || ""
+const smtpPass = process.env.SMTP_PASS || ""
+const smtpFrom = process.env.SMTP_FROM || "support@safe-plate.ai"
+const alertEmailEnabled = process.env.ALERT_EMAIL_ENABLED !== "0"
+const fallbackAlertEmail = process.env.ALERT_EMAIL_DEFAULT || "support@safe-plate.ai"
+const smtpConfigured = !!(smtpHost && smtpUser && smtpPass)
+const mailTransporter = smtpConfigured
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    })
+  : null
 
 const isAllowedRedirect = (value: string) => {
   if (!value) return false
@@ -2029,6 +2050,14 @@ app.post("/history", async (req, res, next) => {
       return res.status(202).json({ status: "skipped", reason: "db_unavailable" })
     }
 
+    void sendAlertEmailForHistory({
+      userId: created.userId,
+      analysisSnapshot: normalizedSnapshot,
+      createdAt: created.createdAt
+    }).catch((error) => {
+      console.error("alert email send failed", error)
+    })
+
     return res.status(201).json({
       id: created.id,
       userId: created.userId,
@@ -2087,6 +2116,7 @@ const prefsSchema = z.object({
 const profilePrefsSchema = z.object({
   dob: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
+  alertEmail: z.string().email().optional(),
   dietaryOther: z.string().optional(),
   dietary: z.record(z.boolean()),
   allergies: z.record(z.boolean()),
@@ -2104,6 +2134,7 @@ const profilePrefsSchema = z.object({
 const defaultProfilePrefs: ProfilePrefs = {
   dob: null,
   country: null,
+  alertEmail: "support@safe-plate.ai",
   dietaryOther: "",
   dietary: {},
   allergies: {},
@@ -2129,6 +2160,208 @@ const defaultProfilePrefs: ProfilePrefs = {
     processing: 40,
     strictMode: true
   }
+}
+
+type AlertKey = "highRisk" | "allergenDetected" | "nonCompliant" | "processed" | "highSodiumSugar"
+
+type TriggeredAlert = {
+  key: AlertKey
+  title: string
+  reason: string
+}
+
+const ALERT_TITLES: Record<AlertKey, string> = {
+  highRisk: "High-Risk Ingredients",
+  allergenDetected: "Allergen Detected",
+  nonCompliant: "Non-Compliant Food",
+  processed: "Highly Processed Food",
+  highSodiumSugar: "High Sodium / Sugar"
+}
+
+const ALLERGEN_KEYWORDS: Record<string, string[]> = {
+  peanuts: ["peanut"],
+  tree_nuts: ["almond", "cashew", "walnut", "pecan", "hazelnut", "pistachio", "macadamia", "nut"],
+  dairy: ["milk", "butter", "cheese", "whey", "casein", "lactose", "cream", "yogurt", "ghee"],
+  eggs: ["egg", "albumin", "ovalbumin"],
+  shellfish: ["shrimp", "prawn", "crab", "lobster", "shellfish"],
+  fish: ["fish", "salmon", "tuna", "anchovy", "cod", "sardine", "tilapia"],
+  soy: ["soy", "soya", "soybean", "lecithin"],
+  wheat_gluten: ["wheat", "gluten", "barley", "rye", "malt"],
+  sesame: ["sesame", "tahini"],
+  sulfites: ["sulfite", "sulphite", "metabisulfite"]
+}
+
+const getSnapshotIngredients = (snapshot: any) => {
+  const ingredients = Array.isArray(snapshot?.parsedIngredients)
+    ? snapshot.parsedIngredients
+    : Array.isArray(snapshot?.analysisSnapshot?.parsedIngredients)
+      ? snapshot.analysisSnapshot.parsedIngredients
+      : []
+
+  return ingredients.map((item: unknown) => String(item || "").toLowerCase()).filter(Boolean)
+}
+
+const getAllergyKeywords = (prefs: ProfilePrefs) => {
+  const activeAllergies = Object.entries(prefs?.allergies || {})
+    .filter(([, enabled]) => !!enabled)
+    .map(([key]) => key)
+
+  const fromKnown = activeAllergies.flatMap((key) => ALLERGEN_KEYWORDS[key] || [])
+  const custom = (prefs?.allergyOther || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length >= 3)
+
+  return [...new Set([...fromKnown, ...custom])]
+}
+
+const readAlertEmail = (prefs: unknown) => {
+  const value = (prefs as { alertEmail?: unknown } | null)?.alertEmail
+  return typeof value === "string" && value.trim() ? value.trim() : fallbackAlertEmail
+}
+
+const detectTriggeredAlerts = (snapshot: any, prefs: ProfilePrefs): TriggeredAlert[] => {
+  const alerts = prefs?.alerts || defaultProfilePrefs.alerts
+  const triggered: TriggeredAlert[] = []
+  const scoreValue = Number(snapshot?.score?.value ?? NaN)
+  const scoreCategory = String(snapshot?.score?.category || "").toLowerCase()
+  const halalStatus = String(snapshot?.halal?.status || "").toLowerCase()
+  const suitabilityVerdict = String(snapshot?.suitability?.verdict || "").toLowerCase()
+  const nutrition = snapshot?.nutritionHighlights || {}
+  const sodium = Number(nutrition?.sodium_mg ?? 0)
+  const sugar = Number(nutrition?.sugar_g ?? 0)
+  const addedSugar = Number(nutrition?.addedSugar_g ?? 0)
+  const flags = Array.isArray(snapshot?.personalizedFlags) ? snapshot.personalizedFlags : []
+  const explanations = Array.isArray(snapshot?.score?.explanations) ? snapshot.score.explanations : []
+  const ingredientBreakdown = Array.isArray(snapshot?.ingredientBreakdown) ? snapshot.ingredientBreakdown : []
+
+  if (
+    alerts.highRisk &&
+    ((Number.isFinite(scoreValue) && scoreValue < 40) ||
+      scoreCategory === "lower" ||
+      halalStatus === "haram")
+  ) {
+    triggered.push({
+      key: "highRisk",
+      title: ALERT_TITLES.highRisk,
+      reason:
+        halalStatus === "haram"
+          ? "Halal classifier marked this item as non-halal."
+          : "Overall safety score is in a high-risk range."
+    })
+  }
+
+  if (
+    alerts.nonCompliant &&
+    (suitabilityVerdict === "not_recommended" || flags.some((item: any) => item?.status === "fail"))
+  ) {
+    triggered.push({
+      key: "nonCompliant",
+      title: ALERT_TITLES.nonCompliant,
+      reason: "Suitability checks reported a non-compliant result."
+    })
+  }
+
+  if (
+    alerts.processed &&
+    (explanations.some((item: any) =>
+      ["Ultra-processed additives", "Hydrogenated oils", "Artificial dyes"].includes(String(item?.label || ""))
+    ) ||
+      ingredientBreakdown.filter((item: any) => item?.status === "caution").length >= 3)
+  ) {
+    triggered.push({
+      key: "processed",
+      title: ALERT_TITLES.processed,
+      reason: "Processing indicators suggest this food is highly processed."
+    })
+  }
+
+  if (alerts.highSodiumSugar && (sodium >= 600 || sugar >= 15 || addedSugar >= 10)) {
+    triggered.push({
+      key: "highSodiumSugar",
+      title: ALERT_TITLES.highSodiumSugar,
+      reason: `Detected sodium/sugar levels (sodium ${sodium || 0}mg, sugar ${sugar || 0}g).`
+    })
+  }
+
+  if (alerts.allergenDetected) {
+    const ingredientText = getSnapshotIngredients(snapshot)
+    const keywords = getAllergyKeywords(prefs)
+    const matches = keywords.filter((keyword) =>
+      ingredientText.some((ingredient: string) => ingredient.includes(keyword))
+    )
+    if (matches.length > 0) {
+      triggered.push({
+        key: "allergenDetected",
+        title: ALERT_TITLES.allergenDetected,
+        reason: `Possible allergen matches found: ${matches.slice(0, 5).join(", ")}`
+      })
+    }
+  }
+
+  return triggered
+}
+
+const sendAlertEmailForHistory = async (params: {
+  userId: string
+  analysisSnapshot: any
+  createdAt: Date
+}) => {
+  if (!alertEmailEnabled || !mailTransporter) return
+
+  const [prefs, user] = await Promise.all([
+    prisma.profilePrefs.findUnique({ where: { userId: params.userId } }),
+    prisma.user.findUnique({ where: { id: params.userId } })
+  ])
+
+  const effectivePrefs: ProfilePrefs = {
+    ...defaultProfilePrefs,
+    ...(prefs
+      ? {
+          dob: prefs.dob ?? null,
+          country: prefs.country ?? null,
+          alertEmail: readAlertEmail(prefs),
+          dietaryOther: prefs.dietaryOther ?? "",
+          dietary: (prefs.dietary as Record<string, boolean>) || {},
+          allergies: (prefs.allergies as Record<string, boolean>) || {},
+          allergyOther: prefs.allergyOther ?? "",
+          alerts: (prefs.alerts as Record<string, boolean>) || defaultProfilePrefs.alerts,
+          sensitivities:
+            (prefs.sensitivities as Record<string, boolean>) || defaultProfilePrefs.sensitivities,
+          scoring: (prefs.scoring as ProfilePrefs["scoring"]) || defaultProfilePrefs.scoring
+        }
+      : {})
+  }
+
+  if (!effectivePrefs.alerts?.email) return
+
+  const triggered = detectTriggeredAlerts(params.analysisSnapshot, effectivePrefs)
+  if (triggered.length === 0) return
+
+  const recipient = effectivePrefs.alertEmail || fallbackAlertEmail
+  const productName = params.analysisSnapshot?.productName || "Unknown product"
+  const score = params.analysisSnapshot?.score?.value
+  const subject = `[SafePlate Alert] ${productName} - ${triggered.map((item) => item.title).join(", ")}`
+  const body = [
+    "SafePlate AI detected alert conditions for a newly scanned item.",
+    "",
+    `User: ${user?.email || params.userId}`,
+    `Product: ${productName}`,
+    `Score: ${typeof score === "number" ? score : "N/A"}`,
+    `Scanned at: ${params.createdAt.toISOString()}`,
+    "",
+    "Triggered alerts:",
+    ...triggered.map((item) => `- ${item.title}: ${item.reason}`),
+    "",
+    "This message was generated by SafePlate AI alert automation."
+  ].join("\n")
+
+  await mailTransporter.sendMail({
+    from: smtpFrom,
+    to: recipient,
+    subject,
+    text: body
+  })
 }
 
 app.post("/prefs", async (req, res, next) => {
@@ -2178,6 +2411,7 @@ app.get("/profile-prefs", requireAuth, async (req, res, next) => {
     return res.json({
       dob: prefs.dob ?? null,
       country: prefs.country ?? null,
+      alertEmail: readAlertEmail(prefs),
       dietaryOther: prefs.dietaryOther ?? "",
       dietary: (prefs.dietary as Record<string, boolean>) || {},
       allergies: (prefs.allergies as Record<string, boolean>) || {},
@@ -2202,6 +2436,7 @@ app.put("/profile-prefs", requireAuth, async (req, res, next) => {
     const nextPrefs = {
       dob: payload.dob ?? null,
       country: payload.country ?? null,
+      alertEmail: payload.alertEmail ?? defaultProfilePrefs.alertEmail,
       dietaryOther: payload.dietaryOther ?? "",
       dietary: payload.dietary,
       allergies: payload.allergies,

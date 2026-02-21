@@ -45,6 +45,7 @@ export type UserPrefs = {
 export type ProfilePrefs = {
   dob?: string | null
   country?: string | null
+  alertEmail?: string
   dietaryOther?: string
   dietary: Record<string, boolean>
   allergies: Record<string, boolean>

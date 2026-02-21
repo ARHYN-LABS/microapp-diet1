@@ -331,6 +331,7 @@ export default function Settings() {
         const sourcePrefs = profilePrefsData || storedProfilePrefs
         setProfilePrefsState({
           ...sourcePrefs,
+          alertEmail: sourcePrefs.alertEmail || "support@safe-plate.ai",
           dietaryOther: sourcePrefs.dietaryOther || "",
           allergyOther: sourcePrefs.allergyOther || storedHealth.allergyOther || "",
           dietary: {
@@ -724,6 +725,9 @@ export default function Settings() {
 
           <div className="glass-card">
             <h2 className="h5 mb-3">Alert preferences</h2>
+            <div className="text-muted small mb-2">
+              Email alerts recipient: {profilePrefs.alertEmail || "support@safe-plate.ai"}
+            </div>
             <div className="row g-2">
               {alertToggles.map((item) => (
                 <div className="col-md-6" key={item.key}>

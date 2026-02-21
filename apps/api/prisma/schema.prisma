@@ -78,6 +78,7 @@ model ProfilePrefs {
   userId        String   @id
   dob           String?
   country       String?
+  alertEmail    String?
   dietaryOther  String?
   allergyOther  String?
   dietary       Json?

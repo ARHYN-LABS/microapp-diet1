@@ -321,6 +321,7 @@ export default function SettingsScreen() {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [profilePrefs, setProfilePrefsState] = useState(() => ({
     photoUri: null as string | null,
+    alertEmail: "support@safe-plate.ai",
     dob: "",
     country: getDefaultCountry(),
     dietaryOther: "",
@@ -360,6 +361,7 @@ export default function SettingsScreen() {
       setProfilePrefsState((prev) => ({
         ...prev,
         ...cachedProfilePrefs,
+        alertEmail: cachedProfilePrefs.alertEmail || prev.alertEmail || "support@safe-plate.ai",
         country: cachedProfilePrefs.country || prev.country,
         dietaryOther: cachedProfilePrefs.dietaryOther || "",
         allergyOther: cachedProfilePrefs.allergyOther ?? "",
@@ -406,6 +408,7 @@ export default function SettingsScreen() {
       setProfilePrefsState((prev) => ({
         ...prev,
         ...sourcePrefs,
+        alertEmail: sourcePrefs.alertEmail || prev.alertEmail || "support@safe-plate.ai",
         country: sourcePrefs.country || prev.country,
         dietaryOther: sourcePrefs.dietaryOther || "",
         allergyOther: sourcePrefs.allergyOther ?? storedHealth.allergyOther ?? "",
@@ -750,6 +753,7 @@ export default function SettingsScreen() {
 
       <View style={[styles.card, styles.cardAlerts]}>
         <Text style={styles.sectionTitle}>Alert preferences</Text>
+        <Text style={styles.bodyMuted}>Email alerts recipient: {profilePrefs.alertEmail || "support@safe-plate.ai"}</Text>
         {alertOptions.map((item) => (
           <View key={item.key} style={styles.toggleRow}>
             <Text style={styles.toggleText}>{item.label}</Text>

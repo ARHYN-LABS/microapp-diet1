@@ -1,0 +1,2 @@
+ALTER TABLE `ProfilePrefs`
+ADD COLUMN `alertEmail` VARCHAR(191) NULL;
