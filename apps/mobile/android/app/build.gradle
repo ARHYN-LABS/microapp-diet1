@@ -93,6 +93,9 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.askmobisoft55.whatsinmyfood'
+    buildFeatures {
+        buildConfig true
+    }
     defaultConfig {
         applicationId 'com.askmobisoft55.whatsinmyfood'
         minSdkVersion rootProject.ext.minSdkVersion
@@ -110,12 +113,10 @@ android {
             keyPassword 'android'
         }
         release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
+            storeFile file('upload-key.keystore')
+            storePassword 'SafePlate2026'
+            keyAlias 'upload'
+            keyPassword 'SafePlate2026'
         }
     }
     buildTypes {
@@ -125,7 +126,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
