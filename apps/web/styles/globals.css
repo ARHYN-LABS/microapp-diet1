@@ -101,6 +101,12 @@ a {
 }
 
 .btn-outline-light {
+  --bs-btn-color: #111827;
+  --bs-btn-border-color: var(--border);
+  --bs-btn-bg: rgba(255, 255, 255, 0.9);
+  --bs-btn-hover-color: var(--accent-2);
+  --bs-btn-hover-border-color: rgba(44, 123, 229, 0.4);
+  --bs-btn-hover-bg: rgba(44, 123, 229, 0.08);
   border-color: var(--border);
   color: #111827;
   border-radius: 999px;
