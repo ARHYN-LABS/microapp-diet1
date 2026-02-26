@@ -412,7 +412,8 @@ export default function Settings() {
         id: nextProfile.id,
         fullName: nextProfile.fullName,
         email: nextProfile.email,
-        avatarUrl: nextProfile.avatarUrl
+        avatarUrl: nextProfile.avatarUrl,
+        role: nextProfile.role
       })
       setStatus("Photo updated.")
     } catch (error) {
@@ -434,7 +435,8 @@ export default function Settings() {
         id: saved.id,
         fullName: saved.fullName,
         email: saved.email,
-        avatarUrl: saved.avatarUrl
+        avatarUrl: saved.avatarUrl,
+        role: saved.role
       })
       setStatus("Profile updated.")
     } catch (error) {
