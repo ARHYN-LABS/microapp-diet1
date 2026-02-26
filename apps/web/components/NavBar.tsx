@@ -83,7 +83,7 @@ export default function NavBar() {
             Pricing
           </Link>
           {isAdmin && (
-            <Link className={router.pathname === "/admin" ? "active" : ""} href="/admin">
+            <Link className={router.pathname.startsWith("/admin") ? "active" : ""} href="/admin/users">
               Admin
             </Link>
           )}
@@ -198,7 +198,7 @@ export default function NavBar() {
             Profile
           </Link>
           {isAdmin && (
-            <Link className={router.pathname === "/admin" ? "active" : ""} href="/admin">
+            <Link className={router.pathname.startsWith("/admin") ? "active" : ""} href="/admin/users">
               Admin
             </Link>
           )}

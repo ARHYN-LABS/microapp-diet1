@@ -2523,6 +2523,9 @@ app.get("/admin/users", requireAuth, requireAdmin, async (req, res, next) => {
     const search = typeof req.query.search === "string" ? req.query.search : ""
     const roleFilter = typeof req.query.role === "string" ? req.query.role : ""
     const planFilter = typeof req.query.plan === "string" ? req.query.plan : ""
+    const sortParam = typeof req.query.sort === "string" ? req.query.sort : "newest"
+    const dateFrom = typeof req.query.dateFrom === "string" ? req.query.dateFrom : ""
+    const dateTo = typeof req.query.dateTo === "string" ? req.query.dateTo : ""
     const page = Math.max(1, Number(req.query.page) || 1)
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20))
     const skip = (page - 1) * limit
@@ -2540,12 +2543,23 @@ app.get("/admin/users", requireAuth, requireAdmin, async (req, res, next) => {
     if (planFilter) {
       where.planName = planFilter
     }
+    if (dateFrom || dateTo) {
+      where.createdAt = {}
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom)
+      if (dateTo) {
+        const end = new Date(dateTo)
+        end.setHours(23, 59, 59, 999)
+        where.createdAt.lte = end
+      }
+    }
+
+    const orderDir = sortParam === "oldest" ? "asc" as const : "desc" as const
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
         select: adminUserSelect,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: orderDir },
         skip,
         take: limit
       }),
@@ -2705,6 +2719,68 @@ app.get("/admin/analytics", requireAuth, requireAdmin, async (req, res, next) =>
         plan: row.planName,
         count: row._count.planName
       }))
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/admin/analytics/charts", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const isoStart = thirtyDaysAgo.toISOString().slice(0, 10)
+
+    // Build date buckets for the last 30 days
+    const dateBuckets: string[] = []
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      dateBuckets.push(d.toISOString().slice(0, 10))
+    }
+
+    // Signups per day
+    const users = await prisma.user.findMany({
+      where: { createdAt: { gte: new Date(isoStart) } },
+      select: { createdAt: true }
+    })
+    const signupMap: Record<string, number> = {}
+    for (const u of users) {
+      const day = u.createdAt.toISOString().slice(0, 10)
+      signupMap[day] = (signupMap[day] || 0) + 1
+    }
+    const signupsPerDay = dateBuckets.map((date) => ({ date, count: signupMap[date] || 0 }))
+
+    // Scans per day
+    const scans = await prisma.scanHistory.findMany({
+      where: { createdAt: { gte: new Date(isoStart) } },
+      select: { createdAt: true }
+    })
+    const scanMap: Record<string, number> = {}
+    for (const s of scans) {
+      const day = s.createdAt.toISOString().slice(0, 10)
+      scanMap[day] = (scanMap[day] || 0) + 1
+    }
+    const scansPerDay = dateBuckets.map((date) => ({ date, count: scanMap[date] || 0 }))
+
+    // Totals
+    const [totalUsers, activeUsers, totalScans, planCounts] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { updatedAt: { gte: thirtyDaysAgo } } }),
+      prisma.scanHistory.count(),
+      prisma.user.groupBy({ by: ["planName"], _count: { planName: true } })
+    ])
+
+    return res.json({
+      signupsPerDay,
+      scansPerDay,
+      planDistribution: planCounts.map((row) => ({
+        plan: row.planName,
+        count: row._count.planName
+      })),
+      totalUsers,
+      activeUsersLast30Days: activeUsers,
+      totalScans
     })
   } catch (error) {
     return next(error)

@@ -1105,6 +1105,34 @@ a {
   text-align: center;
 }
 
+.admin-tabs {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.admin-tab {
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none !important;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.admin-tab:hover {
+  color: var(--text);
+}
+
+.admin-tab.active {
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 .legal-page h1 {
   margin-bottom: 6px;
 }

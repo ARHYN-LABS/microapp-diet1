@@ -1,29 +1,31 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
+import Link from "next/link"
 import {
   adminGetUsers,
   adminCreateUser,
   adminUpdateUser,
   adminDeleteUser,
-  adminResetPassword,
-  adminGetAnalytics
+  adminResetPassword
 } from "@wimf/shared"
-import type { AdminUser, AdminAnalytics, Role } from "@wimf/shared"
-import { getToken, getProfile } from "../lib/auth"
-import { apiBase } from "../lib/apiBase"
+import type { AdminUser, Role } from "@wimf/shared"
+import { getToken } from "../../lib/auth"
+import { apiBase } from "../../lib/apiBase"
 
 const LIMIT = 20
 
-export default function AdminPage() {
+export default function AdminUsersPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [total, setTotal] = useState(0)
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null)
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState("")
   const [planFilter, setPlanFilter] = useState("")
+  const [sort, setSort] = useState("newest")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState("")
 
@@ -43,7 +45,6 @@ export default function AdminPage() {
 
   const getConfig = () => ({ baseUrl: apiBase, token: getToken() || undefined })
 
-  // Auth + role guard (read role from JWT to avoid localStorage race)
   useEffect(() => {
     const token = getToken()
     if (!token) { router.replace("/login"); return }
@@ -59,18 +60,17 @@ export default function AdminPage() {
   const loadData = useCallback(async () => {
     try {
       const config = getConfig()
-      const [usersRes, analyticsRes] = await Promise.all([
-        adminGetUsers(config, { search, role: roleFilter, plan: planFilter, page, limit: LIMIT }),
-        adminGetAnalytics(config)
-      ])
+      const usersRes = await adminGetUsers(config, {
+        search, role: roleFilter, plan: planFilter,
+        page, limit: LIMIT, sort, dateFrom, dateTo
+      })
       setUsers(usersRes.users)
       setTotal(usersRes.total)
-      setAnalytics(analyticsRes)
       setStatus("")
     } catch (err) {
       setStatus((err as Error).message)
     }
-  }, [search, roleFilter, planFilter, page])
+  }, [search, roleFilter, planFilter, page, sort, dateFrom, dateTo])
 
   useEffect(() => {
     if (!loading) loadData()
@@ -159,47 +159,25 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>Admin Dashboard | SafePlate AI</title>
+        <title>Users | Admin | SafePlate AI</title>
       </Head>
 
       <main className="container page-shell">
-        <h1 className="mb-4">Admin Dashboard</h1>
+        {/* Tab Navigation */}
+        <div className="admin-tabs mb-4">
+          <Link href="/admin/users" className="admin-tab active">Users</Link>
+          <Link href="/admin/analytics" className="admin-tab">Analytics</Link>
+        </div>
 
-        {/* Analytics Cards */}
-        {analytics && (
-          <div className="row g-3 mb-4">
-            <div className="col-md-4">
-              <div className="metric-card">
-                <div className="metric-number">{analytics.totalUsers}</div>
-                <div className="metric-sub">Total Registered Users</div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-card">
-                <div className="metric-number">{analytics.activeUsersLast30Days}</div>
-                <div className="metric-sub">Active Users (30 days)</div>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-card">
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {analytics.planDistribution.map((p) => (
-                    <div key={p.plan} className="d-flex justify-content-between align-items-center">
-                      <span className="chip">{p.plan}</span>
-                      <strong>{p.count}</strong>
-                    </div>
-                  ))}
-                </div>
-                <div className="metric-sub mt-2">Plan Distribution</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h1 className="mb-0">User Directory</h1>
+          <span className="text-muted">{total} total</span>
+        </div>
 
-        {/* Filters + Create Button */}
+        {/* Filters */}
         <div className="glass-card mb-4">
           <div className="row g-2 align-items-end">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="form-label">Search</label>
               <input
                 className="form-control"
@@ -208,7 +186,7 @@ export default function AdminPage() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label">Role</label>
               <select
                 className="form-select"
@@ -220,7 +198,7 @@ export default function AdminPage() {
                 <option value="SUPER_ADMIN">SUPER_ADMIN</option>
               </select>
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label">Plan</label>
               <select
                 className="form-select"
@@ -234,10 +212,51 @@ export default function AdminPage() {
               </select>
             </div>
             <div className="col-md-2">
+              <label className="form-label">Sort</label>
+              <select
+                className="form-select"
+                value={sort}
+                onChange={(e) => { setSort(e.target.value); setPage(1) }}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
+            <div className="col-md-3">
               <button className="btn btn-primary w-100" onClick={openCreateModal}>
                 + New User
               </button>
             </div>
+          </div>
+          <div className="row g-2 mt-2">
+            <div className="col-md-3">
+              <label className="form-label">From date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">To date</label>
+              <input
+                type="date"
+                className="form-control"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+              />
+            </div>
+            {(dateFrom || dateTo) && (
+              <div className="col-md-2 d-flex align-items-end">
+                <button
+                  className="btn btn-outline-light btn-sm"
+                  onClick={() => { setDateFrom(""); setDateTo(""); setPage(1) }}
+                >
+                  Clear dates
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

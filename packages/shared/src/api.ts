@@ -10,6 +10,7 @@ import type {
   BillingSummary,
   AdminUser,
   AdminAnalytics,
+  AdminChartData,
   Role
 } from "./index"
 import type { AnalyzeFromImagesResponse } from "./analyze"
@@ -374,7 +375,7 @@ export async function getTodayCalories(config: ApiConfig): Promise<CalorieSummar
 
 export async function adminGetUsers(
   config: ApiConfig,
-  params?: { search?: string; role?: string; plan?: string; page?: number; limit?: number }
+  params?: { search?: string; role?: string; plan?: string; page?: number; limit?: number; sort?: string; dateFrom?: string; dateTo?: string }
 ): Promise<{ users: AdminUser[]; total: number }> {
   const query = new URLSearchParams()
   if (params?.search) query.set("search", params.search)
@@ -382,6 +383,9 @@ export async function adminGetUsers(
   if (params?.plan) query.set("plan", params.plan)
   if (params?.page) query.set("page", String(params.page))
   if (params?.limit) query.set("limit", String(params.limit))
+  if (params?.sort) query.set("sort", params.sort)
+  if (params?.dateFrom) query.set("dateFrom", params.dateFrom)
+  if (params?.dateTo) query.set("dateTo", params.dateTo)
   const qs = query.toString()
   const response = await fetch(withBase(config.baseUrl, `/admin/users${qs ? `?${qs}` : ""}`), {
     headers: authHeaders(config)
@@ -467,4 +471,15 @@ export async function adminGetAnalytics(config: ApiConfig): Promise<AdminAnalyti
     throw new Error(err?.error || "Failed to load analytics")
   }
   return (await response.json()) as AdminAnalytics
+}
+
+export async function adminGetChartData(config: ApiConfig): Promise<AdminChartData> {
+  const response = await fetch(withBase(config.baseUrl, "/admin/analytics/charts"), {
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to load chart data")
+  }
+  return (await response.json()) as AdminChartData
 }

@@ -156,6 +156,15 @@ export type AdminAnalytics = {
   planDistribution: { plan: string; count: number }[]
 }
 
+export type AdminChartData = {
+  signupsPerDay: { date: string; count: number }[]
+  scansPerDay: { date: string; count: number }[]
+  planDistribution: { plan: string; count: number }[]
+  totalUsers: number
+  activeUsersLast30Days: number
+  totalScans: number
+}
+
 export * from "./api"
 export * from "./glossary"
 export * from "./scoring"
