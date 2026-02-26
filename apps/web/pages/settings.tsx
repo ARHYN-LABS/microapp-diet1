@@ -318,7 +318,8 @@ export default function Settings() {
           id: profileData.id,
           fullName: profileData.fullName,
           email: profileData.email,
-          avatarUrl: profileData.avatarUrl
+          avatarUrl: profileData.avatarUrl,
+          role: profileData.role
         })
         if (prefsData) {
           setPrefs({ ...prefsData })
