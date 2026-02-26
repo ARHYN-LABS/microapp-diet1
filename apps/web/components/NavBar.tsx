@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/router"
 import { clearToken, getProfile, getToken } from "../lib/auth"
@@ -21,6 +21,8 @@ export default function NavBar() {
   const [name, setName] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const token = getToken()
@@ -30,11 +32,23 @@ export default function NavBar() {
     setName(profile?.fullName || profile?.email || null)
     setAvatarUrl(normalizeImageUrl(profile?.avatarUrl) || null)
     setMenuOpen(false)
+    setDropdownOpen(false)
   }, [router.asPath])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const handleLogout = () => {
     clearToken()
     setIsAuthed(false)
+    setDropdownOpen(false)
     router.push("/login")
   }
 
@@ -68,9 +82,6 @@ export default function NavBar() {
           <Link className={router.pathname === "/pricing" ? "active" : ""} href="/pricing">
             Pricing
           </Link>
-          <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
-            Profile
-          </Link>
           {isAdmin && (
             <Link className={router.pathname === "/admin" ? "active" : ""} href="/admin">
               Admin
@@ -100,15 +111,63 @@ export default function NavBar() {
             </>
           )}
           {isAuthed && (
-            <>
-              {avatarUrl ? (
-                <img className="nav-avatar" src={avatarUrl} alt="Profile" />
-              ) : null}
-              <span className="chip d-none d-md-inline">{name || "Account"}</span>
-              <button className="app-store-badge d-none d-md-inline-flex" onClick={handleLogout}>
-                Logout
+            <div className="profile-dropdown d-none d-md-flex" ref={dropdownRef}>
+              <button
+                type="button"
+                className="profile-dropdown-trigger"
+                onClick={() => setDropdownOpen((v) => !v)}
+                aria-expanded={dropdownOpen}
+                aria-haspopup="true"
+              >
+                {avatarUrl ? (
+                  <img className="nav-avatar" src={avatarUrl} alt="Profile" />
+                ) : (
+                  <span className="nav-avatar-placeholder">
+                    {(name || "U").charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <svg
+                  className={`dropdown-arrow ${dropdownOpen ? "is-open" : ""}`}
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                >
+                  <path
+                    d="M3 4.5L6 7.5L9 4.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
-            </>
+              {dropdownOpen && (
+                <div className="profile-dropdown-menu">
+                  <Link
+                    href="/settings"
+                    className="profile-dropdown-item"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <span className="material-icons" style={{ fontSize: 18 }}>person</span>
+                    Profile
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="profile-dropdown-item"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <span className="material-icons" style={{ fontSize: 18 }}>settings</span>
+                    Settings
+                  </Link>
+                  <div className="profile-dropdown-divider" />
+                  <button className="profile-dropdown-item" onClick={handleLogout}>
+                    <span className="material-icons" style={{ fontSize: 18 }}>logout</span>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
