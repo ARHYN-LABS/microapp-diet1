@@ -50,7 +50,8 @@ export default function Signup() {
         id: response.profile.id,
         fullName: response.profile.fullName,
         email: response.profile.email,
-        avatarUrl: response.profile.avatarUrl
+        avatarUrl: response.profile.avatarUrl,
+        role: response.profile.role
       })
       setHealthPrefs({ restrictions, allergens })
       router.push("/settings")

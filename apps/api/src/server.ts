@@ -375,10 +375,11 @@ const analyzeLimiter = rateLimit({
 
 type AuthPayload = {
   userId: string
+  role: string
 }
 
-const signToken = (userId: string) =>
-  jwt.sign({ userId } satisfies AuthPayload, jwtSecret, { expiresIn: "7d" })
+const signToken = (userId: string, role: string = "USER") =>
+  jwt.sign({ userId, role } satisfies AuthPayload, jwtSecret, { expiresIn: "7d" })
 
 const requireAuth: express.RequestHandler = (req, res, next) => {
   const header = req.headers.authorization
@@ -388,11 +389,20 @@ const requireAuth: express.RequestHandler = (req, res, next) => {
   const token = header.slice("Bearer ".length)
   try {
     const payload = jwt.verify(token, jwtSecret) as AuthPayload
-    ;(req as { userId?: string }).userId = payload.userId
+    ;(req as { userId?: string; userRole?: string }).userId = payload.userId
+    ;(req as { userId?: string; userRole?: string }).userRole = payload.role || "USER"
     return next()
   } catch {
     return res.status(401).json({ error: "Invalid token" })
   }
+}
+
+const requireAdmin: express.RequestHandler = (req, res, next) => {
+  const role = (req as { userRole?: string }).userRole
+  if (role !== "SUPER_ADMIN") {
+    return res.status(403).json({ error: "Forbidden: admin access required" })
+  }
+  return next()
 }
 
 const getAuthUserId = (req: express.Request) => (req as { userId?: string }).userId
@@ -499,7 +509,7 @@ app.post("/auth/signup", async (req, res, next) => {
       }
     })
 
-    const token = signToken(user.id)
+    const token = signToken(user.id, user.role)
     return res.json({
       token,
       profile: {
@@ -507,6 +517,7 @@ app.post("/auth/signup", async (req, res, next) => {
         fullName: user.fullName,
         email: user.email,
         avatarUrl: toPublicUrl(req, user.avatarUrl),
+        role: user.role,
         mobileNumber: user.mobileNumber,
         age: user.age,
         gender: user.gender,
@@ -540,7 +551,7 @@ app.post("/auth/login", async (req, res, next) => {
     if (resetUser) {
       billingUser = resetUser
     }
-    const token = signToken(user.id)
+    const token = signToken(user.id, user.role)
     return res.json({
       token,
       profile: {
@@ -548,6 +559,7 @@ app.post("/auth/login", async (req, res, next) => {
         fullName: billingUser.fullName,
         email: billingUser.email,
         avatarUrl: toPublicUrl(req, billingUser.avatarUrl),
+        role: billingUser.role,
         mobileNumber: billingUser.mobileNumber,
         age: billingUser.age,
         gender: billingUser.gender,
@@ -641,6 +653,7 @@ app.get("/profile", requireAuth, async (req, res, next) => {
       fullName: user.fullName,
       email: user.email,
       avatarUrl: toPublicUrl(req, user.avatarUrl),
+      role: user.role,
       mobileNumber: user.mobileNumber,
       age: user.age,
       gender: user.gender,
@@ -883,7 +896,7 @@ app.get("/auth/google/callback", async (req, res, next) => {
       })
     }
 
-    const token = signToken(user.id)
+    const token = signToken(user.id, user.role)
     const state =
       typeof req.query.state === "string" && isAllowedRedirect(req.query.state)
         ? req.query.state
@@ -893,7 +906,8 @@ app.get("/auth/google/callback", async (req, res, next) => {
       token,
       userId: user.id,
       email: user.email,
-      fullName: user.fullName || ""
+      fullName: user.fullName || "",
+      role: user.role
     })
     return res.redirect(redirectUrl)
   } catch (error) {
@@ -986,7 +1000,7 @@ app.get("/auth/microsoft/callback", async (req, res, next) => {
       })
     }
 
-    const token = signToken(user.id)
+    const token = signToken(user.id, user.role)
     const state =
       typeof req.query.state === "string" && isAllowedRedirect(req.query.state)
         ? req.query.state
@@ -996,7 +1010,8 @@ app.get("/auth/microsoft/callback", async (req, res, next) => {
       token,
       userId: user.id,
       email: user.email,
-      fullName: user.fullName || ""
+      fullName: user.fullName || "",
+      role: user.role
     })
     return res.redirect(redirectUrl)
   } catch (error) {
@@ -2458,6 +2473,239 @@ app.put("/profile-prefs", requireAuth, async (req, res, next) => {
       return res.status(503).json({ error: "Preferences unavailable" })
     }
     return res.json(nextPrefs)
+  } catch (error) {
+    return next(error)
+  }
+})
+
+// ---- Admin routes ----
+
+const adminCreateUserSchema = z.object({
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(8),
+  role: z.enum(["USER", "SUPER_ADMIN"]).optional().default("USER"),
+  planName: z.enum(["free", "silver", "golden"]).optional().default("free")
+})
+
+const adminUpdateUserSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  role: z.enum(["USER", "SUPER_ADMIN"]).optional(),
+  planName: z.enum(["free", "silver", "golden"]).optional(),
+  scanLimit: z.number().int().min(0).optional()
+})
+
+const adminResetPasswordSchema = z.object({
+  newPassword: z.string().min(8)
+})
+
+const adminUserSelect = {
+  id: true,
+  fullName: true,
+  email: true,
+  role: true,
+  planName: true,
+  scansUsed: true,
+  scanLimit: true,
+  createdAt: true,
+  updatedAt: true
+} as const
+
+const toAdminUser = (u: { createdAt: Date; updatedAt: Date; [k: string]: unknown }) => ({
+  ...u,
+  createdAt: u.createdAt.toISOString(),
+  updatedAt: u.updatedAt.toISOString()
+})
+
+app.get("/admin/users", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const search = typeof req.query.search === "string" ? req.query.search : ""
+    const roleFilter = typeof req.query.role === "string" ? req.query.role : ""
+    const planFilter = typeof req.query.plan === "string" ? req.query.plan : ""
+    const page = Math.max(1, Number(req.query.page) || 1)
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 20))
+    const skip = (page - 1) * limit
+
+    const where: any = {}
+    if (search) {
+      where.OR = [
+        { email: { contains: search } },
+        { fullName: { contains: search } }
+      ]
+    }
+    if (roleFilter === "USER" || roleFilter === "SUPER_ADMIN") {
+      where.role = roleFilter
+    }
+    if (planFilter) {
+      where.planName = planFilter
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: adminUserSelect,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
+      }),
+      prisma.user.count({ where })
+    ])
+
+    return res.json({ users: users.map(toAdminUser), total })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.post("/admin/users", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const payload = adminCreateUserSchema.parse(req.body)
+    const existing = await prisma.user.findUnique({ where: { email: payload.email } })
+    if (existing) {
+      return res.status(409).json({ error: "Email already in use" })
+    }
+
+    const passwordHash = await bcrypt.hash(payload.password, 10)
+    const planConfig = getPlanConfig(payload.planName)
+    const user = await prisma.user.create({
+      data: {
+        fullName: payload.fullName,
+        email: payload.email,
+        passwordHash,
+        role: payload.role as any,
+        dailyCalorieGoal: 2000,
+        planName: planConfig.planName,
+        scanLimit: planConfig.scanLimit,
+        scansUsed: 0,
+        billingStartDate: new Date(),
+        planExpiresAt: payload.planName === "free" ? null : addMonths(new Date(), 1)
+      },
+      select: adminUserSelect
+    })
+
+    return res.json(toAdminUser(user))
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.put("/admin/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    const payload = adminUpdateUserSchema.parse(req.body)
+
+    const existing = await prisma.user.findUnique({ where: { id: userId } })
+    if (!existing) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    if (payload.email && payload.email !== existing.email) {
+      const emailTaken = await prisma.user.findUnique({ where: { email: payload.email } })
+      if (emailTaken) {
+        return res.status(409).json({ error: "Email already in use" })
+      }
+    }
+
+    const data: any = {}
+    if (payload.fullName !== undefined) data.fullName = payload.fullName
+    if (payload.email !== undefined) data.email = payload.email
+    if (payload.role !== undefined) data.role = payload.role
+    if (payload.planName !== undefined) {
+      const planConfig = getPlanConfig(payload.planName)
+      data.planName = planConfig.planName
+      data.scanLimit = payload.scanLimit ?? planConfig.scanLimit
+      if (payload.planName === "free") {
+        data.planExpiresAt = null
+      } else if (!existing.planExpiresAt || existing.planName === "free") {
+        data.billingStartDate = new Date()
+        data.planExpiresAt = addMonths(new Date(), 1)
+      }
+    }
+    if (payload.scanLimit !== undefined && payload.planName === undefined) {
+      data.scanLimit = payload.scanLimit
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: adminUserSelect
+    })
+
+    return res.json(toAdminUser(user))
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.delete("/admin/users/:id", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    const requestingUserId = getAuthUserId(req)
+
+    if (userId === requestingUserId) {
+      return res.status(400).json({ error: "Cannot delete your own account" })
+    }
+
+    const existing = await prisma.user.findUnique({ where: { id: userId } })
+    if (!existing) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    await prisma.calorieLog.deleteMany({ where: { userId } })
+    await prisma.medicalCondition.deleteMany({ where: { userId } })
+    await prisma.scanHistory.deleteMany({ where: { userId } })
+    await prisma.userPrefs.deleteMany({ where: { userId } })
+    await prisma.profilePrefs.deleteMany({ where: { userId } })
+    await prisma.user.delete({ where: { id: userId } })
+
+    return res.json({ message: "User deleted" })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.post("/admin/users/:id/reset-password", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const userId = req.params.id
+    const payload = adminResetPasswordSchema.parse(req.body)
+
+    const existing = await prisma.user.findUnique({ where: { id: userId } })
+    if (!existing) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    const passwordHash = await bcrypt.hash(payload.newPassword, 10)
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, resetTokenHash: null, resetTokenExpires: null }
+    })
+
+    return res.json({ message: "Password reset successfully" })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+app.get("/admin/analytics", requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const [totalUsers, activeUsers, planCounts] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { updatedAt: { gte: thirtyDaysAgo } } }),
+      prisma.user.groupBy({ by: ["planName"], _count: { planName: true } })
+    ])
+
+    return res.json({
+      totalUsers,
+      activeUsersLast30Days: activeUsers,
+      planDistribution: planCounts.map((row) => ({
+        plan: row.planName,
+        count: row._count.planName
+      }))
+    })
   } catch (error) {
     return next(error)
   }

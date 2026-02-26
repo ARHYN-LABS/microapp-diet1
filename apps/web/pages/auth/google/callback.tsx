@@ -7,7 +7,7 @@ export default function GoogleCallback() {
 
   useEffect(() => {
     if (!router.isReady) return
-    const { token, userId, email, fullName, error } = router.query
+    const { token, userId, email, fullName, role, error } = router.query
     if (typeof error === "string") {
       router.replace(`/login?error=${encodeURIComponent(error)}`)
       return
@@ -17,7 +17,8 @@ export default function GoogleCallback() {
       setProfile({
         id: userId,
         fullName: typeof fullName === "string" ? fullName : undefined,
-        email
+        email,
+        role: typeof role === "string" ? role : undefined
       })
       router.replace("/dashboard")
       return

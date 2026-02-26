@@ -7,6 +7,7 @@ import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 export default function NavBar() {
   const router = useRouter()
   const [isAuthed, setIsAuthed] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [name, setName] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -15,6 +16,7 @@ export default function NavBar() {
     const token = getToken()
     const profile = getProfile()
     setIsAuthed(!!token)
+    setIsAdmin(profile?.role === "SUPER_ADMIN")
     setName(profile?.fullName || profile?.email || null)
     setAvatarUrl(normalizeImageUrl(profile?.avatarUrl) || null)
     setMenuOpen(false)
@@ -59,6 +61,11 @@ export default function NavBar() {
           <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
             Profile
           </Link>
+          {isAdmin && (
+            <Link className={router.pathname === "/admin" ? "active" : ""} href="/admin">
+              Admin
+            </Link>
+          )}
         </div>
         <div className="app-actions">
           <button
@@ -121,6 +128,11 @@ export default function NavBar() {
           <Link className={router.pathname === "/settings" ? "active" : ""} href="/settings">
             Profile
           </Link>
+          {isAdmin && (
+            <Link className={router.pathname === "/admin" ? "active" : ""} href="/admin">
+              Admin
+            </Link>
+          )}
           {!isAuthed && (
             <>
               <Link className="app-store-badge" href="/login">

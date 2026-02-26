@@ -7,7 +7,10 @@ import type {
   ScanHistory,
   UserPrefs,
   UserProfile,
-  BillingSummary
+  BillingSummary,
+  AdminUser,
+  AdminAnalytics,
+  Role
 } from "./index"
 import type { AnalyzeFromImagesResponse } from "./analyze"
 
@@ -365,4 +368,103 @@ export async function getTodayCalories(config: ApiConfig): Promise<CalorieSummar
     throw new Error(payload?.error || "Failed to load calories")
   }
   return (await response.json()) as CalorieSummary
+}
+
+// ---- Admin API ----
+
+export async function adminGetUsers(
+  config: ApiConfig,
+  params?: { search?: string; role?: string; plan?: string; page?: number; limit?: number }
+): Promise<{ users: AdminUser[]; total: number }> {
+  const query = new URLSearchParams()
+  if (params?.search) query.set("search", params.search)
+  if (params?.role) query.set("role", params.role)
+  if (params?.plan) query.set("plan", params.plan)
+  if (params?.page) query.set("page", String(params.page))
+  if (params?.limit) query.set("limit", String(params.limit))
+  const qs = query.toString()
+  const response = await fetch(withBase(config.baseUrl, `/admin/users${qs ? `?${qs}` : ""}`), {
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to load users")
+  }
+  return (await response.json()) as { users: AdminUser[]; total: number }
+}
+
+export async function adminCreateUser(
+  config: ApiConfig,
+  body: { fullName: string; email: string; password: string; role?: Role; planName?: string }
+): Promise<AdminUser> {
+  const response = await fetch(withBase(config.baseUrl, "/admin/users"), {
+    method: "POST",
+    headers: authHeaders(config, { "Content-Type": "application/json" }),
+    body: JSON.stringify(body)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to create user")
+  }
+  return (await response.json()) as AdminUser
+}
+
+export async function adminUpdateUser(
+  config: ApiConfig,
+  userId: string,
+  body: { fullName?: string; email?: string; role?: Role; planName?: string; scanLimit?: number }
+): Promise<AdminUser> {
+  const response = await fetch(withBase(config.baseUrl, `/admin/users/${userId}`), {
+    method: "PUT",
+    headers: authHeaders(config, { "Content-Type": "application/json" }),
+    body: JSON.stringify(body)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to update user")
+  }
+  return (await response.json()) as AdminUser
+}
+
+export async function adminDeleteUser(
+  config: ApiConfig,
+  userId: string
+): Promise<{ message: string }> {
+  const response = await fetch(withBase(config.baseUrl, `/admin/users/${userId}`), {
+    method: "DELETE",
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to delete user")
+  }
+  return (await response.json()) as { message: string }
+}
+
+export async function adminResetPassword(
+  config: ApiConfig,
+  userId: string,
+  body: { newPassword: string }
+): Promise<{ message: string }> {
+  const response = await fetch(withBase(config.baseUrl, `/admin/users/${userId}/reset-password`), {
+    method: "POST",
+    headers: authHeaders(config, { "Content-Type": "application/json" }),
+    body: JSON.stringify(body)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to reset password")
+  }
+  return (await response.json()) as { message: string }
+}
+
+export async function adminGetAnalytics(config: ApiConfig): Promise<AdminAnalytics> {
+  const response = await fetch(withBase(config.baseUrl, "/admin/analytics"), {
+    headers: authHeaders(config)
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => null)
+    throw new Error(err?.error || "Failed to load analytics")
+  }
+  return (await response.json()) as AdminAnalytics
 }

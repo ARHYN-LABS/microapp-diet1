@@ -60,6 +60,8 @@ export type ProfilePrefs = {
   }
 }
 
+export type Role = "USER" | "SUPER_ADMIN"
+
 export type Gender = "male" | "female" | "other"
 
 export type ActivityLevel = "sedentary" | "light" | "moderate" | "active"
@@ -87,6 +89,7 @@ export type UserProfile = {
   fullName?: string | null
   email: string
   avatarUrl?: string | null
+  role?: Role
   mobileNumber?: string | null
   age?: number | null
   gender?: Gender | null
@@ -133,6 +136,24 @@ export type ScanHistory = {
   parsedIngredients?: string[] | null
   parsedNutrition?: NutritionParsed | null
   analysisSnapshot?: AnalyzeFromImagesResponse | null
+}
+
+export type AdminUser = {
+  id: string
+  fullName?: string | null
+  email: string
+  role: Role
+  planName: string
+  scansUsed: number
+  scanLimit: number
+  createdAt: string
+  updatedAt: string
+}
+
+export type AdminAnalytics = {
+  totalUsers: number
+  activeUsersLast30Days: number
+  planDistribution: { plan: string; count: number }[]
 }
 
 export * from "./api"
