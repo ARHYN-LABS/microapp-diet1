@@ -4,6 +4,16 @@ import { useRouter } from "next/router"
 import { clearToken, getProfile, getToken } from "../lib/auth"
 import { normalizeImageUrl } from "../lib/normalizeImageUrl"
 
+function getRoleFromToken(token: string | null): string | null {
+  if (!token) return null
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    return payload.role || null
+  } catch {
+    return null
+  }
+}
+
 export default function NavBar() {
   const router = useRouter()
   const [isAuthed, setIsAuthed] = useState(false)
@@ -16,7 +26,7 @@ export default function NavBar() {
     const token = getToken()
     const profile = getProfile()
     setIsAuthed(!!token)
-    setIsAdmin(profile?.role === "SUPER_ADMIN")
+    setIsAdmin(getRoleFromToken(token) === "SUPER_ADMIN")
     setName(profile?.fullName || profile?.email || null)
     setAvatarUrl(normalizeImageUrl(profile?.avatarUrl) || null)
     setMenuOpen(false)

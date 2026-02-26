@@ -43,12 +43,16 @@ export default function AdminPage() {
 
   const getConfig = () => ({ baseUrl: apiBase, token: getToken() || undefined })
 
-  // Auth + role guard
+  // Auth + role guard (read role from JWT to avoid localStorage race)
   useEffect(() => {
     const token = getToken()
-    const profile = getProfile()
     if (!token) { router.replace("/login"); return }
-    if (profile?.role !== "SUPER_ADMIN") { router.replace("/"); return }
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      if (payload.role !== "SUPER_ADMIN") { router.replace("/"); return }
+    } catch {
+      router.replace("/"); return
+    }
     setLoading(false)
   }, [router])
 
