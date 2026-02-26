@@ -83,9 +83,14 @@ export default function NavBar() {
             Pricing
           </Link>
           {isAdmin && (
-            <Link className={router.pathname.startsWith("/admin") ? "active" : ""} href="/admin/users">
-              Admin
-            </Link>
+            <>
+              <Link className={router.pathname === "/admin/users" ? "active" : ""} href="/admin/users">
+                Admin
+              </Link>
+              <Link className={router.pathname === "/admin/analytics" ? "active" : ""} href="/admin/analytics">
+                Analytics
+              </Link>
+            </>
           )}
         </div>
         <div className="app-actions">
@@ -198,9 +203,14 @@ export default function NavBar() {
             Profile
           </Link>
           {isAdmin && (
-            <Link className={router.pathname.startsWith("/admin") ? "active" : ""} href="/admin/users">
-              Admin
-            </Link>
+            <>
+              <Link className={router.pathname === "/admin/users" ? "active" : ""} href="/admin/users">
+                Admin
+              </Link>
+              <Link className={router.pathname === "/admin/analytics" ? "active" : ""} href="/admin/analytics">
+                Analytics
+              </Link>
+            </>
           )}
           {!isAuthed && (
             <>
