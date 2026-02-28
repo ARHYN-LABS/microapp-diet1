@@ -40,6 +40,31 @@ async function main() {
     }
   })
 
+  // Google Play reviewer test account
+  const testHash = await bcrypt.hash("Test1234!", 10)
+  const testUser = await prisma.user.upsert({
+    where: { email: "test@example.com" },
+    update: { passwordHash: testHash },
+    create: {
+      fullName: "Test User",
+      email: "test@example.com",
+      passwordHash: testHash,
+      age: 25,
+      gender: "male",
+      dietaryPreference: "none",
+      heightCm: 170,
+      weightKg: 70,
+      activityLevel: "moderate",
+      dailyCalorieGoal: 2200,
+      planName: "free",
+      scanLimit: 10,
+      scansUsed: 0,
+      billingStartDate: new Date(),
+      planExpiresAt: null
+    }
+  })
+  console.log(`Upserted test@example.com (id: ${testUser.id})`)
+
   // Promote super admin
   const adminEmail = "miqbal@dccdialysis.com"
   const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } })

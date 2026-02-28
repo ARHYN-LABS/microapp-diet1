@@ -539,7 +539,7 @@ app.post("/auth/login", async (req, res, next) => {
   try {
     const payload = loginSchema.parse(req.body)
     const user = await prisma.user.findUnique({ where: { email: payload.email } })
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return res.status(401).json({ error: "Invalid credentials" })
     }
     const valid = await bcrypt.compare(payload.password, user.passwordHash)
