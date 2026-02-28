@@ -13,7 +13,7 @@
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package || true"
   },
   "devDependencies": {
     "patch-package": "^8.0.0",
