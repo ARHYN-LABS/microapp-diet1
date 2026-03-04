@@ -126,6 +126,18 @@ workflows:
           wrapper.write_text(text)
           print("Gradle wrapper pinned to 7.5.1")
           PY
+      - name: Patch proguard rules for Reanimated
+        script: |
+          PROGUARD="apps/mobile/android/app/proguard-rules.pro"
+          if ! grep -q "reanimated" "$PROGUARD" 2>/dev/null; then
+            echo "" >> "$PROGUARD"
+            echo "# react-native-reanimated" >> "$PROGUARD"
+            echo "-keep class com.swmansion.reanimated.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.facebook.react.turbomodule.** { *; }" >> "$PROGUARD"
+            echo "Reanimated proguard rules added"
+          else
+            echo "Reanimated proguard rules already present"
+          fi
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_BASE64" ]; then echo "Missing CM_KEYSTORE_BASE64"; exit 1; fi
