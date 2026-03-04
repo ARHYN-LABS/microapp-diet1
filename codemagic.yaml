@@ -28,16 +28,12 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Force Gradle version for Expo SDK 49
+      - name: Disable New Architecture (not all deps support it)
         script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
-          text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
-          wrapper.write_text(text)
-          print("Gradle wrapper pinned to 7.5.1")
-          PY
+          PROPS="apps/mobile/android/gradle.properties"
+          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
+          echo "New Architecture disabled"
+          grep newArchEnabled "$PROPS"
       - name: Build debug APK
         script: cd apps/mobile/android && ./gradlew assembleDebug
     artifacts:
@@ -71,16 +67,12 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Force Gradle version for Expo SDK 49
+      - name: Disable New Architecture (not all deps support it)
         script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
-          text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
-          wrapper.write_text(text)
-          print("Gradle wrapper pinned to 7.5.1")
-          PY
+          PROPS="apps/mobile/android/gradle.properties"
+          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
+          echo "New Architecture disabled"
+          grep newArchEnabled "$PROPS"
       - name: Build release APK
         script: cd apps/mobile/android && ./gradlew assembleRelease
     artifacts:
@@ -116,16 +108,12 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Force Gradle version for Expo SDK 49
+      - name: Disable New Architecture (not all deps support it)
         script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
-          text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
-          wrapper.write_text(text)
-          print("Gradle wrapper pinned to 7.5.1")
-          PY
+          PROPS="apps/mobile/android/gradle.properties"
+          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
+          echo "New Architecture disabled"
+          grep newArchEnabled "$PROPS"
       - name: Patch proguard rules for Reanimated
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
