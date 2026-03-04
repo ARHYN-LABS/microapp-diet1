@@ -47,7 +47,7 @@
         "backgroundColor": "#F8FAFC"
       },
       "package": "com.askmobisoft55.whatsinmyfood",
-      "versionCode": 19
+      "versionCode": 20
     },
     "extra": {
       "apiBase": "${EXPO_PUBLIC_API_BASE}",
