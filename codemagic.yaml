@@ -52,7 +52,7 @@ workflows:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
     scripts:
       - name: Install dependencies
-        script: npm install
+        script: npm install && cd apps/mobile && npm install
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
