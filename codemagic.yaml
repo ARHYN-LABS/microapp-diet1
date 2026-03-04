@@ -3,7 +3,7 @@ workflows:
     name: Android Debug APK
     max_build_duration: 60
     environment:
-      node: 18.18.2
+      node: 20.18.0
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
@@ -46,7 +46,7 @@ workflows:
     name: Android Release APK (debug signed)
     max_build_duration: 60
     environment:
-      node: 18.18.2
+      node: 20.18.0
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
@@ -89,7 +89,7 @@ workflows:
     name: Android Release AAB (Play Store)
     max_build_duration: 60
     environment:
-      node: 18.18.2
+      node: 20.18.0
       java: 17
       groups:
         - keystore
