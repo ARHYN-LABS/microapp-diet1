@@ -16,6 +16,7 @@
     "postinstall": "patch-package || true"
   },
   "devDependencies": {
+    "babel-preset-expo": "~14.0.0",
     "patch-package": "^8.0.0",
     "typescript": "^5.3.3"
   },
