@@ -133,25 +133,31 @@ workflows:
           echo "Keystore decoded successfully"
           GRADLE_FILE="apps/mobile/android/app/build.gradle"
           cat > /tmp/inject_signing.py << 'PYEOF'
-          import sys
+          import sys, re
           gradle = sys.argv[1]
           with open(gradle) as f:
               text = f.read()
-          if "signingConfigs" not in text:
-              sb = "\n    signingConfigs {\n"
-              sb += "        release {\n"
-              sb += "            storeFile file('upload-key.keystore')\n"
-              sb += '            storePassword "SafePlate2026"\n'
-              sb += '            keyAlias "upload"\n'
-              sb += '            keyPassword "SafePlate2026"\n'
-              sb += "        }\n"
-              sb += "    }\n"
+          release_block = (
+              '        release {\n'
+              "            storeFile file('upload-key.keystore')\n"
+              '            storePassword "SafePlate2026"\n'
+              '            keyAlias "upload"\n'
+              '            keyPassword "SafePlate2026"\n'
+              '        }\n'
+          )
+          if "signingConfigs" in text and "release {" not in text.split("signingConfigs")[1].split("buildTypes")[0]:
+              text = text.replace("signingConfigs {", "signingConfigs {\n" + release_block, 1)
+              print("Added release to existing signingConfigs")
+          elif "signingConfigs" not in text:
+              sb = "\n    signingConfigs {\n" + release_block + "    }\n"
               text = text.replace("    buildTypes {", sb + "    buildTypes {")
-          if "signingConfig signingConfigs.release" not in text:
-              text = text.replace(
-                  "signingConfig signingConfigs.debug",
-                  "signingConfig signingConfigs.release"
-              )
+              print("Added new signingConfigs block")
+          else:
+              print("Release signing config already exists")
+          text = text.replace(
+              "signingConfig signingConfigs.debug",
+              "signingConfig signingConfigs.release"
+          )
           with open(gradle, 'w') as f:
               f.write(text)
           print("Signing config injected into build.gradle")
