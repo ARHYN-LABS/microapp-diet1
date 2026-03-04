@@ -9,8 +9,7 @@ workflows:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -26,13 +25,9 @@ workflows:
           print(f"Patched {patched} expo android build.gradle files")
           PY
       - name: Build shared package
-        script: |
-          cd packages/shared
-          npm run build
+        script: cd packages/shared && npm run build
       - name: Prebuild Android project
-        script: |
-          cd apps/mobile
-          npx expo prebuild --platform android --clean
+        script: cd apps/mobile && npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
@@ -44,9 +39,7 @@ workflows:
           print("Gradle wrapper pinned to 7.5.1")
           PY
       - name: Build debug APK
-        script: |
-          cd apps/mobile/android
-          ./gradlew assembleDebug
+        script: cd apps/mobile/android && ./gradlew assembleDebug
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
   android-release:
@@ -59,8 +52,7 @@ workflows:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -76,13 +68,9 @@ workflows:
           print(f"Patched {patched} expo android build.gradle files")
           PY
       - name: Build shared package
-        script: |
-          cd packages/shared
-          npm run build
+        script: cd packages/shared && npm run build
       - name: Prebuild Android project
-        script: |
-          cd apps/mobile
-          npx expo prebuild --platform android --clean
+        script: cd apps/mobile && npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
@@ -94,93 +82,7 @@ workflows:
           print("Gradle wrapper pinned to 7.5.1")
           PY
       - name: Build release APK
-        script: |
-          cd apps/mobile/android
-          ./gradlew assembleRelease
-    artifacts:
-      - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
-  android-release-signed:
-    name: Android Release APK (signed)
-    max_build_duration: 60
-    environment:
-      node: 18.18.2
-      java: 17
-      vars:
-        EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
-    scripts:
-      - name: Install dependencies
-        script: |
-          npm install
-      - name: Patch Expo Gradle compatibility
-        script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          patched = 0
-          for gradle_file in Path("node_modules").glob("expo-*/android/build.gradle"):
-            text = gradle_file.read_text()
-            next_text = text.replace("classifier = 'sources'", "archiveClassifier.set('sources')")
-            next_text = next_text.replace('classifier = "sources"', 'archiveClassifier.set("sources")')
-            if next_text != text:
-              gradle_file.write_text(next_text)
-              patched += 1
-          print(f"Patched {patched} expo android build.gradle files")
-          PY
-      - name: Build shared package
-        script: |
-          cd packages/shared
-          npm run build
-      - name: Prebuild Android project
-        script: |
-          cd apps/mobile
-          npx expo prebuild --platform android --clean
-      - name: Force Gradle version for Expo SDK 49
-        script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
-          text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
-          wrapper.write_text(text)
-          print("Gradle wrapper pinned to 7.5.1")
-          PY
-      - name: Configure release keystore
-        script: |
-          if [ -z "$CM_KEYSTORE_BASE64" ]; then echo "Missing CM_KEYSTORE_BASE64"; exit 1; fi
-          # Decode base64 keystore into the app directory
-          echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
-          echo "Keystore decoded successfully"
-          # Inject release signing config into the generated build.gradle
-          python3 - <<'PY'
-          from pathlib import Path
-          gradle = Path("apps/mobile/android/app/build.gradle")
-          text = gradle.read_text()
-
-          if "signingConfigs" not in text:
-              signing_block = """
-    signingConfigs {
-        release {
-            storeFile file('upload-key.keystore')
-            storePassword "SafePlate2026"
-            keyAlias "upload"
-            keyPassword "SafePlate2026"
-        }
-    }
-"""
-              text = text.replace("    buildTypes {", signing_block + "    buildTypes {")
-
-          if "signingConfig signingConfigs.release" not in text:
-              text = text.replace(
-                  'signingConfig signingConfigs.debug\n            minifyEnabled',
-                  'signingConfig signingConfigs.release\n            minifyEnabled'
-              )
-
-          gradle.write_text(text)
-          print("Signing config injected into build.gradle")
-          PY
-      - name: Build release APK
-        script: |
-          cd apps/mobile/android
-          ./gradlew assembleRelease
+        script: cd apps/mobile/android && ./gradlew assembleRelease
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
   android-release-aab:
@@ -195,8 +97,7 @@ workflows:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
     scripts:
       - name: Install dependencies
-        script: |
-          npm install
+        script: npm install
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -212,13 +113,9 @@ workflows:
           print(f"Patched {patched} expo android build.gradle files")
           PY
       - name: Build shared package
-        script: |
-          cd packages/shared
-          npm run build
+        script: cd packages/shared && npm run build
       - name: Prebuild Android project
-        script: |
-          cd apps/mobile
-          npx expo prebuild --platform android --clean
+        script: cd apps/mobile && npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
@@ -232,40 +129,35 @@ workflows:
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_BASE64" ]; then echo "Missing CM_KEYSTORE_BASE64"; exit 1; fi
-          # Decode base64 keystore into the app directory
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
           echo "Keystore decoded successfully"
-          # Inject release signing config into the generated build.gradle
-          python3 - <<'PY'
-          from pathlib import Path
-          gradle = Path("apps/mobile/android/app/build.gradle")
-          text = gradle.read_text()
-
+          GRADLE_FILE="apps/mobile/android/app/build.gradle"
+          cat > /tmp/inject_signing.py << 'PYEOF'
+          import sys
+          gradle = sys.argv[1]
+          with open(gradle) as f:
+              text = f.read()
           if "signingConfigs" not in text:
-              signing_block = """
-    signingConfigs {
-        release {
-            storeFile file('upload-key.keystore')
-            storePassword "SafePlate2026"
-            keyAlias "upload"
-            keyPassword "SafePlate2026"
-        }
-    }
-"""
-              text = text.replace("    buildTypes {", signing_block + "    buildTypes {")
-
+              sb = "\n    signingConfigs {\n"
+              sb += "        release {\n"
+              sb += "            storeFile file('upload-key.keystore')\n"
+              sb += '            storePassword "SafePlate2026"\n'
+              sb += '            keyAlias "upload"\n'
+              sb += '            keyPassword "SafePlate2026"\n'
+              sb += "        }\n"
+              sb += "    }\n"
+              text = text.replace("    buildTypes {", sb + "    buildTypes {")
           if "signingConfig signingConfigs.release" not in text:
               text = text.replace(
-                  'signingConfig signingConfigs.debug\n            minifyEnabled',
-                  'signingConfig signingConfigs.release\n            minifyEnabled'
+                  "signingConfig signingConfigs.debug",
+                  "signingConfig signingConfigs.release"
               )
-
-          gradle.write_text(text)
+          with open(gradle, 'w') as f:
+              f.write(text)
           print("Signing config injected into build.gradle")
-          PY
+          PYEOF
+          python3 /tmp/inject_signing.py "$GRADLE_FILE"
       - name: Build release AAB
-        script: |
-          cd apps/mobile/android
-          ./gradlew bundleRelease
+        script: cd apps/mobile/android && ./gradlew bundleRelease
     artifacts:
       - apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
