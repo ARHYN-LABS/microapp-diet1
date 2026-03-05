@@ -89,6 +89,46 @@ workflows:
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
           PY
+      - name: Patch gesture-handler to use TurboReactPackage (RN 0.81 compat)
+        script: |
+          python3 - <<'PY'
+          import glob
+
+          # RN 0.81's TurboModuleManager checks "instanceof TurboReactPackage" to find
+          # TurboModules. gesture-handler v2.28+ extends BaseReactPackage (parent class
+          # of TurboReactPackage in 0.81.5), which fails the instanceof check.
+          # Patch it to extend TurboReactPackage directly.
+          for kt_file in glob.glob("node_modules/react-native-gesture-handler/**/RNGestureHandlerPackage.kt", recursive=True):
+              with open(kt_file) as f:
+                  text = f.read()
+              if "BaseReactPackage" in text:
+                  new_text = text.replace(
+                      "import com.facebook.react.BaseReactPackage",
+                      "import com.facebook.react.TurboReactPackage"
+                  )
+                  new_text = new_text.replace("BaseReactPackage()", "TurboReactPackage()")
+                  with open(kt_file, 'w') as f:
+                      f.write(new_text)
+                  print(f"Patched {kt_file}: BaseReactPackage -> TurboReactPackage")
+              else:
+                  print(f"No BaseReactPackage in {kt_file}")
+
+          # Also patch reanimated if it has the same issue
+          for kt_file in glob.glob("node_modules/react-native-reanimated/**/ReanimatedPackage.kt", recursive=True):
+              with open(kt_file) as f:
+                  text = f.read()
+              if "BaseReactPackage" in text:
+                  new_text = text.replace(
+                      "import com.facebook.react.BaseReactPackage",
+                      "import com.facebook.react.TurboReactPackage"
+                  )
+                  new_text = new_text.replace("BaseReactPackage()", "TurboReactPackage()")
+                  with open(kt_file, 'w') as f:
+                      f.write(new_text)
+                  print(f"Patched {kt_file}: BaseReactPackage -> TurboReactPackage")
+              else:
+                  print(f"No BaseReactPackage in {kt_file}")
+          PY
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
@@ -386,6 +426,39 @@ workflows:
               gradle_file.write_text(next_text)
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
+          PY
+      - name: Patch gesture-handler to use TurboReactPackage (RN 0.81 compat)
+        script: |
+          python3 - <<'PY'
+          import glob
+          for kt_file in glob.glob("node_modules/react-native-gesture-handler/**/RNGestureHandlerPackage.kt", recursive=True):
+              with open(kt_file) as f:
+                  text = f.read()
+              if "BaseReactPackage" in text:
+                  new_text = text.replace(
+                      "import com.facebook.react.BaseReactPackage",
+                      "import com.facebook.react.TurboReactPackage"
+                  )
+                  new_text = new_text.replace("BaseReactPackage()", "TurboReactPackage()")
+                  with open(kt_file, 'w') as f:
+                      f.write(new_text)
+                  print(f"Patched {kt_file}: BaseReactPackage -> TurboReactPackage")
+              else:
+                  print(f"No BaseReactPackage in {kt_file}")
+          for kt_file in glob.glob("node_modules/react-native-reanimated/**/ReanimatedPackage.kt", recursive=True):
+              with open(kt_file) as f:
+                  text = f.read()
+              if "BaseReactPackage" in text:
+                  new_text = text.replace(
+                      "import com.facebook.react.BaseReactPackage",
+                      "import com.facebook.react.TurboReactPackage"
+                  )
+                  new_text = new_text.replace("BaseReactPackage()", "TurboReactPackage()")
+                  with open(kt_file, 'w') as f:
+                      f.write(new_text)
+                  print(f"Patched {kt_file}: BaseReactPackage -> TurboReactPackage")
+              else:
+                  print(f"No BaseReactPackage in {kt_file}")
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
