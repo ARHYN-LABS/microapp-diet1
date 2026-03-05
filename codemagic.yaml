@@ -264,6 +264,49 @@ workflows:
             echo "-keep class com.facebook.jni.** { *; }" >> "$PROGUARD"
             echo "Proguard rules added"
           fi
+      - name: Optimize APK size (strip x86 + enable shrink)
+        script: |
+          cd apps/mobile
+          python3 - android/app/build.gradle <<'PY'
+          import sys
+          gradle = sys.argv[1]
+          with open(gradle) as f:
+              text = f.read()
+
+          # 1. Add ndk abiFilters to strip x86/x86_64 (saves ~60MB)
+          if "abiFilters" not in text:
+              text = text.replace(
+                  "defaultConfig {",
+                  'defaultConfig {\n        ndk {\n            abiFilters "armeabi-v7a", "arm64-v8a"\n        }',
+                  1
+              )
+              print("Added ndk abiFilters (ARM only)")
+          else:
+              print("abiFilters already present")
+
+          # 2. Enable shrinkResources for release builds
+          if "shrinkResources" not in text:
+              text = text.replace(
+                  "minifyEnabled true",
+                  "minifyEnabled true\n            shrinkResources true"
+              )
+              # If minifyEnabled wasn't found with true, try enabling both
+              if "shrinkResources" not in text and "minifyEnabled" in text:
+                  text = text.replace(
+                      "minifyEnabled false",
+                      "minifyEnabled true\n            shrinkResources true"
+                  )
+              if "shrinkResources" in text:
+                  print("Enabled shrinkResources")
+              else:
+                  print("Could not inject shrinkResources (minifyEnabled not found)")
+          else:
+              print("shrinkResources already present")
+
+          with open(gradle, 'w') as f:
+              f.write(text)
+          print("APK optimization applied")
+          PY
       - name: Configure release keystore
         script: |
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
