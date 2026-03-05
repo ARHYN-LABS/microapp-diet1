@@ -177,6 +177,59 @@ workflows:
               if 'autolinkLibraries' in line:
                   print(f"  {line.strip()}")
           PY
+      - name: Register gesture-handler native package in MainApplication
+        script: |
+          cd apps/mobile
+          python3 - <<'PY'
+          import glob
+
+          main_apps = glob.glob("android/**/MainApplication.kt", recursive=True)
+          if not main_apps:
+              print("ERROR: No MainApplication.kt found!")
+              exit(1)
+
+          path = main_apps[0]
+          print(f"Found: {path}")
+
+          with open(path) as f:
+              text = f.read()
+
+          if "RNGestureHandlerPackage" in text:
+              print("Already has RNGestureHandlerPackage")
+          else:
+              # Add import
+              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
+              if "import com.facebook.react.PackageList" in text:
+                  text = text.replace(
+                      "import com.facebook.react.PackageList",
+                      "import com.facebook.react.PackageList\n" + import_line
+                  )
+              elif "import com.facebook.react.ReactPackage" in text:
+                  text = text.replace(
+                      "import com.facebook.react.ReactPackage",
+                      "import com.facebook.react.ReactPackage\n" + import_line
+                  )
+
+              # Add to packages list
+              if "PackageList(this).packages.apply {" in text:
+                  text = text.replace(
+                      "PackageList(this).packages.apply {",
+                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
+                  )
+                  print("Added RNGestureHandlerPackage to packages list")
+              elif "PackageList(this).packages" in text:
+                  text = text.replace(
+                      "PackageList(this).packages",
+                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
+                  )
+                  print("Added RNGestureHandlerPackage via listOf")
+
+              with open(path, 'w') as f:
+                  f.write(text)
+
+          with open(path) as f:
+              print(f.read())
+          PY
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
@@ -437,6 +490,57 @@ workflows:
           with open(gradle, 'w') as f:
               f.write(text)
           print("AAB optimization applied")
+          PY
+      - name: Register gesture-handler native package in MainApplication
+        script: |
+          cd apps/mobile
+          python3 - <<'PY'
+          import glob
+
+          main_apps = glob.glob("android/**/MainApplication.kt", recursive=True)
+          if not main_apps:
+              print("ERROR: No MainApplication.kt found!")
+              exit(1)
+
+          path = main_apps[0]
+          print(f"Found: {path}")
+
+          with open(path) as f:
+              text = f.read()
+
+          if "RNGestureHandlerPackage" in text:
+              print("Already has RNGestureHandlerPackage")
+          else:
+              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
+              if "import com.facebook.react.PackageList" in text:
+                  text = text.replace(
+                      "import com.facebook.react.PackageList",
+                      "import com.facebook.react.PackageList\n" + import_line
+                  )
+              elif "import com.facebook.react.ReactPackage" in text:
+                  text = text.replace(
+                      "import com.facebook.react.ReactPackage",
+                      "import com.facebook.react.ReactPackage\n" + import_line
+                  )
+
+              if "PackageList(this).packages.apply {" in text:
+                  text = text.replace(
+                      "PackageList(this).packages.apply {",
+                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
+                  )
+                  print("Added RNGestureHandlerPackage to packages list")
+              elif "PackageList(this).packages" in text:
+                  text = text.replace(
+                      "PackageList(this).packages",
+                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
+                  )
+                  print("Added RNGestureHandlerPackage via listOf")
+
+              with open(path, 'w') as f:
+                  f.write(text)
+
+          with open(path) as f:
+              print(f.read())
           PY
       - name: Patch proguard rules for native modules
         script: |
