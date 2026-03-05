@@ -96,6 +96,18 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
+      - name: Verify autolinking includes gesture handler
+        script: |
+          echo "=== Checking autolinked packages ==="
+          PACKAGE_LIST=$(find apps/mobile/android -name "PackageList.java" -o -name "PackageList.kt" 2>/dev/null)
+          if [ -n "$PACKAGE_LIST" ]; then
+            echo "Found: $PACKAGE_LIST"
+            cat "$PACKAGE_LIST"
+          else
+            echo "WARNING: PackageList not found!"
+          fi
+          echo "=== Checking for gesture handler in android ==="
+          grep -r "gesturehandler\|GestureHandler" apps/mobile/android/settings.gradle apps/mobile/android/app/build.gradle 2>/dev/null || echo "WARNING: gesture handler not found in gradle files!"
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
