@@ -125,21 +125,7 @@ workflows:
           with open(gradle) as f:
               text = f.read()
 
-          # Force all subprojects to use react-android 0.81.5
-          # Without this, gesture-handler's `implementation 'com.facebook.react:react-native:+'`
-          # resolves to 0.82 from Maven, where TurboReactPackage extends BaseReactPackage,
-          # creating a cycle with our shim (BaseReactPackage extends TurboReactPackage).
-          force_block = '''
-subprojects {
-    configurations.all {
-        resolutionStrategy {
-            force 'com.facebook.react:react-android:0.81.5'
-            force 'com.facebook.react:react-native:0.81.5'
-            force 'com.facebook.react:hermes-android:0.81.5'
-        }
-    }
-}
-'''
+          force_block = "\nsubprojects {\n    configurations.all {\n        resolutionStrategy {\n            force 'com.facebook.react:react-android:0.81.5'\n            force 'com.facebook.react:react-native:0.81.5'\n            force 'com.facebook.react:hermes-android:0.81.5'\n        }\n    }\n}\n"
           if 'resolutionStrategy' not in text:
               text += force_block
               print("Added dependency resolution force to root build.gradle")
@@ -499,17 +485,7 @@ subprojects {
           with open(gradle) as f:
               text = f.read()
 
-          force_block = '''
-subprojects {
-    configurations.all {
-        resolutionStrategy {
-            force 'com.facebook.react:react-android:0.81.5'
-            force 'com.facebook.react:react-native:0.81.5'
-            force 'com.facebook.react:hermes-android:0.81.5'
-        }
-    }
-}
-'''
+          force_block = "\nsubprojects {\n    configurations.all {\n        resolutionStrategy {\n            force 'com.facebook.react:react-android:0.81.5'\n            force 'com.facebook.react:react-native:0.81.5'\n            force 'com.facebook.react:hermes-android:0.81.5'\n        }\n    }\n}\n"
           if 'resolutionStrategy' not in text:
               text += force_block
               print("Added dependency resolution force to root build.gradle")
