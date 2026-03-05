@@ -95,6 +95,27 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
+      - name: Add BaseReactPackage shim for RN 0.81 compatibility
+        script: |
+          # gesture-handler v2.28 and reanimated v4.1 use BaseReactPackage (from RN 0.82)
+          # but we're on RN 0.81 which only has TurboReactPackage.
+          # Create a compatibility shim so the classes load at runtime.
+          SHIM_DIR="apps/mobile/android/app/src/main/java/com/facebook/react"
+          mkdir -p "$SHIM_DIR"
+          cat > "$SHIM_DIR/BaseReactPackage.kt" << 'KTEOF'
+          package com.facebook.react
+
+          /**
+           * Compatibility shim: BaseReactPackage was introduced in RN 0.82 as a
+           * rename of TurboReactPackage. Libraries targeting 0.82+ (gesture-handler
+           * v2.28, reanimated v4.1) import this class. On RN 0.81 we alias it to
+           * TurboReactPackage so the class is available at runtime AND recognised
+           * by ReactPackageTurboModuleManagerDelegate (instanceof TurboReactPackage).
+           */
+          abstract class BaseReactPackage : TurboReactPackage()
+          KTEOF
+          echo "Created BaseReactPackage shim"
+          cat "$SHIM_DIR/BaseReactPackage.kt"
       - name: Ensure newArchEnabled in gradle.properties
         script: |
           cd apps/mobile/android
