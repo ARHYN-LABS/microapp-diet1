@@ -95,13 +95,49 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
-      - name: Verify prebuild output
+      - name: Debug autolinking
         script: |
-          echo "=== settings.gradle ==="
-          head -50 apps/mobile/android/settings.gradle
+          cd apps/mobile
+          echo "=== Check gesture-handler exists at root ==="
+          ls -d ../../node_modules/react-native-gesture-handler 2>&1 || echo "NOT FOUND at root"
+          ls ../../node_modules/react-native-gesture-handler/android/build.gradle 2>&1 || echo "NO android/build.gradle at root"
           echo ""
-          echo "=== PackageList check ==="
-          find apps/mobile/android -name "PackageList.*" -exec echo "Found: {}" \; -exec head -80 {} \;
+          echo "=== react-native.config.js resolved paths ==="
+          node -e "
+            const c = require('./react-native.config.js');
+            const fs = require('fs');
+            Object.entries(c.dependencies).forEach(([k,v]) => {
+              const exists = fs.existsSync(v.root);
+              const hasAndroid = fs.existsSync(v.root + '/android');
+              console.log(k + ': exists=' + exists + ' hasAndroid=' + hasAndroid + ' root=' + v.root);
+            });
+          "
+          echo ""
+          echo "=== Community CLI config ==="
+          npx @react-native-community/cli config 2>&1 | node -e "
+            let d = '';
+            process.stdin.on('data', c => d += c);
+            process.stdin.on('end', () => {
+              try {
+                const j = JSON.parse(d);
+                const deps = j.dependencies || {};
+                console.log('Total deps:', Object.keys(deps).length);
+                Object.keys(deps).forEach(k => {
+                  const p = deps[k];
+                  console.log('  ' + k + ': ' + (p.root || 'no root'));
+                });
+              } catch(e) {
+                console.log('Parse failed. First 3000 chars:');
+                console.log(d.substring(0, 3000));
+              }
+            });
+          " || echo "CLI config command failed"
+          echo ""
+          echo "=== Expo autolinking resolve ==="
+          npx expo-modules-autolinking resolve --platform android 2>&1 | head -80 || true
+          echo ""
+          echo "=== settings.gradle ==="
+          cat android/settings.gradle
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
