@@ -89,26 +89,6 @@ workflows:
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
           PY
-      - name: Pin react-native deps to 0.81.5 in native modules
-        script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          patched = 0
-          for gradle_file in Path("node_modules").rglob("android/build.gradle"):
-              text = gradle_file.read_text()
-              # Replace react-native:+ with compileOnly (already provided by the app)
-              new_text = re.sub(
-                  r"implementation\s+['\"]com\.facebook\.react:react-native:\+['\"]",
-                  "//implementation 'com.facebook.react:react-native:+' // pinned by CI",
-                  text
-              )
-              if new_text != text:
-                  gradle_file.write_text(new_text)
-                  patched += 1
-                  print(f"Patched: {gradle_file}")
-          print(f"Pinned react-native deps in {patched} files")
-          PY
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
@@ -353,25 +333,6 @@ workflows:
               gradle_file.write_text(next_text)
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
-          PY
-      - name: Pin react-native deps to 0.81.5 in native modules
-        script: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          patched = 0
-          for gradle_file in Path("node_modules").rglob("android/build.gradle"):
-              text = gradle_file.read_text()
-              new_text = re.sub(
-                  r"implementation\s+['\"]com\.facebook\.react:react-native:\+['\"]",
-                  "//implementation 'com.facebook.react:react-native:+' // pinned by CI",
-                  text
-              )
-              if new_text != text:
-                  gradle_file.write_text(new_text)
-                  patched += 1
-                  print(f"Patched: {gradle_file}")
-          print(f"Pinned react-native deps in {patched} files")
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
