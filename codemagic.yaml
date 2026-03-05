@@ -28,12 +28,6 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Disable New Architecture (not all deps support it)
-        script: |
-          PROPS="apps/mobile/android/gradle.properties"
-          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
-          echo "New Architecture disabled"
-          grep newArchEnabled "$PROPS"
       - name: Build debug APK
         script: cd apps/mobile/android && ./gradlew assembleDebug
     artifacts:
@@ -67,12 +61,6 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Disable New Architecture (not all deps support it)
-        script: |
-          PROPS="apps/mobile/android/gradle.properties"
-          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
-          echo "New Architecture disabled"
-          grep newArchEnabled "$PROPS"
       - name: Build release APK
         script: cd apps/mobile/android && ./gradlew assembleRelease
     artifacts:
@@ -108,23 +96,23 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Disable New Architecture (not all deps support it)
-        script: |
-          PROPS="apps/mobile/android/gradle.properties"
-          sed -i 's/newArchEnabled=true/newArchEnabled=false/' "$PROPS"
-          echo "New Architecture disabled"
-          grep newArchEnabled "$PROPS"
-      - name: Patch proguard rules for Reanimated
+      - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
           if ! grep -q "reanimated" "$PROGUARD" 2>/dev/null; then
             echo "" >> "$PROGUARD"
             echo "# react-native-reanimated" >> "$PROGUARD"
             echo "-keep class com.swmansion.reanimated.** { *; }" >> "$PROGUARD"
+            echo "# react-native-gesture-handler" >> "$PROGUARD"
+            echo "-keep class com.swmansion.gesturehandler.** { *; }" >> "$PROGUARD"
+            echo "# TurboModules" >> "$PROGUARD"
             echo "-keep class com.facebook.react.turbomodule.** { *; }" >> "$PROGUARD"
-            echo "Reanimated proguard rules added"
+            echo "# Hermes" >> "$PROGUARD"
+            echo "-keep class com.facebook.hermes.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.facebook.jni.** { *; }" >> "$PROGUARD"
+            echo "Proguard rules added"
           else
-            echo "Reanimated proguard rules already present"
+            echo "Proguard rules already present"
           fi
       - name: Configure release keystore
         script: |
