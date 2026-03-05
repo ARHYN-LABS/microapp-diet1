@@ -162,11 +162,12 @@ workflows:
           # Ensure newArchEnabled=true is set — required by native module build.gradle
           # files (e.g. gesture-handler) to enable codegen and C++ JSI bindings
           if grep -q "newArchEnabled" gradle.properties; then
-            echo "newArchEnabled already present"
+            sed -i 's/newArchEnabled=.*/newArchEnabled=false/' gradle.properties
+            echo "Set newArchEnabled=false"
           else
             echo "" >> gradle.properties
-            echo "newArchEnabled=true" >> gradle.properties
-            echo "Added newArchEnabled=true to gradle.properties"
+            echo "newArchEnabled=false" >> gradle.properties
+            echo "Added newArchEnabled=false to gradle.properties"
           fi
           # Limit to ARM architectures only (reduces APK from ~104MB to ~40MB)
           if grep -q "reactNativeArchitectures" gradle.properties; then
@@ -521,11 +522,12 @@ workflows:
         script: |
           cd apps/mobile/android
           if grep -q "newArchEnabled" gradle.properties; then
-            echo "newArchEnabled already present"
+            sed -i 's/newArchEnabled=.*/newArchEnabled=false/' gradle.properties
+            echo "Set newArchEnabled=false"
           else
             echo "" >> gradle.properties
-            echo "newArchEnabled=true" >> gradle.properties
-            echo "Added newArchEnabled=true"
+            echo "newArchEnabled=false" >> gradle.properties
+            echo "Added newArchEnabled=false"
           fi
           if grep -q "reactNativeArchitectures" gradle.properties; then
             sed -i 's/reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a/' gradle.properties
