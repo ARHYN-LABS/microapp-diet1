@@ -42,7 +42,7 @@ workflows:
         - keystore
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
-        EXPO_USE_COMMUNITY_AUTOLINKING: "1"
+
     scripts:
       - name: Install dependencies
         script: npm install
@@ -95,49 +95,46 @@ workflows:
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
-      - name: Debug autolinking
+      - name: Fix autolinking for monorepo
         script: |
           cd apps/mobile
-          echo "=== Check gesture-handler exists at root ==="
-          ls -d ../../node_modules/react-native-gesture-handler 2>&1 || echo "NOT FOUND at root"
-          ls ../../node_modules/react-native-gesture-handler/android/build.gradle 2>&1 || echo "NO android/build.gradle at root"
-          echo ""
-          echo "=== react-native.config.js resolved paths ==="
-          node -e "
-            const c = require('./react-native.config.js');
-            const fs = require('fs');
-            Object.entries(c.dependencies).forEach(([k,v]) => {
-              const exists = fs.existsSync(v.root);
-              const hasAndroid = fs.existsSync(v.root + '/android');
-              console.log(k + ': exists=' + exists + ' hasAndroid=' + hasAndroid + ' root=' + v.root);
-            });
-          "
-          echo ""
-          echo "=== Community CLI config ==="
-          npx @react-native-community/cli config 2>&1 | node -e "
-            let d = '';
-            process.stdin.on('data', c => d += c);
-            process.stdin.on('end', () => {
-              try {
-                const j = JSON.parse(d);
-                const deps = j.dependencies || {};
-                console.log('Total deps:', Object.keys(deps).length);
-                Object.keys(deps).forEach(k => {
-                  const p = deps[k];
-                  console.log('  ' + k + ': ' + (p.root || 'no root'));
-                });
-              } catch(e) {
-                console.log('Parse failed. First 3000 chars:');
-                console.log(d.substring(0, 3000));
-              }
-            });
-          " || echo "CLI config command failed"
-          echo ""
-          echo "=== Expo autolinking resolve ==="
-          npx expo-modules-autolinking resolve --platform android 2>&1 | head -80 || true
-          echo ""
-          echo "=== settings.gradle ==="
-          cat android/settings.gradle
+          # Generate community CLI config from correct working directory (apps/mobile/)
+          # Gradle runs autolinking from android/ dir which can't find packages
+          npx @react-native-community/cli config > android/rn-cli-config.json
+          node -e "const c=require('./android/rn-cli-config.json'); console.log('Autolinking deps:', Object.keys(c.dependencies||{}).join(', '))"
+
+          # Patch settings.gradle to use pre-generated config instead of running command
+          python3 - <<'PY'
+          import os
+          settings_path = "android/settings.gradle"
+          config_path = os.path.abspath("android/rn-cli-config.json")
+
+          with open(settings_path) as f:
+              text = f.read()
+
+          # Replace both autolinking branches with cat command that reads our config
+          patched = 0
+          old1 = "ex.autolinkLibrariesFromCommand()"
+          new1 = f'ex.autolinkLibrariesFromCommand(["cat", "{config_path}"])'
+          if old1 in text:
+              text = text.replace(old1, new1)
+              patched += 1
+
+          old2 = "ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)"
+          new2 = f'ex.autolinkLibrariesFromCommand(["cat", "{config_path}"])'
+          if old2 in text:
+              text = text.replace(old2, new2)
+              patched += 1
+
+          with open(settings_path, 'w') as f:
+              f.write(text)
+          print(f"Patched {patched} autolinking calls in settings.gradle")
+
+          # Show the patched section
+          for line in text.split('\n'):
+              if 'autolinkLibraries' in line:
+                  print(f"  {line.strip()}")
+          PY
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
@@ -190,7 +187,7 @@ workflows:
         - keystore
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
-        EXPO_USE_COMMUNITY_AUTOLINKING: "1"
+
     scripts:
       - name: Install dependencies
         script: npm install
@@ -253,25 +250,43 @@ workflows:
           npx expo-modules-autolinking resolve --platform android 2>&1 | head -60 || true
           echo ""
           npx expo prebuild --platform android --clean
-      - name: Verify prebuild output
+      - name: Fix autolinking for monorepo
         script: |
-          echo "=== settings.gradle ==="
-          head -50 apps/mobile/android/settings.gradle
-          echo ""
-          echo "=== PackageList check ==="
-          find apps/mobile/android -name "PackageList.*" -exec echo "Found: {}" \; -exec head -80 {} \;
+          cd apps/mobile
+          npx @react-native-community/cli config > android/rn-cli-config.json
+          node -e "const c=require('./android/rn-cli-config.json'); console.log('Autolinking deps:', Object.keys(c.dependencies||{}).join(', '))"
+          python3 - <<'PY'
+          import os
+          settings_path = "android/settings.gradle"
+          config_path = os.path.abspath("android/rn-cli-config.json")
+          with open(settings_path) as f:
+              text = f.read()
+          patched = 0
+          old1 = "ex.autolinkLibrariesFromCommand()"
+          new1 = f'ex.autolinkLibrariesFromCommand(["cat", "{config_path}"])'
+          if old1 in text:
+              text = text.replace(old1, new1)
+              patched += 1
+          old2 = "ex.autolinkLibrariesFromCommand(expoAutolinking.rnConfigCommand)"
+          new2 = f'ex.autolinkLibrariesFromCommand(["cat", "{config_path}"])'
+          if old2 in text:
+              text = text.replace(old2, new2)
+              patched += 1
+          with open(settings_path, 'w') as f:
+              f.write(text)
+          print(f"Patched {patched} autolinking calls")
+          for line in text.split('\n'):
+              if 'autolinkLibraries' in line:
+                  print(f"  {line.strip()}")
+          PY
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
           if ! grep -q "reanimated" "$PROGUARD" 2>/dev/null; then
             echo "" >> "$PROGUARD"
-            echo "# react-native-reanimated" >> "$PROGUARD"
             echo "-keep class com.swmansion.reanimated.** { *; }" >> "$PROGUARD"
-            echo "# react-native-gesture-handler" >> "$PROGUARD"
             echo "-keep class com.swmansion.gesturehandler.** { *; }" >> "$PROGUARD"
-            echo "# TurboModules" >> "$PROGUARD"
             echo "-keep class com.facebook.react.turbomodule.** { *; }" >> "$PROGUARD"
-            echo "# Hermes" >> "$PROGUARD"
             echo "-keep class com.facebook.hermes.** { *; }" >> "$PROGUARD"
             echo "-keep class com.facebook.jni.** { *; }" >> "$PROGUARD"
             echo "Proguard rules added"
