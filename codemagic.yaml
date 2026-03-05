@@ -33,16 +33,48 @@ workflows:
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
   android-release:
-    name: Android Release APK (debug signed)
+    name: Android Release APK (test)
     max_build_duration: 60
     environment:
       node: 20.18.0
       java: 17
+      groups:
+        - keystore
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+        EXPO_USE_COMMUNITY_AUTOLINKING: "1"
     scripts:
       - name: Install dependencies
         script: npm install
+      - name: Patch Expo FormData crash in winter runtime
+        script: |
+          python3 - <<'PY'
+          import glob, os
+          targets = glob.glob("node_modules/expo/src/winter/runtime.native.*")
+          targets += glob.glob("node_modules/expo/build/winter/runtime.native.*")
+          patched = 0
+          for fp in targets:
+              with open(fp) as f:
+                  text = f.read()
+              if "installFormDataPatch(FormData)" in text and "typeof FormData" not in text:
+                  new_text = text.replace(
+                      "installFormDataPatch(FormData);",
+                      "if (typeof FormData !== 'undefined') { installFormDataPatch(FormData); }"
+                  )
+                  if new_text == text:
+                      new_text = text.replace(
+                          "installFormDataPatch(FormData)",
+                          "(typeof FormData !== 'undefined' && installFormDataPatch(FormData))"
+                      )
+                  if new_text != text:
+                      with open(fp, 'w') as f:
+                          f.write(new_text)
+                      patched += 1
+                      print(f"Patched: {fp}")
+              else:
+                  print(f"Already patched or no match: {fp}")
+          print(f"Patched {patched} files")
+          PY
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -60,7 +92,54 @@ workflows:
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
-        script: cd apps/mobile && npx expo prebuild --platform android --clean
+        script: |
+          cd apps/mobile
+          npx expo prebuild --platform android --clean
+      - name: Verify prebuild output
+        script: |
+          echo "=== settings.gradle ==="
+          head -50 apps/mobile/android/settings.gradle
+          echo ""
+          echo "=== PackageList check ==="
+          find apps/mobile/android -name "PackageList.*" -exec echo "Found: {}" \; -exec head -80 {} \;
+      - name: Patch proguard rules for native modules
+        script: |
+          PROGUARD="apps/mobile/android/app/proguard-rules.pro"
+          if ! grep -q "reanimated" "$PROGUARD" 2>/dev/null; then
+            echo "" >> "$PROGUARD"
+            echo "-keep class com.swmansion.reanimated.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.swmansion.gesturehandler.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.facebook.react.turbomodule.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.facebook.hermes.** { *; }" >> "$PROGUARD"
+            echo "-keep class com.facebook.jni.** { *; }" >> "$PROGUARD"
+            echo "Proguard rules added"
+          fi
+      - name: Configure release keystore
+        script: |
+          echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
+          python3 - apps/mobile/android/app/build.gradle <<'PY'
+          import sys, re
+          gradle = sys.argv[1]
+          with open(gradle) as f:
+              text = f.read()
+          release_block = (
+              '        release {\n'
+              "            storeFile file('upload-key.keystore')\n"
+              '            storePassword "SafePlate2026"\n'
+              '            keyAlias "upload"\n'
+              '            keyPassword "SafePlate2026"\n'
+              '        }\n'
+          )
+          if "signingConfigs" in text and "release {" not in text.split("signingConfigs")[1].split("buildTypes")[0]:
+              text = text.replace("signingConfigs {", "signingConfigs {\n" + release_block, 1)
+          elif "signingConfigs" not in text:
+              sb = "\n    signingConfigs {\n" + release_block + "    }\n"
+              text = text.replace("    buildTypes {", sb + "    buildTypes {")
+          text = text.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
+          with open(gradle, 'w') as f:
+              f.write(text)
+          print("Signing config injected")
+          PY
       - name: Build release APK
         script: cd apps/mobile/android && ./gradlew assembleRelease
     artifacts:
