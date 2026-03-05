@@ -84,7 +84,7 @@ workflows:
           cd apps/mobile
           mkdir -p node_modules
           # Copy (not symlink) native packages so autolinking finds them
-          NATIVE_PKGS="react-native react-native-gesture-handler react-native-reanimated react-native-worklets react-native-screens react-native-safe-area-context react-native-svg"
+          NATIVE_PKGS="react-native-gesture-handler react-native-reanimated react-native-worklets react-native-screens react-native-safe-area-context react-native-svg"
           for pkg in $NATIVE_PKGS; do
             if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
               cp -R "../../node_modules/$pkg" "node_modules/$pkg"
