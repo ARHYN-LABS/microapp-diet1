@@ -1,8 +1,5 @@
 {
   "expo": {
-    "experiments": {
-      "autolinkingModuleResolution": true
-    },
     "name": "SafePlate AI",
     "scheme": "safeplate",
     "icon": "./assets/icon.png",
@@ -50,7 +47,7 @@
         "backgroundColor": "#F8FAFC"
       },
       "package": "com.askmobisoft55.whatsinmyfood",
-      "versionCode": 26
+      "versionCode": 28
     },
     "extra": {
       "apiBase": "${EXPO_PUBLIC_API_BASE}",

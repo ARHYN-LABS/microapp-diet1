@@ -75,9 +75,38 @@ workflows:
         - keystore
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+        EXPO_USE_COMMUNITY_AUTOLINKING: "1"
     scripts:
       - name: Install dependencies
         script: npm install
+      - name: Install mobile deps locally
+        script: |
+          cd apps/mobile
+          mkdir -p node_modules
+          # Copy (not symlink) native packages so autolinking finds them
+          NATIVE_PKGS="react-native react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context react-native-svg"
+          for pkg in $NATIVE_PKGS; do
+            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
+              cp -R "../../node_modules/$pkg" "node_modules/$pkg"
+              echo "Copied $pkg"
+            else
+              echo "Already exists or not found: $pkg"
+            fi
+          done
+          # Copy scoped native packages
+          for pkg in @react-native-async-storage/async-storage @react-native-community/slider @react-native-community/datetimepicker; do
+            SCOPE=$(echo $pkg | cut -d'/' -f1)
+            NAME=$(echo $pkg | cut -d'/' -f2)
+            mkdir -p "node_modules/$SCOPE"
+            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
+              cp -R "../../node_modules/$pkg" "node_modules/$SCOPE/$NAME"
+              echo "Copied $pkg"
+            else
+              echo "Already exists or not found: $pkg"
+            fi
+          done
+          echo "=== node_modules contents ==="
+          ls -la node_modules/ | head -30
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -94,49 +123,146 @@ workflows:
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
-      - name: Link native packages for autolinking
+      - name: Verify RN config before prebuild
         script: |
           cd apps/mobile
-          mkdir -p node_modules
-          # Link non-scoped native packages
-          for pkg in react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context react-native-svg; do
-            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
-              ln -s "$(cd ../../node_modules/$pkg && pwd)" "node_modules/$pkg"
-              echo "Linked $pkg"
-            else
-              echo "Already exists or not found: $pkg"
-            fi
-          done
-          # Link scoped native packages
-          for pkg in @react-native-async-storage/async-storage @react-native-community/slider @react-native-community/datetimepicker; do
-            SCOPE=$(echo $pkg | cut -d'/' -f1)
-            NAME=$(echo $pkg | cut -d'/' -f2)
-            mkdir -p "node_modules/$SCOPE"
-            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
-              ln -s "$(cd ../../node_modules/$pkg && pwd)" "node_modules/$SCOPE/$NAME"
-              echo "Linked $pkg"
-            else
-              echo "Already exists or not found: $pkg"
-            fi
-          done
-          echo "=== node_modules contents ==="
-          ls -la node_modules/ | head -30
-      - name: Verify autolinking before prebuild
-        script: |
-          cd apps/mobile
-          echo "=== Autolinking resolution ==="
-          npx expo-modules-autolinking resolve --platform android 2>&1 | head -60 || true
-          echo "=== Checking for gesture handler ==="
-          npx expo-modules-autolinking resolve --platform android 2>&1 | grep -i gesture || echo "gesture handler NOT found by autolinking"
+          echo "=== react-native.config.js dependencies ==="
+          node -e "const c = require('./react-native.config.js'); console.log(Object.keys(c.dependencies).join('\n'))"
+          echo ""
+          echo "=== Community CLI config (gesture handler check) ==="
+          npx react-native config 2>&1 | grep -A2 "gesture-handler" | head -10 || echo "WARNING: gesture handler not in RN config"
+          echo ""
+          echo "=== Expo autolinking resolve ==="
+          npx expo-modules-autolinking resolve --platform android 2>&1 | head -40 || true
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Verify autolinking after prebuild
+      - name: Force-inject native modules into Android build
         script: |
-          echo "=== PackageList ==="
-          PLIST=$(find apps/mobile/android -name "PackageList.java" -o -name "PackageList.kt" 2>/dev/null | head -1)
-          if [ -n "$PLIST" ]; then cat "$PLIST"; fi
-          echo "=== settings.gradle gesture handler check ==="
-          grep -i "gesture" apps/mobile/android/settings.gradle 2>/dev/null || echo "NOT FOUND in settings.gradle"
+          python3 - <<'PY'
+          import os, re, glob
+
+          ANDROID_DIR = "apps/mobile/android"
+          SETTINGS = os.path.join(ANDROID_DIR, "settings.gradle")
+          APP_GRADLE = os.path.join(ANDROID_DIR, "app", "build.gradle")
+
+          # Native RN packages that must be in the build
+          NATIVE_PACKAGES = {
+              "react-native-gesture-handler": {
+                  "path": "../../../node_modules/react-native-gesture-handler/android",
+                  "local_path": "../node_modules/react-native-gesture-handler/android",
+                  "java_package": "com.swmansion.gesturehandler.RNGestureHandlerPackage",
+                  "java_import": "com.swmansion.gesturehandler",
+              },
+              "react-native-reanimated": {
+                  "path": "../../../node_modules/react-native-reanimated/android",
+                  "local_path": "../node_modules/react-native-reanimated/android",
+                  "java_package": "com.swmansion.reanimated.ReanimatedPackage",
+                  "java_import": "com.swmansion.reanimated",
+              },
+              "react-native-screens": {
+                  "path": "../../../node_modules/react-native-screens/android",
+                  "local_path": "../node_modules/react-native-screens/android",
+                  "java_package": "com.swmansion.rnscreens.RNScreensPackage",
+                  "java_import": "com.swmansion.rnscreens",
+              },
+              "react-native-safe-area-context": {
+                  "path": "../../../node_modules/react-native-safe-area-context/android",
+                  "local_path": "../node_modules/react-native-safe-area-context/android",
+                  "java_package": "com.th3rdwave.safeareacontext.SafeAreaContextPackage",
+                  "java_import": "com.th3rdwave.safeareacontext",
+              },
+              "react-native-svg": {
+                  "path": "../../../node_modules/react-native-svg/android",
+                  "local_path": "../node_modules/react-native-svg/android",
+                  "java_package": "com.horcrux.svg.SvgPackage",
+                  "java_import": "com.horcrux.svg",
+              },
+          }
+
+          # --- 1. Check and patch settings.gradle ---
+          with open(SETTINGS) as f:
+              settings_text = f.read()
+
+          print("=== settings.gradle BEFORE patch ===")
+          print(settings_text[:2000])
+
+          injected_settings = []
+          for pkg_name, info in NATIVE_PACKAGES.items():
+              gradle_name = ":" + pkg_name.replace("/", "_")
+              if pkg_name not in settings_text:
+                  # Use local copy first, fall back to root
+                  local_android = os.path.join(ANDROID_DIR, "..", "node_modules", pkg_name, "android")
+                  root_android = os.path.join("node_modules", pkg_name, "android")
+                  if os.path.isdir(local_android):
+                      use_path = info["local_path"]
+                  elif os.path.isdir(root_android):
+                      use_path = info["path"]
+                  else:
+                      print(f"WARNING: {pkg_name} android dir not found!")
+                      continue
+                  line = f"\ninclude '{gradle_name}'\nproject('{gradle_name}').projectDir = new File(rootProject.projectDir, '{use_path}')\n"
+                  settings_text += line
+                  injected_settings.append(pkg_name)
+
+          if injected_settings:
+              with open(SETTINGS, 'w') as f:
+                  f.write(settings_text)
+              print(f"\nInjected into settings.gradle: {injected_settings}")
+          else:
+              print("\nAll native packages already in settings.gradle")
+
+          # --- 2. Check and patch app/build.gradle dependencies ---
+          with open(APP_GRADLE) as f:
+              app_text = f.read()
+
+          injected_deps = []
+          for pkg_name in NATIVE_PACKAGES:
+              gradle_name = ":" + pkg_name.replace("/", "_")
+              if gradle_name not in app_text and pkg_name not in app_text:
+                  dep_line = f'    implementation project("{gradle_name}")\n'
+                  # Add before the last closing brace of dependencies block
+                  app_text = app_text.replace(
+                      "\n}\n\napply from",
+                      f"\n{dep_line}}}\n\napply from",
+                      1
+                  )
+                  if dep_line.strip() not in app_text:
+                      # Fallback: find dependencies { ... } block and append
+                      app_text = re.sub(
+                          r'(dependencies\s*\{)',
+                          r'\1\n' + dep_line,
+                          app_text,
+                          count=1
+                      )
+                  injected_deps.append(pkg_name)
+
+          if injected_deps:
+              with open(APP_GRADLE, 'w') as f:
+                  f.write(app_text)
+              print(f"Injected into app/build.gradle: {injected_deps}")
+          else:
+              print("All native packages already in app/build.gradle")
+
+          # --- 3. Check PackageList for gesture handler ---
+          plist_files = glob.glob(os.path.join(ANDROID_DIR, "**", "PackageList.java"), recursive=True)
+          plist_files += glob.glob(os.path.join(ANDROID_DIR, "**", "PackageList.kt"), recursive=True)
+          if plist_files:
+              print(f"\nPackageList found: {plist_files[0]}")
+              with open(plist_files[0]) as f:
+                  plist_text = f.read()
+              if "gesturehandler" in plist_text.lower() or "GestureHandler" in plist_text:
+                  print("gesture handler IS in PackageList")
+              else:
+                  print("WARNING: gesture handler NOT in PackageList — will be added by Gradle autolinking at build time")
+          else:
+              print("\nNo PackageList found (will be auto-generated by Gradle)")
+
+          print("\n=== settings.gradle AFTER patch ===")
+          with open(SETTINGS) as f:
+              print(f.read()[-1500:])
+
+          print("\n=== DONE ===")
+          PY
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
