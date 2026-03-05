@@ -21,9 +21,7 @@
         "NSCameraUsageDescription": "Allow camera access to identify products."
       }
     },
-    "newArchEnabled": false,
     "android": {
-      "newArchEnabled": false,
       "usesCleartextTraffic": true,
       "permissions": [
         "CAMERA",
@@ -49,7 +47,7 @@
         "backgroundColor": "#F8FAFC"
       },
       "package": "com.askmobisoft55.whatsinmyfood",
-      "versionCode": 34
+      "versionCode": 35
     },
     "extra": {
       "apiBase": "${EXPO_PUBLIC_API_BASE}",
