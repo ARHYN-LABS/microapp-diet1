@@ -9,6 +9,9 @@ module.exports = {
     "react-native-reanimated": {
       root: path.join(root, "node_modules", "react-native-reanimated"),
     },
+    "react-native-worklets": {
+      root: path.join(root, "node_modules", "react-native-worklets"),
+    },
     "react-native-screens": {
       root: path.join(root, "node_modules", "react-native-screens"),
     },
