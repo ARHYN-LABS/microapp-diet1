@@ -135,6 +135,106 @@ workflows:
               if 'autolinkLibraries' in line:
                   print(f"  {line.strip()}")
           PY
+      - name: Debug autolinking config
+        script: |
+          cd apps/mobile
+          echo "=== gesture-handler config from rn-cli-config.json ==="
+          node -e "
+            const c = require('./android/rn-cli-config.json');
+            const gh = c.dependencies['react-native-gesture-handler'];
+            if (gh) {
+              console.log('root:', gh.root);
+              console.log('platforms.android:', JSON.stringify(gh.platforms?.android, null, 2));
+            } else {
+              console.log('NOT FOUND in config!');
+            }
+          "
+          echo ""
+          echo "=== MainApplication files ==="
+          find android -name "MainApplication*" -type f
+          echo ""
+          echo "=== MainApplication.kt content ==="
+          find android -name "MainApplication.kt" -exec cat {} \;
+          echo ""
+          echo "=== Pre-build PackageList files ==="
+          find android -name "PackageList*" -type f 2>/dev/null || echo "No PackageList files yet"
+          echo ""
+          echo "=== Gesture handler Package class ==="
+          find ../../node_modules/react-native-gesture-handler/android -name "*Package*" -type f 2>/dev/null | head -10
+          grep -r "class.*Package" ../../node_modules/react-native-gesture-handler/android/src/ --include="*.kt" --include="*.java" 2>/dev/null | head -10 || true
+      - name: Force register native packages in MainApplication
+        script: |
+          cd apps/mobile
+          python3 - <<'PY'
+          import glob
+
+          # Find MainApplication.kt
+          main_apps = glob.glob("android/**/MainApplication.kt", recursive=True)
+          if not main_apps:
+              main_apps = glob.glob("android/**/MainApplication.java", recursive=True)
+          if not main_apps:
+              print("ERROR: No MainApplication found!")
+              exit(1)
+
+          path = main_apps[0]
+          print(f"Found: {path}")
+
+          with open(path) as f:
+              text = f.read()
+
+          # Check if already patched
+          if "RNGestureHandlerPackage" in text:
+              print("Already has RNGestureHandlerPackage")
+          else:
+              # Add imports after existing imports
+              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
+              # Try common import locations
+              if "import com.facebook.react.ReactPackage" in text:
+                  text = text.replace(
+                      "import com.facebook.react.ReactPackage",
+                      "import com.facebook.react.ReactPackage\n" + import_line
+                  )
+              elif "import com.facebook.react.PackageList" in text:
+                  text = text.replace(
+                      "import com.facebook.react.PackageList",
+                      "import com.facebook.react.PackageList\n" + import_line
+                  )
+              else:
+                  # Add after package declaration
+                  lines = text.split("\n")
+                  for i, line in enumerate(lines):
+                      if line.startswith("package "):
+                          lines.insert(i + 1, "\n" + import_line)
+                          break
+                  text = "\n".join(lines)
+
+              # Add to packages list — look for the apply block
+              if "PackageList(this).packages.apply {" in text:
+                  text = text.replace(
+                      "PackageList(this).packages.apply {",
+                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
+                  )
+                  print("Added RNGestureHandlerPackage to packages.apply block")
+              elif "PackageList(this).packages" in text:
+                  # Different pattern — might be a direct return
+                  text = text.replace(
+                      "PackageList(this).packages",
+                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
+                  )
+                  print("Added RNGestureHandlerPackage via listOf concatenation")
+              else:
+                  print("WARNING: Could not find PackageList usage pattern")
+
+              with open(path, 'w') as f:
+                  f.write(text)
+              print("Patched MainApplication successfully")
+
+          # Print the result
+          print("\n=== Patched MainApplication ===")
+          with open(path) as f:
+              for i, line in enumerate(f, 1):
+                  print(f"{i:4d}: {line}", end="")
+          PY
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
@@ -175,6 +275,20 @@ workflows:
           PY
       - name: Build release APK
         script: cd apps/mobile/android && ./gradlew assembleRelease
+      - name: Debug post-build PackageList
+        script: |
+          cd apps/mobile
+          echo "=== PackageList files after build ==="
+          find android -name "PackageList*" -type f 2>/dev/null
+          echo ""
+          echo "=== PackageList.java content ==="
+          find android -name "PackageList.java" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null
+          echo ""
+          echo "=== Check gesture-handler in PackageList ==="
+          find android -name "PackageList.java" -exec grep -l -i "gesture" {} \; 2>/dev/null || echo "gesture-handler NOT in any PackageList"
+          echo ""
+          echo "=== Check gesture-handler in all generated java/kt ==="
+          grep -r "gesturehandler\|GestureHandler" android/app/build/generated/ --include="*.java" --include="*.kt" 2>/dev/null | head -20 || echo "No gesture-handler refs in generated code"
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
   android-release-aab:
