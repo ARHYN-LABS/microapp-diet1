@@ -121,9 +121,16 @@ workflows:
           done
           echo "=== node_modules contents ==="
           ls -la node_modules/ | head -30
+      - name: Verify autolinking before prebuild
+        script: |
+          cd apps/mobile
+          echo "=== Autolinking resolution ==="
+          npx expo-modules-autolinking resolve --platform android 2>&1 | head -60 || true
+          echo "=== Checking for gesture handler ==="
+          npx expo-modules-autolinking resolve --platform android 2>&1 | grep -i gesture || echo "gesture handler NOT found by autolinking"
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Verify autolinking
+      - name: Verify autolinking after prebuild
         script: |
           echo "=== PackageList ==="
           PLIST=$(find apps/mobile/android -name "PackageList.java" -o -name "PackageList.kt" 2>/dev/null | head -1)

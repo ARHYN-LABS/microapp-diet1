@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "main": "index.js",
+  "expo": {
+    "autolinking": {
+      "searchPaths": ["../../node_modules", "./node_modules"]
+    }
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
