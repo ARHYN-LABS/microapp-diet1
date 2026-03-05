@@ -79,6 +79,53 @@ workflows:
     scripts:
       - name: Install dependencies
         script: npm install
+      - name: Patch Expo FormData crash in winter runtime
+        script: |
+          python3 - <<'PY'
+          import glob, os
+
+          # The EXACT crash: expo/src/winter/runtime.native.ts line 25 does
+          # installFormDataPatch(FormData) — a bare global reference that throws
+          # ReferenceError in Hermes + New Architecture before InitializeCore runs.
+          # Guard it with a typeof check.
+          targets = glob.glob("node_modules/expo/src/winter/runtime.native.*")
+          # Also check compiled output if it exists
+          targets += glob.glob("node_modules/expo/build/winter/runtime.native.*")
+          patched = 0
+          for fp in targets:
+              with open(fp) as f:
+                  text = f.read()
+              if "installFormDataPatch(FormData)" in text and "typeof FormData" not in text:
+                  new_text = text.replace(
+                      "installFormDataPatch(FormData);",
+                      "if (typeof FormData !== 'undefined') { installFormDataPatch(FormData); }"
+                  )
+                  # Handle TS version (may not have semicolon)
+                  if new_text == text:
+                      new_text = text.replace(
+                          "installFormDataPatch(FormData)",
+                          "(typeof FormData !== 'undefined' && installFormDataPatch(FormData))"
+                      )
+                  if new_text != text:
+                      with open(fp, 'w') as f:
+                          f.write(new_text)
+                      patched += 1
+                      print(f"Patched: {fp}")
+                  else:
+                      print(f"No change needed: {fp}")
+              else:
+                  print(f"Already patched or no match: {fp}")
+          print(f"Patched {patched} files")
+          if patched == 0:
+              print("WARNING: Could not find installFormDataPatch(FormData) to patch!")
+              # Print what we found for debugging
+              for fp in targets:
+                  with open(fp) as f:
+                      lines = f.readlines()
+                  for i, line in enumerate(lines):
+                      if "FormData" in line:
+                          print(f"  {fp}:{i+1}: {line.rstrip()}")
+          PY
       - name: Install mobile deps locally
         script: |
           cd apps/mobile
