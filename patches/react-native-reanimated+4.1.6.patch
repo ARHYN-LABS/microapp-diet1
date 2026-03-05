@@ -1,0 +1,22 @@
+diff --git a/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java b/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
+index eee7e93..92f0ab2 100644
+--- a/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
++++ b/node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedPackage.java
+@@ -1,7 +1,7 @@
+ package com.swmansion.reanimated;
+ 
+ import androidx.annotation.NonNull;
+-import com.facebook.react.BaseReactPackage;
++import com.facebook.react.TurboReactPackage;
+ import com.facebook.react.ReactApplication;
+ import com.facebook.react.ReactInstanceManager;
+ import com.facebook.react.ReactPackage;
+@@ -19,7 +19,7 @@ import java.util.Objects;
+     nativeModules = {
+       ReanimatedModule.class,
+     })
+-public class ReanimatedPackage extends BaseReactPackage implements ReactPackage {
++public class ReanimatedPackage extends TurboReactPackage implements ReactPackage {
+   @Override
+   public NativeModule getModule(
+       @NonNull String name, @NonNull ReactApplicationContext reactContext) {
