@@ -235,41 +235,50 @@ workflows:
           with open(path) as f:
               text = f.read()
 
-          if "RNGestureHandlerPackage" in text:
-              print("Already has RNGestureHandlerPackage")
-          else:
-              # Add import
-              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
-              if "import com.facebook.react.PackageList" in text:
-                  text = text.replace(
-                      "import com.facebook.react.PackageList",
-                      "import com.facebook.react.PackageList\n" + import_line
-                  )
-              elif "import com.facebook.react.ReactPackage" in text:
-                  text = text.replace(
-                      "import com.facebook.react.ReactPackage",
-                      "import com.facebook.react.ReactPackage\n" + import_line
-                  )
+          # Normalize old short package calls to fully-qualified to avoid import issues.
+          text = text.replace(
+              "add(RNGestureHandlerPackage())",
+              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+          )
+          text = text.replace(
+              "add(ReanimatedPackage())",
+              "add(com.swmansion.reanimated.ReanimatedPackage())",
+          )
 
-              # Add to packages list
+          required = [
+              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.swmansion.reanimated.ReanimatedPackage())",
+          ]
+          changed = False
+          for add_line in required:
+              if add_line in text:
+                  continue
               if "PackageList(this).packages.apply {" in text:
                   text = text.replace(
                       "PackageList(this).packages.apply {",
-                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
+                      "PackageList(this).packages.apply {\n                    " + add_line,
+                      1,
                   )
-                  print("Added RNGestureHandlerPackage to packages list")
+                  changed = True
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
+                      "(PackageList(this).packages + listOf(com.swmansion.gesturehandler.RNGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
+                      1,
                   )
-                  print("Added RNGestureHandlerPackage via listOf")
+                  changed = True
+                  break
 
-              with open(path, 'w') as f:
+          if changed:
+              with open(path, "w") as f:
                   f.write(text)
+              print("Updated MainApplication package list with gesture-handler + reanimated")
+          else:
+              print("MainApplication already contains gesture-handler + reanimated packages")
 
-          with open(path) as f:
-              print(f.read())
+          for line in text.splitlines():
+              if "add(com.swmansion." in line or "PackageList(this).packages" in line:
+                  print(line)
           PY
       - name: Patch proguard rules for native modules
         script: |
@@ -583,39 +592,50 @@ workflows:
           with open(path) as f:
               text = f.read()
 
-          if "RNGestureHandlerPackage" in text:
-              print("Already has RNGestureHandlerPackage")
-          else:
-              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
-              if "import com.facebook.react.PackageList" in text:
-                  text = text.replace(
-                      "import com.facebook.react.PackageList",
-                      "import com.facebook.react.PackageList\n" + import_line
-                  )
-              elif "import com.facebook.react.ReactPackage" in text:
-                  text = text.replace(
-                      "import com.facebook.react.ReactPackage",
-                      "import com.facebook.react.ReactPackage\n" + import_line
-                  )
+          # Normalize old short package calls to fully-qualified to avoid import issues.
+          text = text.replace(
+              "add(RNGestureHandlerPackage())",
+              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+          )
+          text = text.replace(
+              "add(ReanimatedPackage())",
+              "add(com.swmansion.reanimated.ReanimatedPackage())",
+          )
 
+          required = [
+              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.swmansion.reanimated.ReanimatedPackage())",
+          ]
+          changed = False
+          for add_line in required:
+              if add_line in text:
+                  continue
               if "PackageList(this).packages.apply {" in text:
                   text = text.replace(
                       "PackageList(this).packages.apply {",
-                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
+                      "PackageList(this).packages.apply {\n                    " + add_line,
+                      1,
                   )
-                  print("Added RNGestureHandlerPackage to packages list")
+                  changed = True
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
+                      "(PackageList(this).packages + listOf(com.swmansion.gesturehandler.RNGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
+                      1,
                   )
-                  print("Added RNGestureHandlerPackage via listOf")
+                  changed = True
+                  break
 
-              with open(path, 'w') as f:
+          if changed:
+              with open(path, "w") as f:
                   f.write(text)
+              print("Updated MainApplication package list with gesture-handler + reanimated")
+          else:
+              print("MainApplication already contains gesture-handler + reanimated packages")
 
-          with open(path) as f:
-              print(f.read())
+          for line in text.splitlines():
+              if "add(com.swmansion." in line or "PackageList(this).packages" in line:
+                  print(line)
           PY
       - name: Patch proguard rules for native modules
         script: |
