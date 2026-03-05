@@ -75,6 +75,7 @@ workflows:
         - keystore
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+        EXPO_USE_COMMUNITY_AUTOLINKING: "1"
     scripts:
       - name: Install dependencies
         script: npm install
