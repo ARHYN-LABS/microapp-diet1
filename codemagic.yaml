@@ -89,33 +89,32 @@ workflows:
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
           PY
+      - name: Pin react-native deps to 0.81.5 in native modules
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          patched = 0
+          for gradle_file in Path("node_modules").rglob("android/build.gradle"):
+              text = gradle_file.read_text()
+              # Replace react-native:+ with compileOnly (already provided by the app)
+              new_text = re.sub(
+                  r"implementation\s+['\"]com\.facebook\.react:react-native:\+['\"]",
+                  "//implementation 'com.facebook.react:react-native:+' // pinned by CI",
+                  text
+              )
+              if new_text != text:
+                  gradle_file.write_text(new_text)
+                  patched += 1
+                  print(f"Patched: {gradle_file}")
+          print(f"Pinned react-native deps in {patched} files")
+          PY
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: |
           cd apps/mobile
           npx expo prebuild --platform android --clean
-      - name: Add BaseReactPackage shim for RN 0.81 compatibility
-        script: |
-          # gesture-handler v2.28 and reanimated v4.1 use BaseReactPackage (from RN 0.82)
-          # but we're on RN 0.81 which only has TurboReactPackage.
-          # Create a compatibility shim so the classes load at runtime.
-          SHIM_DIR="apps/mobile/android/app/src/main/java/com/facebook/react"
-          mkdir -p "$SHIM_DIR"
-          cat > "$SHIM_DIR/BaseReactPackage.kt" << 'KTEOF'
-          package com.facebook.react
-
-          /**
-           * Compatibility shim: BaseReactPackage was introduced in RN 0.82 as a
-           * rename of TurboReactPackage. Libraries targeting 0.82+ (gesture-handler
-           * v2.28, reanimated v4.1) import this class. On RN 0.81 we alias it to
-           * TurboReactPackage so the class is available at runtime AND recognised
-           * by ReactPackageTurboModuleManagerDelegate (instanceof TurboReactPackage).
-           */
-          abstract class BaseReactPackage : TurboReactPackage()
-          KTEOF
-          echo "Created BaseReactPackage shim"
-          cat "$SHIM_DIR/BaseReactPackage.kt"
       - name: Force react-android to 0.81.5 (prevent Maven 0.82 cycle)
         script: |
           cd apps/mobile/android
@@ -197,79 +196,6 @@ workflows:
           for line in text.split('\n'):
               if 'autolinkLibraries' in line:
                   print(f"  {line.strip()}")
-          PY
-      - name: Force register native packages in MainApplication
-        script: |
-          cd apps/mobile
-          python3 - <<'PY'
-          import glob
-
-          # Find MainApplication.kt
-          main_apps = glob.glob("android/**/MainApplication.kt", recursive=True)
-          if not main_apps:
-              main_apps = glob.glob("android/**/MainApplication.java", recursive=True)
-          if not main_apps:
-              print("ERROR: No MainApplication found!")
-              exit(1)
-
-          path = main_apps[0]
-          print(f"Found: {path}")
-
-          with open(path) as f:
-              text = f.read()
-
-          # Check if already patched
-          if "RNGestureHandlerPackage" in text:
-              print("Already has RNGestureHandlerPackage")
-          else:
-              # Add imports after existing imports
-              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
-              # Try common import locations
-              if "import com.facebook.react.ReactPackage" in text:
-                  text = text.replace(
-                      "import com.facebook.react.ReactPackage",
-                      "import com.facebook.react.ReactPackage\n" + import_line
-                  )
-              elif "import com.facebook.react.PackageList" in text:
-                  text = text.replace(
-                      "import com.facebook.react.PackageList",
-                      "import com.facebook.react.PackageList\n" + import_line
-                  )
-              else:
-                  # Add after package declaration
-                  lines = text.split("\n")
-                  for i, line in enumerate(lines):
-                      if line.startswith("package "):
-                          lines.insert(i + 1, "\n" + import_line)
-                          break
-                  text = "\n".join(lines)
-
-              # Add to packages list — look for the apply block
-              if "PackageList(this).packages.apply {" in text:
-                  text = text.replace(
-                      "PackageList(this).packages.apply {",
-                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
-                  )
-                  print("Added RNGestureHandlerPackage to packages.apply block")
-              elif "PackageList(this).packages" in text:
-                  # Different pattern — might be a direct return
-                  text = text.replace(
-                      "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
-                  )
-                  print("Added RNGestureHandlerPackage via listOf concatenation")
-              else:
-                  print("WARNING: Could not find PackageList usage pattern")
-
-              with open(path, 'w') as f:
-                  f.write(text)
-              print("Patched MainApplication successfully")
-
-          # Print the result
-          print("\n=== Patched MainApplication ===")
-          with open(path) as f:
-              for i, line in enumerate(f, 1):
-                  print(f"{i:4d}: {line}", end="")
           PY
       - name: Patch proguard rules for native modules
         script: |
@@ -428,6 +354,25 @@ workflows:
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
           PY
+      - name: Pin react-native deps to 0.81.5 in native modules
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          patched = 0
+          for gradle_file in Path("node_modules").rglob("android/build.gradle"):
+              text = gradle_file.read_text()
+              new_text = re.sub(
+                  r"implementation\s+['\"]com\.facebook\.react:react-native:\+['\"]",
+                  "//implementation 'com.facebook.react:react-native:+' // pinned by CI",
+                  text
+              )
+              if new_text != text:
+                  gradle_file.write_text(new_text)
+                  patched += 1
+                  print(f"Patched: {gradle_file}")
+          print(f"Pinned react-native deps in {patched} files")
+          PY
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
@@ -466,16 +411,6 @@ workflows:
               if 'autolinkLibraries' in line:
                   print(f"  {line.strip()}")
           PY
-      - name: Add BaseReactPackage shim for RN 0.81 compatibility
-        script: |
-          SHIM_DIR="apps/mobile/android/app/src/main/java/com/facebook/react"
-          mkdir -p "$SHIM_DIR"
-          cat > "$SHIM_DIR/BaseReactPackage.kt" << 'KTEOF'
-          package com.facebook.react
-
-          abstract class BaseReactPackage : TurboReactPackage()
-          KTEOF
-          echo "Created BaseReactPackage shim"
       - name: Force react-android to 0.81.5 (prevent Maven 0.82 cycle)
         script: |
           cd apps/mobile/android
@@ -510,56 +445,6 @@ workflows:
           else
             echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
           fi
-      - name: Force register native packages in MainApplication
-        script: |
-          cd apps/mobile
-          python3 - <<'PY'
-          import glob
-
-          main_apps = glob.glob("android/**/MainApplication.kt", recursive=True)
-          if not main_apps:
-              main_apps = glob.glob("android/**/MainApplication.java", recursive=True)
-          if not main_apps:
-              print("ERROR: No MainApplication found!")
-              exit(1)
-
-          path = main_apps[0]
-          print(f"Found: {path}")
-
-          with open(path) as f:
-              text = f.read()
-
-          if "RNGestureHandlerPackage" in text:
-              print("Already has RNGestureHandlerPackage")
-          else:
-              import_line = "import com.swmansion.gesturehandler.RNGestureHandlerPackage"
-              if "import com.facebook.react.ReactPackage" in text:
-                  text = text.replace(
-                      "import com.facebook.react.ReactPackage",
-                      "import com.facebook.react.ReactPackage\n" + import_line
-                  )
-              elif "import com.facebook.react.PackageList" in text:
-                  text = text.replace(
-                      "import com.facebook.react.PackageList",
-                      "import com.facebook.react.PackageList\n" + import_line
-                  )
-              if "PackageList(this).packages.apply {" in text:
-                  text = text.replace(
-                      "PackageList(this).packages.apply {",
-                      "PackageList(this).packages.apply {\n                    add(RNGestureHandlerPackage())"
-                  )
-                  print("Added RNGestureHandlerPackage to packages.apply block")
-              elif "PackageList(this).packages" in text:
-                  text = text.replace(
-                      "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(RNGestureHandlerPackage()))"
-                  )
-                  print("Added RNGestureHandlerPackage via listOf concatenation")
-
-              with open(path, 'w') as f:
-                  f.write(text)
-              print("Patched MainApplication successfully")
-          PY
       - name: Optimize AAB size (strip x86)
         script: |
           cd apps/mobile
