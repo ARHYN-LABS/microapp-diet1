@@ -94,20 +94,42 @@ workflows:
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
+      - name: Link native packages for autolinking
+        script: |
+          cd apps/mobile
+          mkdir -p node_modules
+          # Link non-scoped native packages
+          for pkg in react-native-gesture-handler react-native-reanimated react-native-screens react-native-safe-area-context react-native-svg; do
+            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
+              ln -s "$(cd ../../node_modules/$pkg && pwd)" "node_modules/$pkg"
+              echo "Linked $pkg"
+            else
+              echo "Already exists or not found: $pkg"
+            fi
+          done
+          # Link scoped native packages
+          for pkg in @react-native-async-storage/async-storage @react-native-community/slider @react-native-community/datetimepicker; do
+            SCOPE=$(echo $pkg | cut -d'/' -f1)
+            NAME=$(echo $pkg | cut -d'/' -f2)
+            mkdir -p "node_modules/$SCOPE"
+            if [ ! -d "node_modules/$pkg" ] && [ -d "../../node_modules/$pkg" ]; then
+              ln -s "$(cd ../../node_modules/$pkg && pwd)" "node_modules/$SCOPE/$NAME"
+              echo "Linked $pkg"
+            else
+              echo "Already exists or not found: $pkg"
+            fi
+          done
+          echo "=== node_modules contents ==="
+          ls -la node_modules/ | head -30
       - name: Prebuild Android project
         script: cd apps/mobile && npx expo prebuild --platform android --clean
-      - name: Verify autolinking includes gesture handler
+      - name: Verify autolinking
         script: |
-          echo "=== Checking autolinked packages ==="
-          PACKAGE_LIST=$(find apps/mobile/android -name "PackageList.java" -o -name "PackageList.kt" 2>/dev/null)
-          if [ -n "$PACKAGE_LIST" ]; then
-            echo "Found: $PACKAGE_LIST"
-            cat "$PACKAGE_LIST"
-          else
-            echo "WARNING: PackageList not found!"
-          fi
-          echo "=== Checking for gesture handler in android ==="
-          grep -r "gesturehandler\|GestureHandler" apps/mobile/android/settings.gradle apps/mobile/android/app/build.gradle 2>/dev/null || echo "WARNING: gesture handler not found in gradle files!"
+          echo "=== PackageList ==="
+          PLIST=$(find apps/mobile/android -name "PackageList.java" -o -name "PackageList.kt" 2>/dev/null | head -1)
+          if [ -n "$PLIST" ]; then cat "$PLIST"; fi
+          echo "=== settings.gradle gesture handler check ==="
+          grep -i "gesture" apps/mobile/android/settings.gradle 2>/dev/null || echo "NOT FOUND in settings.gradle"
       - name: Patch proguard rules for native modules
         script: |
           PROGUARD="apps/mobile/android/app/proguard-rules.pro"
