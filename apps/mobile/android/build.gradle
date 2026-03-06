@@ -23,13 +23,11 @@ allprojects {
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
 
-subprojects {
-    afterEvaluate { project ->
-        if (project.plugins.hasPlugin('com.android.library')) {
-            project.android {
-                buildFeatures {
-                    buildConfig true
-                }
+subprojects { project ->
+    project.plugins.withId('com.android.library') {
+        project.extensions.configure(com.android.build.gradle.LibraryExtension) { android ->
+            android.buildFeatures {
+                buildConfig true
             }
         }
     }
