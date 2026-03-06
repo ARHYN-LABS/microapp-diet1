@@ -518,6 +518,15 @@ workflows:
             grep -n "\\* Where:" /tmp/gradle_release_apk.log || true
             grep -n "Execution failed for task" /tmp/gradle_release_apk.log || true
             grep -n "Caused by:" /tmp/gradle_release_apk.log || true
+            echo "--- Focused root-cause excerpt ---"
+            WR_LINE=$(grep -n "^\\* What went wrong:" /tmp/gradle_release_apk.log | head -1 | cut -d: -f1 || true)
+            if [ -n "$WR_LINE" ]; then
+              sed -n "${WR_LINE},$((WR_LINE+120))p" /tmp/gradle_release_apk.log || true
+            fi
+            TASK_LINE=$(grep -n "Execution failed for task" /tmp/gradle_release_apk.log | head -1 | cut -d: -f1 || true)
+            if [ -n "$TASK_LINE" ]; then
+              sed -n "${TASK_LINE},$((TASK_LINE+80))p" /tmp/gradle_release_apk.log || true
+            fi
             echo "--- Failure excerpt (last 260 lines) ---"
             tail -260 /tmp/gradle_release_apk.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
@@ -983,6 +992,15 @@ workflows:
             grep -n "\\* Where:" /tmp/gradle_release_aab.log || true
             grep -n "Execution failed for task" /tmp/gradle_release_aab.log || true
             grep -n "Caused by:" /tmp/gradle_release_aab.log || true
+            echo "--- Focused root-cause excerpt ---"
+            WR_LINE=$(grep -n "^\\* What went wrong:" /tmp/gradle_release_aab.log | head -1 | cut -d: -f1 || true)
+            if [ -n "$WR_LINE" ]; then
+              sed -n "${WR_LINE},$((WR_LINE+120))p" /tmp/gradle_release_aab.log || true
+            fi
+            TASK_LINE=$(grep -n "Execution failed for task" /tmp/gradle_release_aab.log | head -1 | cut -d: -f1 || true)
+            if [ -n "$TASK_LINE" ]; then
+              sed -n "${TASK_LINE},$((TASK_LINE+80))p" /tmp/gradle_release_aab.log || true
+            fi
             echo "--- Failure excerpt (last 260 lines) ---"
             tail -260 /tmp/gradle_release_aab.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
