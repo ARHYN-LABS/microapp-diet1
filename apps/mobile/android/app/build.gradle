@@ -113,10 +113,19 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('upload-key.keystore')
-            storePassword 'SafePlate2026'
-            keyAlias 'upload'
-            keyPassword 'SafePlate2026'
+            def releaseStoreFile = keystoreProperties.getProperty("storeFile", System.getenv("CM_KEYSTORE_PATH"))
+            def releaseStorePassword = keystoreProperties.getProperty("storePassword", System.getenv("CM_KEYSTORE_PASSWORD"))
+            def releaseKeyAlias = keystoreProperties.getProperty("keyAlias", System.getenv("CM_KEY_ALIAS"))
+            def releaseKeyPassword = keystoreProperties.getProperty("keyPassword", System.getenv("CM_KEY_PASSWORD"))
+
+            if (releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            } else {
+                throw new GradleException("Missing release keystore config. Set apps/mobile/android/keystore.properties or CM_KEYSTORE_PATH, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD.")
+            }
         }
     }
     buildTypes {
