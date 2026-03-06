@@ -446,7 +446,14 @@ workflows:
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
           check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
-          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\")\" -le 1 ]"
+          DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
+          if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
+          if [ "$DUP_COUNT" -le 1 ]; then
+            echo "[OK] MainApplication does not have duplicate AppTurboGestureHandlerPackage lines"
+          else
+            echo "[FAIL] MainApplication does not have duplicate AppTurboGestureHandlerPackage lines"
+            ERRORS=$((ERRORS+1))
+          fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
@@ -731,7 +738,14 @@ workflows:
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
           check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
-          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\")\" -le 1 ]"
+          DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
+          if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
+          if [ "$DUP_COUNT" -le 1 ]; then
+            echo "[OK] MainApplication does not have duplicate AppTurboGestureHandlerPackage lines"
+          else
+            echo "[FAIL] MainApplication does not have duplicate AppTurboGestureHandlerPackage lines"
+            ERRORS=$((ERRORS+1))
+          fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
