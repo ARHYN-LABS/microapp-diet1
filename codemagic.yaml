@@ -269,6 +269,14 @@ workflows:
               "add(com.swmansion.reanimated.ReanimatedPackage())",
               "",
           )
+          text = text.replace(
+              "add(ReanimatedPackage())",
+              "",
+          )
+          text = text.replace(
+              "import com.swmansion.reanimated.ReanimatedPackage\n",
+              "",
+          )
 
           # Remove duplicate add(...) lines in getPackages().
           seen_adds = set()
@@ -445,7 +453,12 @@ workflows:
             ERRORS=$((ERRORS+1))
           fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
+          if grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle; then
+            echo "[OK] Reanimated new-arch assert is patched or absent in node_modules"
+          else
+            echo "[FAIL] Reanimated new-arch assert is still active in node_modules"
+            ERRORS=$((ERRORS+1))
+          fi
 
           echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
@@ -738,7 +751,12 @@ workflows:
             ERRORS=$((ERRORS+1))
           fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
+          if grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle; then
+            echo "[OK] Reanimated new-arch assert is patched or absent in node_modules"
+          else
+            echo "[FAIL] Reanimated new-arch assert is still active in node_modules"
+            ERRORS=$((ERRORS+1))
+          fi
 
           echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
@@ -811,6 +829,14 @@ workflows:
           )
           text = text.replace(
               "add(com.swmansion.reanimated.ReanimatedPackage())",
+              "",
+          )
+          text = text.replace(
+              "add(ReanimatedPackage())",
+              "",
+          )
+          text = text.replace(
+              "import com.swmansion.reanimated.ReanimatedPackage\n",
               "",
           )
 
