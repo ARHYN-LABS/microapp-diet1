@@ -267,16 +267,8 @@ workflows:
           )
           text = text.replace(
               "add(com.swmansion.reanimated.ReanimatedPackage())",
-              "add(ReanimatedPackage())",
+              "",
           )
-          if "import com.swmansion.reanimated.ReanimatedPackage" not in text:
-              lines = text.splitlines()
-              for i, line in enumerate(lines):
-                  if line.startswith("package "):
-                      lines.insert(i + 1, "")
-                      lines.insert(i + 2, "import com.swmansion.reanimated.ReanimatedPackage")
-                      text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
-                      break
 
           # Remove duplicate add(...) lines in getPackages().
           seen_adds = set()
@@ -292,7 +284,6 @@ workflows:
 
           required = [
               "add(AppTurboGestureHandlerPackage())",
-              "add(ReanimatedPackage())",
           ]
           changed = False
           for add_line in required:
@@ -308,7 +299,7 @@ workflows:
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(AppTurboGestureHandlerPackage(), ReanimatedPackage()))",
+                      "(PackageList(this).packages + listOf(AppTurboGestureHandlerPackage()))",
                       1,
                   )
                   changed = True
@@ -322,7 +313,7 @@ workflows:
               print("MainApplication already contains gesture-handler + reanimated packages")
 
           for line in text.splitlines():
-              if "add(ReanimatedPackage())" in line or "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
+              if "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
                   print(line)
           PY
       - name: Patch proguard rules for native modules
@@ -445,7 +436,6 @@ workflows:
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
-          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
           if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
           if [ "$DUP_COUNT" -le 1 ]; then
@@ -474,12 +464,6 @@ workflows:
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "=== BUILD FAILED: DIAGNOSTICS START ==="
-            echo "--- Primary Gradle failure blocks ---"
-            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_apk.log || true
-            grep -n "\\* What went wrong:" /tmp/gradle_release_apk.log || true
-            grep -n "\\* Where:" /tmp/gradle_release_apk.log || true
-            echo "--- Failure excerpt (last 220 lines) ---"
-            tail -220 /tmp/gradle_release_apk.log || true
             echo "--- HEAD ---"
             git rev-parse HEAD || true
             git log -1 --oneline || true
@@ -493,6 +477,14 @@ workflows:
             find app/build/generated -name PackageList.java -print -exec sed -n '1,220p' {} \; || true
             echo "--- Search for gesture/reanimated in generated output ---"
             grep -R -n "RNGestureHandlerPackage\\|AppTurboGestureHandlerPackage\\|ReanimatedPackage\\|RNGestureHandlerModule" app/build/generated 2>/dev/null || true
+            echo "--- Primary Gradle failure blocks ---"
+            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_apk.log || true
+            grep -n "\\* What went wrong:" /tmp/gradle_release_apk.log || true
+            grep -n "\\* Where:" /tmp/gradle_release_apk.log || true
+            grep -n "Execution failed for task" /tmp/gradle_release_apk.log || true
+            grep -n "Caused by:" /tmp/gradle_release_apk.log || true
+            echo "--- Failure excerpt (last 260 lines) ---"
+            tail -260 /tmp/gradle_release_apk.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
             exit $BUILD_EXIT
           fi
@@ -737,7 +729,6 @@ workflows:
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
-          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
           if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
           if [ "$DUP_COUNT" -le 1 ]; then
@@ -820,16 +811,8 @@ workflows:
           )
           text = text.replace(
               "add(com.swmansion.reanimated.ReanimatedPackage())",
-              "add(ReanimatedPackage())",
+              "",
           )
-          if "import com.swmansion.reanimated.ReanimatedPackage" not in text:
-              lines = text.splitlines()
-              for i, line in enumerate(lines):
-                  if line.startswith("package "):
-                      lines.insert(i + 1, "")
-                      lines.insert(i + 2, "import com.swmansion.reanimated.ReanimatedPackage")
-                      text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
-                      break
 
           # Remove duplicate add(...) lines in getPackages().
           seen_adds = set()
@@ -845,7 +828,6 @@ workflows:
 
           required = [
               "add(AppTurboGestureHandlerPackage())",
-              "add(ReanimatedPackage())",
           ]
           changed = False
           for add_line in required:
@@ -861,7 +843,7 @@ workflows:
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(AppTurboGestureHandlerPackage(), ReanimatedPackage()))",
+                      "(PackageList(this).packages + listOf(AppTurboGestureHandlerPackage()))",
                       1,
                   )
                   changed = True
@@ -875,7 +857,7 @@ workflows:
               print("MainApplication already contains gesture-handler + reanimated packages")
 
           for line in text.splitlines():
-              if "add(ReanimatedPackage())" in line or "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
+              if "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
                   print(line)
           PY
       - name: Patch proguard rules for native modules
@@ -917,12 +899,6 @@ workflows:
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "=== BUILD FAILED: DIAGNOSTICS START ==="
-            echo "--- Primary Gradle failure blocks ---"
-            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_aab.log || true
-            grep -n "\\* What went wrong:" /tmp/gradle_release_aab.log || true
-            grep -n "\\* Where:" /tmp/gradle_release_aab.log || true
-            echo "--- Failure excerpt (last 220 lines) ---"
-            tail -220 /tmp/gradle_release_aab.log || true
             echo "--- HEAD ---"
             git rev-parse HEAD || true
             git log -1 --oneline || true
@@ -936,6 +912,14 @@ workflows:
             find app/build/generated -name PackageList.java -print -exec sed -n '1,220p' {} \; || true
             echo "--- Search for gesture/reanimated in generated output ---"
             grep -R -n "RNGestureHandlerPackage\\|AppTurboGestureHandlerPackage\\|ReanimatedPackage\\|RNGestureHandlerModule" app/build/generated 2>/dev/null || true
+            echo "--- Primary Gradle failure blocks ---"
+            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_aab.log || true
+            grep -n "\\* What went wrong:" /tmp/gradle_release_aab.log || true
+            grep -n "\\* Where:" /tmp/gradle_release_aab.log || true
+            grep -n "Execution failed for task" /tmp/gradle_release_aab.log || true
+            grep -n "Caused by:" /tmp/gradle_release_aab.log || true
+            echo "--- Failure excerpt (last 260 lines) ---"
+            tail -260 /tmp/gradle_release_aab.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
             exit $BUILD_EXIT
           fi
