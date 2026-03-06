@@ -447,10 +447,16 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew
           set +e
-          ./gradlew assembleRelease --stacktrace --warning-mode all
+          ./gradlew assembleRelease --stacktrace --warning-mode all 2>&1 | tee /tmp/gradle_release_apk.log
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "=== BUILD FAILED: DIAGNOSTICS START ==="
+            echo "--- Primary Gradle failure blocks ---"
+            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_apk.log || true
+            grep -n "\\* What went wrong:" /tmp/gradle_release_apk.log || true
+            grep -n "\\* Where:" /tmp/gradle_release_apk.log || true
+            echo "--- Failure excerpt (last 220 lines) ---"
+            tail -220 /tmp/gradle_release_apk.log || true
             echo "--- HEAD ---"
             git rev-parse HEAD || true
             git log -1 --oneline || true
@@ -858,10 +864,16 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew
           set +e
-          ./gradlew bundleRelease --stacktrace --warning-mode all
+          ./gradlew bundleRelease --stacktrace --warning-mode all 2>&1 | tee /tmp/gradle_release_aab.log
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
             echo "=== BUILD FAILED: DIAGNOSTICS START ==="
+            echo "--- Primary Gradle failure blocks ---"
+            grep -n "FAILURE: Build failed with an exception." /tmp/gradle_release_aab.log || true
+            grep -n "\\* What went wrong:" /tmp/gradle_release_aab.log || true
+            grep -n "\\* Where:" /tmp/gradle_release_aab.log || true
+            echo "--- Failure excerpt (last 220 lines) ---"
+            tail -220 /tmp/gradle_release_aab.log || true
             echo "--- HEAD ---"
             git rev-parse HEAD || true
             git log -1 --oneline || true
