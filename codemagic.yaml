@@ -25,6 +25,100 @@ workflows:
               patched += 1
           print(f"Patched {patched} expo android build.gradle files")
           PY
+      - name: Patch Reanimated new-arch assertion for old-arch runtime
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("node_modules/react-native-reanimated/android/build.gradle")
+          if not p.exists():
+              print("Reanimated android/build.gradle not found; skipping patch")
+              raise SystemExit(0)
+          text = p.read_text()
+          marker = "preBuild.dependsOn(assertNewArchitectureEnabledTask)"
+          if marker in text:
+              text = text.replace(marker, "// patched in CI: " + marker)
+              p.write_text(text)
+              print("Patched Reanimated assertNewArchitectureEnabledTask dependency")
+          else:
+              print("Reanimated assert dependency already patched or not found")
+          PY
+      - name: Patch Worklets new-arch assertion for old-arch runtime
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("node_modules/react-native-worklets/android/build.gradle")
+          if not p.exists():
+              print("Worklets android/build.gradle not found; skipping patch")
+              raise SystemExit(0)
+          text = p.read_text()
+          marker = "preBuild.dependsOn(assertNewArchitectureEnabledTask)"
+          if marker in text:
+              text = text.replace(marker, "// patched in CI: " + marker)
+              p.write_text(text)
+              print("Patched Worklets assertNewArchitectureEnabledTask dependency")
+          else:
+              print("Worklets assert dependency already patched or not found")
+          PY
+      - name: Patch Worklets Java compatibility for old-arch compile
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          targets = [
+              Path("node_modules/react-native-worklets/android/src/legacyBundling/com/swmansion/worklets/WorkletsModule.java"),
+              Path("node_modules/react-native-worklets/android/src/experimentalBundling/com/swmansion/worklets/WorkletsModule.java"),
+          ]
+          for p in targets:
+              if not p.exists():
+                  print(f"Missing: {p}")
+                  continue
+              text = p.read_text()
+              changed = False
+
+              if "extends NativeWorkletsModuleSpec" in text:
+                  text = text.replace(
+                      "extends NativeWorkletsModuleSpec",
+                      "extends com.facebook.react.bridge.ReactContextBaseJavaModule",
+                  )
+                  changed = True
+
+              if "public static final String NAME" not in text:
+                  anchor = "public class WorkletsModule "
+                  idx = text.find(anchor)
+                  if idx != -1:
+                      brace = text.find("{", idx)
+                      if brace != -1:
+                          insert = "\n  public static final String NAME = \"WorkletsModule\";\n"
+                          text = text[: brace + 1] + insert + text[brace + 1 :]
+                          changed = True
+
+              if "public String getName()" not in text:
+                  anchor = "public WorkletsModule(ReactApplicationContext reactContext) {"
+                  idx = text.find(anchor)
+                  if idx != -1:
+                      insert = (
+                          "@Override\n"
+                          "  public String getName() {\n"
+                          "    return NAME;\n"
+                          "  }\n\n"
+                      )
+                      text = text[:idx] + insert + text[idx:]
+                      changed = True
+
+              if changed:
+                  p.write_text(text)
+                  print(f"Patched: {p}")
+              else:
+                  print(f"No changes needed: {p}")
+          PY
+      - name: Ensure newArchEnabled in gradle.properties
+        script: |
+          cd apps/mobile/android
+          if grep -q "newArchEnabled" gradle.properties; then
+            sed -i 's/newArchEnabled=.*/newArchEnabled=false/' gradle.properties
+          else
+            echo "" >> gradle.properties
+            echo "newArchEnabled=false" >> gradle.properties
+          fi
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Build debug APK
