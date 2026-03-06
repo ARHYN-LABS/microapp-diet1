@@ -619,6 +619,10 @@ workflows:
             fi
             echo "--- Failure excerpt (last 260 lines) ---"
             tail -260 /tmp/gradle_release_apk.log || true
+            echo "--- ROOT CAUSE SUMMARY (END) ---"
+            grep -m1 -A40 "^\\* What went wrong:" /tmp/gradle_release_apk.log || true
+            grep -m1 -A20 "Execution failed for task" /tmp/gradle_release_apk.log || true
+            grep -m10 " error: " /tmp/gradle_release_apk.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
             exit $BUILD_EXIT
           fi
@@ -1183,6 +1187,10 @@ workflows:
             fi
             echo "--- Failure excerpt (last 260 lines) ---"
             tail -260 /tmp/gradle_release_aab.log || true
+            echo "--- ROOT CAUSE SUMMARY (END) ---"
+            grep -m1 -A40 "^\\* What went wrong:" /tmp/gradle_release_aab.log || true
+            grep -m1 -A20 "Execution failed for task" /tmp/gradle_release_aab.log || true
+            grep -m10 " error: " /tmp/gradle_release_aab.log || true
             echo "=== BUILD FAILED: DIAGNOSTICS END ==="
             exit $BUILD_EXIT
           fi
