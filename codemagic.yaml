@@ -281,7 +281,7 @@ workflows:
               print("MainApplication already contains gesture-handler + reanimated packages")
 
           for line in text.splitlines():
-              if "add(com.swmansion." in line or "PackageList(this).packages" in line:
+              if "add(com.swmansion." in line or "add(com.askmobisoft55." in line or "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
                   print(line)
           PY
       - name: Patch proguard rules for native modules
@@ -353,8 +353,36 @@ workflows:
           keyPassword=$KEY_PASS
           EOF
           echo "Configured apps/mobile/android/keystore.properties"
+      - name: Preflight validation (commit + flags + registration)
+        script: |
+          echo "=== Commit ==="
+          git rev-parse HEAD
+          git log -1 --oneline
+          echo ""
+          echo "=== android/gradle.properties ==="
+          cat apps/mobile/android/gradle.properties
+          echo ""
+          echo "=== MainApplication.kt ==="
+          MAIN_APP=$(find apps/mobile/android/app/src/main/java -name MainApplication.kt | head -1)
+          cat "$MAIN_APP"
+          echo ""
+          echo "=== Registration checks ==="
+          grep -q "add(AppTurboGestureHandlerPackage())" "$MAIN_APP" || { echo "Missing AppTurboGestureHandlerPackage registration"; exit 1; }
+          grep -q "isNewArchEnabled: Boolean = false" "$MAIN_APP" || { echo "Expected isNewArchEnabled=false in MainApplication"; exit 1; }
+          grep -q "^reactNativeArchitectures=armeabi-v7a,arm64-v8a" apps/mobile/android/gradle.properties || { echo "Expected ARM-only reactNativeArchitectures"; exit 1; }
       - name: Build release APK
         script: cd apps/mobile/android && ./gradlew assembleRelease
+      - name: Validate APK ABI contents
+        script: |
+          APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$APK" ]; then echo "APK not found: $APK"; exit 1; fi
+          echo "=== Native libs inside APK ==="
+          unzip -l "$APK" | grep " lib/" || true
+          if unzip -l "$APK" | grep -q "lib/x86/"; then echo "Unexpected x86 libs in APK"; exit 1; fi
+          if unzip -l "$APK" | grep -q "lib/x86_64/"; then echo "Unexpected x86_64 libs in APK"; exit 1; fi
+          unzip -l "$APK" | grep -q "lib/armeabi-v7a/" || { echo "Missing armeabi-v7a libs"; exit 1; }
+          unzip -l "$APK" | grep -q "lib/arm64-v8a/" || { echo "Missing arm64-v8a libs"; exit 1; }
+          echo "APK ABI validation passed (ARM-only)"
       - name: Verify codegen ran for gesture-handler
         script: |
           cd apps/mobile
@@ -626,7 +654,7 @@ workflows:
               print("MainApplication already contains gesture-handler + reanimated packages")
 
           for line in text.splitlines():
-              if "add(com.swmansion." in line or "PackageList(this).packages" in line:
+              if "add(com.swmansion." in line or "add(com.askmobisoft55." in line or "add(AppTurboGestureHandlerPackage())" in line or "PackageList(this).packages" in line:
                   print(line)
           PY
       - name: Patch proguard rules for native modules
