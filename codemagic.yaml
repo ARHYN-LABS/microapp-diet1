@@ -371,7 +371,10 @@ workflows:
           grep -q "isNewArchEnabled: Boolean = false" "$MAIN_APP" || { echo "Expected isNewArchEnabled=false in MainApplication"; exit 1; }
           grep -q "^reactNativeArchitectures=armeabi-v7a,arm64-v8a" apps/mobile/android/gradle.properties || { echo "Expected ARM-only reactNativeArchitectures"; exit 1; }
       - name: Build release APK
-        script: cd apps/mobile/android && ./gradlew assembleRelease
+        script: |
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew assembleRelease
       - name: Validate APK ABI contents
         script: |
           APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
@@ -686,6 +689,9 @@ workflows:
           EOF
           echo "Configured apps/mobile/android/keystore.properties"
       - name: Build release AAB
-        script: cd apps/mobile/android && ./gradlew bundleRelease
+        script: |
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
     artifacts:
       - apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
