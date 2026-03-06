@@ -620,6 +620,18 @@ workflows:
           unzip -l "$APK" | grep -q "lib/armeabi-v7a/" || { echo "Missing armeabi-v7a libs"; exit 1; }
           unzip -l "$APK" | grep -q "lib/arm64-v8a/" || { echo "Missing arm64-v8a libs"; exit 1; }
           echo "APK ABI validation passed (ARM-only)"
+      - name: Validate APK size budget
+        script: |
+          APK=$(find apps/mobile/android/app/build/outputs/apk/release -type f -name "*release*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find apps/mobile/android/app/build/outputs/apk/release -type f -name "*.apk" | head -1)
+          fi
+          [ -n "$APK" ] || { echo "APK not found"; exit 1; }
+          MAX_MB="${APK_MAX_SIZE_MB:-55}"
+          SIZE_BYTES=$(wc -c < "$APK")
+          SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $SIZE_BYTES/1024/1024}")
+          echo "APK size: ${SIZE_MB} MB (limit: ${MAX_MB} MB)"
+          awk "BEGIN {exit !($SIZE_MB <= $MAX_MB)}" || { echo "APK exceeds size budget"; exit 1; }
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/**/*.apk
   android-release-aab:
@@ -1165,5 +1177,14 @@ workflows:
             exit $BUILD_EXIT
           fi
           exit 0
+      - name: Validate AAB size budget
+        script: |
+          AAB=$(find apps/mobile/android/app/build/outputs/bundle -type f -name "*.aab" | head -1)
+          [ -n "$AAB" ] || { echo "AAB not found"; exit 1; }
+          MAX_MB="${AAB_MAX_SIZE_MB:-45}"
+          SIZE_BYTES=$(wc -c < "$AAB")
+          SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $SIZE_BYTES/1024/1024}")
+          echo "AAB size: ${SIZE_MB} MB (limit: ${MAX_MB} MB)"
+          awk "BEGIN {exit !($SIZE_MB <= $MAX_MB)}" || { echo "AAB exceeds size budget"; exit 1; }
     artifacts:
       - apps/mobile/android/app/build/outputs/bundle/**/*.aab
