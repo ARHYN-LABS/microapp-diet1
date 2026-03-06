@@ -413,6 +413,10 @@ workflows:
           echo ""
           echo "=== Registration checks ==="
           grep -q "add(AppTurboGestureHandlerPackage())" "$MAIN_APP" || { echo "Missing AppTurboGestureHandlerPackage registration"; exit 1; }
+          if grep -q "add(ReanimatedPackage())" "$MAIN_APP"; then
+            echo "MainApplication should not manually add ReanimatedPackage (autolink handles it)"
+            exit 1
+          fi
           grep -q "isNewArchEnabled: Boolean = false" "$MAIN_APP" || { echo "Expected isNewArchEnabled=false in MainApplication"; exit 1; }
           grep -q "^reactNativeArchitectures=armeabi-v7a,arm64-v8a" apps/mobile/android/gradle.properties || { echo "Expected ARM-only reactNativeArchitectures"; exit 1; }
       - name: Comprehensive validation report (all checks in one run)
@@ -444,6 +448,7 @@ workflows:
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
+          check "MainApplication does not manually add ReanimatedPackage" "! grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
           if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
           if [ "$DUP_COUNT" -le 1 ]; then
@@ -453,7 +458,21 @@ workflows:
             ERRORS=$((ERRORS+1))
           fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          if grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle; then
+          GH_PKG="../../../node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/RNGestureHandlerPackage.kt"
+          if [ ! -f "$GH_PKG" ]; then
+            echo "[FAIL] RNGestureHandlerPackage.kt not found in node_modules"
+            ERRORS=$((ERRORS+1))
+          elif grep -q 'TurboReactPackage' "$GH_PKG" && ! grep -q 'BaseReactPackage' "$GH_PKG"; then
+            echo "[OK] RNGestureHandlerPackage uses TurboReactPackage"
+          else
+            echo "[FAIL] RNGestureHandlerPackage is not patched to TurboReactPackage"
+            ERRORS=$((ERRORS+1))
+          fi
+
+          REA_GRADLE="../../../node_modules/react-native-reanimated/android/build.gradle"
+          if [ ! -f "$REA_GRADLE" ]; then
+            echo "[OK] Reanimated build.gradle not present; skipping assert check"
+          elif grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' "$REA_GRADLE" || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' "$REA_GRADLE"; then
             echo "[OK] Reanimated new-arch assert is patched or absent in node_modules"
           else
             echo "[FAIL] Reanimated new-arch assert is still active in node_modules"
@@ -742,6 +761,7 @@ workflows:
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
+          check "MainApplication does not manually add ReanimatedPackage" "! grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
           if [ -z "$DUP_COUNT" ]; then DUP_COUNT=0; fi
           if [ "$DUP_COUNT" -le 1 ]; then
@@ -751,7 +771,21 @@ workflows:
             ERRORS=$((ERRORS+1))
           fi
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          if grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle; then
+          GH_PKG="../../../node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/RNGestureHandlerPackage.kt"
+          if [ ! -f "$GH_PKG" ]; then
+            echo "[FAIL] RNGestureHandlerPackage.kt not found in node_modules"
+            ERRORS=$((ERRORS+1))
+          elif grep -q 'TurboReactPackage' "$GH_PKG" && ! grep -q 'BaseReactPackage' "$GH_PKG"; then
+            echo "[OK] RNGestureHandlerPackage uses TurboReactPackage"
+          else
+            echo "[FAIL] RNGestureHandlerPackage is not patched to TurboReactPackage"
+            ERRORS=$((ERRORS+1))
+          fi
+
+          REA_GRADLE="../../../node_modules/react-native-reanimated/android/build.gradle"
+          if [ ! -f "$REA_GRADLE" ]; then
+            echo "[OK] Reanimated build.gradle not present; skipping assert check"
+          elif grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' "$REA_GRADLE" || ! grep -q 'preBuild.dependsOn(assertNewArchitectureEnabledTask)' "$REA_GRADLE"; then
             echo "[OK] Reanimated new-arch assert is patched or absent in node_modules"
           else
             echo "[FAIL] Reanimated new-arch assert is still active in node_modules"

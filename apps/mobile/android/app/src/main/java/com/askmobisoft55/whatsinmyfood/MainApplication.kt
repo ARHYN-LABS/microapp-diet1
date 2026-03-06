@@ -42,7 +42,7 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
-    Log.e("WIMF_BUILD", "Startup marker commit=6b81850 versionCode=43 newArch=false")
+    Log.e("WIMF_BUILD", "Startup marker versionCode=43 newArch=false")
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {
