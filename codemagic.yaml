@@ -135,6 +135,9 @@ workflows:
           python3 - <<'PY'
           from pathlib import Path
           p = Path("node_modules/react-native-reanimated/android/build.gradle")
+          if not p.exists():
+              print("Reanimated android/build.gradle not found; skipping patch")
+              raise SystemExit(0)
           text = p.read_text()
           marker = "preBuild.dependsOn(assertNewArchitectureEnabledTask)"
           if marker in text:
@@ -266,6 +269,14 @@ workflows:
               "add(com.swmansion.reanimated.ReanimatedPackage())",
               "add(ReanimatedPackage())",
           )
+          if "import com.swmansion.reanimated.ReanimatedPackage" not in text:
+              lines = text.splitlines()
+              for i, line in enumerate(lines):
+                  if line.startswith("package "):
+                      lines.insert(i + 1, "")
+                      lines.insert(i + 2, "import com.swmansion.reanimated.ReanimatedPackage")
+                      text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+                      break
 
           # Remove duplicate add(...) lines in getPackages().
           seen_adds = set()
@@ -376,6 +387,7 @@ workflows:
           KEY_ALIAS="${CM_KEY_ALIAS:-upload}"
           KEY_PASS="${CM_KEY_PASSWORD:-$STORE_PASS}"
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
+          test -s apps/mobile/android/app/upload-key.keystore || { echo "Decoded keystore is empty/invalid"; exit 1; }
           cat > apps/mobile/android/keystore.properties << EOF
           storeFile=app/upload-key.keystore
           storePassword=$STORE_PASS
@@ -394,6 +406,10 @@ workflows:
           echo ""
           echo "=== MainApplication.kt ==="
           MAIN_APP=$(find apps/mobile/android/app/src/main/java -name MainApplication.kt | head -1)
+          if [ -z "$MAIN_APP" ]; then
+            echo "MainApplication.kt not found"
+            exit 1
+          fi
           cat "$MAIN_APP"
           echo ""
           echo "=== Registration checks ==="
@@ -405,6 +421,7 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew || true
           ERRORS=0
+          MAIN_APP=$(find app/src/main/java -name MainApplication.kt | head -1)
 
           check() {
             if ! eval "$2"; then
@@ -418,12 +435,18 @@ workflows:
           echo "=== VALIDATION REPORT START ==="
           echo "HEAD: $(git rev-parse HEAD)"
           echo "Commit: $(git log -1 --oneline)"
+          if [ -z "$MAIN_APP" ]; then
+            echo "[FAIL] MainApplication.kt exists"
+            ERRORS=$((ERRORS+1))
+          else
+            echo "[OK] MainApplication.kt exists at $MAIN_APP"
+          fi
 
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
-          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
-          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
-          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
+          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
+          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
+          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\")\" -le 1 ]"
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
@@ -597,6 +620,9 @@ workflows:
           python3 - <<'PY'
           from pathlib import Path
           p = Path("node_modules/react-native-reanimated/android/build.gradle")
+          if not p.exists():
+              print("Reanimated android/build.gradle not found; skipping patch")
+              raise SystemExit(0)
           text = p.read_text()
           marker = "preBuild.dependsOn(assertNewArchitectureEnabledTask)"
           if marker in text:
@@ -680,6 +706,7 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew || true
           ERRORS=0
+          MAIN_APP=$(find app/src/main/java -name MainApplication.kt | head -1)
 
           check() {
             if ! eval "$2"; then
@@ -693,12 +720,18 @@ workflows:
           echo "=== VALIDATION REPORT START ==="
           echo "HEAD: $(git rev-parse HEAD)"
           echo "Commit: $(git log -1 --oneline)"
+          if [ -z "$MAIN_APP" ]; then
+            echo "[FAIL] MainApplication.kt exists"
+            ERRORS=$((ERRORS+1))
+          else
+            echo "[OK] MainApplication.kt exists at $MAIN_APP"
+          fi
 
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
-          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
-          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
-          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
+          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
+          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
+          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\")\" -le 1 ]"
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
@@ -775,6 +808,14 @@ workflows:
               "add(com.swmansion.reanimated.ReanimatedPackage())",
               "add(ReanimatedPackage())",
           )
+          if "import com.swmansion.reanimated.ReanimatedPackage" not in text:
+              lines = text.splitlines()
+              for i, line in enumerate(lines):
+                  if line.startswith("package "):
+                      lines.insert(i + 1, "")
+                      lines.insert(i + 2, "import com.swmansion.reanimated.ReanimatedPackage")
+                      text = "\n".join(lines) + ("\n" if text.endswith("\n") else "")
+                      break
 
           # Remove duplicate add(...) lines in getPackages().
           seen_adds = set()
@@ -844,6 +885,7 @@ workflows:
           KEY_ALIAS="${CM_KEY_ALIAS:-upload}"
           KEY_PASS="${CM_KEY_PASSWORD:-$STORE_PASS}"
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
+          test -s apps/mobile/android/app/upload-key.keystore || { echo "Decoded keystore is empty/invalid"; exit 1; }
           cat > apps/mobile/android/keystore.properties << EOF
           storeFile=app/upload-key.keystore
           storePassword=$STORE_PASS
