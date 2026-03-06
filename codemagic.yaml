@@ -338,15 +338,15 @@ workflows:
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_BASE64" ]; then echo "Missing CM_KEYSTORE_BASE64"; exit 1; fi
-          if [ -z "$CM_KEYSTORE_PASSWORD" ]; then echo "Missing CM_KEYSTORE_PASSWORD"; exit 1; fi
-          if [ -z "$CM_KEY_ALIAS" ]; then echo "Missing CM_KEY_ALIAS"; exit 1; fi
-          if [ -z "$CM_KEY_PASSWORD" ]; then echo "Missing CM_KEY_PASSWORD"; exit 1; fi
+          STORE_PASS="${CM_KEYSTORE_PASSWORD:-SafePlate2026}"
+          KEY_ALIAS="${CM_KEY_ALIAS:-upload}"
+          KEY_PASS="${CM_KEY_PASSWORD:-$STORE_PASS}"
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
           cat > apps/mobile/android/keystore.properties << EOF
           storeFile=app/upload-key.keystore
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          keyPassword=$CM_KEY_PASSWORD
+          storePassword=$STORE_PASS
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASS
           EOF
           echo "Configured apps/mobile/android/keystore.properties"
       - name: Build release APK
@@ -642,15 +642,15 @@ workflows:
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_BASE64" ]; then echo "Missing CM_KEYSTORE_BASE64"; exit 1; fi
-          if [ -z "$CM_KEYSTORE_PASSWORD" ]; then echo "Missing CM_KEYSTORE_PASSWORD"; exit 1; fi
-          if [ -z "$CM_KEY_ALIAS" ]; then echo "Missing CM_KEY_ALIAS"; exit 1; fi
-          if [ -z "$CM_KEY_PASSWORD" ]; then echo "Missing CM_KEY_PASSWORD"; exit 1; fi
+          STORE_PASS="${CM_KEYSTORE_PASSWORD:-SafePlate2026}"
+          KEY_ALIAS="${CM_KEY_ALIAS:-upload}"
+          KEY_PASS="${CM_KEY_PASSWORD:-$STORE_PASS}"
           echo "$CM_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/upload-key.keystore
           cat > apps/mobile/android/keystore.properties << EOF
           storeFile=app/upload-key.keystore
-          storePassword=$CM_KEYSTORE_PASSWORD
-          keyAlias=$CM_KEY_ALIAS
-          keyPassword=$CM_KEY_PASSWORD
+          storePassword=$STORE_PASS
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASS
           EOF
           echo "Configured apps/mobile/android/keystore.properties"
       - name: Build release AAB
