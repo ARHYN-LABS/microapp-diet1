@@ -27,7 +27,8 @@ workflows:
       - name: Build shared package
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
-        script: cd apps/mobile && npx expo prebuild --platform android --clean
+        script: |
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Build debug APK
         script: cd apps/mobile/android && ./gradlew assembleDebug
     artifacts:
@@ -133,8 +134,7 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: |
-          cd apps/mobile
-          npx expo prebuild --platform android --clean
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Force react-android to 0.81.5 (prevent Maven 0.82 cycle)
         script: |
           cd apps/mobile/android
@@ -238,7 +238,11 @@ workflows:
           # Normalize old short package calls to fully-qualified to avoid import issues.
           text = text.replace(
               "add(RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
+          )
+          text = text.replace(
               "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
           )
           text = text.replace(
               "add(ReanimatedPackage())",
@@ -246,7 +250,7 @@ workflows:
           )
 
           required = [
-              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
               "add(com.swmansion.reanimated.ReanimatedPackage())",
           ]
           changed = False
@@ -263,7 +267,7 @@ workflows:
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(com.swmansion.gesturehandler.RNGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
+                      "(PackageList(this).packages + listOf(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
                       1,
                   )
                   changed = True
@@ -462,11 +466,7 @@ workflows:
         script: cd packages/shared && npm run build
       - name: Prebuild Android project
         script: |
-          cd apps/mobile
-          echo "=== Expo autolinking resolve ==="
-          npx expo-modules-autolinking resolve --platform android 2>&1 | head -60 || true
-          echo ""
-          npx expo prebuild --platform android --clean
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Fix autolinking for monorepo
         script: |
           cd apps/mobile
@@ -583,7 +583,11 @@ workflows:
           # Normalize old short package calls to fully-qualified to avoid import issues.
           text = text.replace(
               "add(RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
+          )
+          text = text.replace(
               "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
           )
           text = text.replace(
               "add(ReanimatedPackage())",
@@ -591,7 +595,7 @@ workflows:
           )
 
           required = [
-              "add(com.swmansion.gesturehandler.RNGestureHandlerPackage())",
+              "add(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage())",
               "add(com.swmansion.reanimated.ReanimatedPackage())",
           ]
           changed = False
@@ -608,7 +612,7 @@ workflows:
               elif "PackageList(this).packages" in text:
                   text = text.replace(
                       "PackageList(this).packages",
-                      "(PackageList(this).packages + listOf(com.swmansion.gesturehandler.RNGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
+                      "(PackageList(this).packages + listOf(com.askmobisoft55.whatsinmyfood.AppTurboGestureHandlerPackage(), com.swmansion.reanimated.ReanimatedPackage()))",
                       1,
                   )
                   changed = True
