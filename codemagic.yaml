@@ -404,7 +404,28 @@ workflows:
         script: |
           cd apps/mobile/android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          set +e
+          ./gradlew assembleRelease --stacktrace --warning-mode all
+          BUILD_EXIT=$?
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "=== BUILD FAILED: DIAGNOSTICS START ==="
+            echo "--- HEAD ---"
+            git rev-parse HEAD || true
+            git log -1 --oneline || true
+            echo "--- gradle.properties ---"
+            cat gradle.properties || true
+            echo "--- MainApplication.kt ---"
+            find app/src/main/java -name MainApplication.kt -print -exec cat {} \; || true
+            echo "--- AppTurboGestureHandlerPackage.kt ---"
+            find app/src/main/java -name AppTurboGestureHandlerPackage.kt -print -exec cat {} \; || true
+            echo "--- Generated PackageList.java ---"
+            find app/build/generated -name PackageList.java -print -exec sed -n '1,220p' {} \; || true
+            echo "--- Search for gesture/reanimated in generated output ---"
+            grep -R -n "RNGestureHandlerPackage\\|AppTurboGestureHandlerPackage\\|ReanimatedPackage\\|RNGestureHandlerModule" app/build/generated 2>/dev/null || true
+            echo "=== BUILD FAILED: DIAGNOSTICS END ==="
+            exit $BUILD_EXIT
+          fi
+          exit 0
       - name: Validate APK ABI contents
         script: |
           APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
@@ -752,6 +773,27 @@ workflows:
         script: |
           cd apps/mobile/android
           chmod +x gradlew
-          ./gradlew bundleRelease
+          set +e
+          ./gradlew bundleRelease --stacktrace --warning-mode all
+          BUILD_EXIT=$?
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "=== BUILD FAILED: DIAGNOSTICS START ==="
+            echo "--- HEAD ---"
+            git rev-parse HEAD || true
+            git log -1 --oneline || true
+            echo "--- gradle.properties ---"
+            cat gradle.properties || true
+            echo "--- MainApplication.kt ---"
+            find app/src/main/java -name MainApplication.kt -print -exec cat {} \; || true
+            echo "--- AppTurboGestureHandlerPackage.kt ---"
+            find app/src/main/java -name AppTurboGestureHandlerPackage.kt -print -exec cat {} \; || true
+            echo "--- Generated PackageList.java ---"
+            find app/build/generated -name PackageList.java -print -exec sed -n '1,220p' {} \; || true
+            echo "--- Search for gesture/reanimated in generated output ---"
+            grep -R -n "RNGestureHandlerPackage\\|AppTurboGestureHandlerPackage\\|ReanimatedPackage\\|RNGestureHandlerModule" app/build/generated 2>/dev/null || true
+            echo "=== BUILD FAILED: DIAGNOSTICS END ==="
+            exit $BUILD_EXIT
+          fi
+          exit 0
     artifacts:
       - apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
