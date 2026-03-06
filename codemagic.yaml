@@ -518,6 +518,7 @@ workflows:
 
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
+          check "apps/mobile pins react-native-worklets to 0.5.x" "grep -q '\"react-native-worklets\": \"0.5.' ../package.json"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
           check "MainApplication does not manually add ReanimatedPackage" "! grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
@@ -936,6 +937,7 @@ workflows:
 
           check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
           check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
+          check "apps/mobile pins react-native-worklets to 0.5.x" "grep -q '\"react-native-worklets\": \"0.5.' ../package.json"
           check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' \"$MAIN_APP\""
           check "MainApplication does not manually add ReanimatedPackage" "! grep -q 'add(ReanimatedPackage())' \"$MAIN_APP\""
           DUP_COUNT=$(grep -c 'add(AppTurboGestureHandlerPackage())' "$MAIN_APP" || true)
