@@ -27,9 +27,6 @@ workflows:
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
-      - name: Prebuild Android project
-        script: |
-          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Build debug APK
         script: cd apps/mobile/android && chmod +x gradlew && ./gradlew assembleDebug
     artifacts:
@@ -219,9 +216,6 @@ workflows:
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
-      - name: Prebuild Android project
-        script: |
-          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Force react-android to 0.81.5 (prevent Maven 0.82 cycle)
         script: |
           cd apps/mobile/android
@@ -465,31 +459,6 @@ workflows:
           keyPassword=$KEY_PASS
           EOF
           echo "Configured apps/mobile/android/keystore.properties"
-      - name: Preflight validation (commit + flags + registration)
-        script: |
-          echo "=== Commit ==="
-          git rev-parse HEAD
-          git log -1 --oneline
-          echo ""
-          echo "=== android/gradle.properties ==="
-          cat apps/mobile/android/gradle.properties
-          echo ""
-          echo "=== MainApplication.kt ==="
-          MAIN_APP=$(find apps/mobile/android/app/src/main/java -name MainApplication.kt | head -1)
-          if [ -z "$MAIN_APP" ]; then
-            echo "MainApplication.kt not found"
-            exit 1
-          fi
-          cat "$MAIN_APP"
-          echo ""
-          echo "=== Registration checks ==="
-          grep -q "add(AppTurboGestureHandlerPackage())" "$MAIN_APP" || { echo "Missing AppTurboGestureHandlerPackage registration"; exit 1; }
-          if grep -q "add(ReanimatedPackage())" "$MAIN_APP"; then
-            echo "MainApplication should not manually add ReanimatedPackage (autolink handles it)"
-            exit 1
-          fi
-          grep -q "isNewArchEnabled: Boolean = false" "$MAIN_APP" || { echo "Expected isNewArchEnabled=false in MainApplication"; exit 1; }
-          grep -q "^reactNativeArchitectures=armeabi-v7a,arm64-v8a" apps/mobile/android/gradle.properties || { echo "Expected ARM-only reactNativeArchitectures"; exit 1; }
       - name: Comprehensive validation report (all checks in one run)
         script: |
           cd apps/mobile/android
@@ -651,14 +620,6 @@ workflows:
           unzip -l "$APK" | grep -q "lib/armeabi-v7a/" || { echo "Missing armeabi-v7a libs"; exit 1; }
           unzip -l "$APK" | grep -q "lib/arm64-v8a/" || { echo "Missing arm64-v8a libs"; exit 1; }
           echo "APK ABI validation passed (ARM-only)"
-      - name: Verify codegen ran for gesture-handler
-        script: |
-          cd apps/mobile
-          echo "=== Codegen output for gesture-handler ==="
-          find android -path "*gesturehandler*" -name "*.java" -o -path "*gesturehandler*" -name "*.kt" | grep -i generated | head -20 || echo "No codegen output found"
-          echo ""
-          echo "=== Native .so files for gesture-handler ==="
-          find android -name "libgesturehandler*" -o -name "*rngesturehandler*" 2>/dev/null | head -10 || echo "No gesture-handler .so files"
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/**/*.apk
   android-release-aab:
@@ -846,9 +807,6 @@ workflows:
           PY
       - name: Build shared package
         script: cd packages/shared && npm run build
-      - name: Prebuild Android project
-        script: |
-          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Fix autolinking for monorepo
         script: |
           cd apps/mobile
