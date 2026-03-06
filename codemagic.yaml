@@ -439,6 +439,7 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew
           set +e
+          set -o pipefail
           ./gradlew assembleRelease --stacktrace --warning-mode all 2>&1 | tee /tmp/gradle_release_apk.log
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
@@ -468,8 +469,12 @@ workflows:
           exit 0
       - name: Validate APK ABI contents
         script: |
-          APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
-          if [ ! -f "$APK" ]; then echo "APK not found: $APK"; exit 1; fi
+          APK=$(find apps/mobile/android/app/build/outputs/apk -type f -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "APK not found under apps/mobile/android/app/build/outputs/apk"
+            exit 1
+          fi
+          echo "Using APK: $APK"
           echo "=== Native libs inside APK ==="
           unzip -l "$APK" | grep " lib/" || true
           if unzip -l "$APK" | grep -q "lib/x86/"; then echo "Unexpected x86 libs in APK"; exit 1; fi
@@ -848,6 +853,7 @@ workflows:
           cd apps/mobile/android
           chmod +x gradlew
           set +e
+          set -o pipefail
           ./gradlew bundleRelease --stacktrace --warning-mode all 2>&1 | tee /tmp/gradle_release_aab.log
           BUILD_EXIT=$?
           if [ $BUILD_EXIT -ne 0 ]; then
