@@ -562,16 +562,21 @@ workflows:
           fi
 
           WKT_LEGACY="../../../node_modules/react-native-worklets/android/src/legacyBundling/com/swmansion/worklets/WorkletsModule.java"
-          if [ -f "$WKT_LEGACY" ]; then
-            if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$WKT_LEGACY" && grep -q "public static final String NAME" "$WKT_LEGACY"; then
-              echo "[OK] Worklets legacy module compatibility patch is present"
+          WKT_EXPERIMENTAL="../../../node_modules/react-native-worklets/android/src/experimentalBundling/com/swmansion/worklets/WorkletsModule.java"
+          for WKT_FILE in "$WKT_LEGACY" "$WKT_EXPERIMENTAL"; do
+            if [ -f "$WKT_FILE" ]; then
+              if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$WKT_FILE" \
+                && grep -q "public static final String NAME" "$WKT_FILE" \
+                && grep -q "public String getName()" "$WKT_FILE"; then
+                echo "[OK] Worklets module compatibility patch is present in $(basename "$(dirname "$WKT_FILE")")/$(basename "$WKT_FILE")"
+              else
+                echo "[FAIL] Worklets module compatibility patch missing in $WKT_FILE"
+                ERRORS=$((ERRORS+1))
+              fi
             else
-              echo "[FAIL] Worklets legacy module compatibility patch missing"
-              ERRORS=$((ERRORS+1))
+              echo "[OK] Worklets module file not present; skipping $WKT_FILE"
             fi
-          else
-            echo "[OK] Worklets legacy module file not present; skipping compatibility check"
-          fi
+          done
 
           echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
@@ -981,16 +986,21 @@ workflows:
           fi
 
           WKT_LEGACY="../../../node_modules/react-native-worklets/android/src/legacyBundling/com/swmansion/worklets/WorkletsModule.java"
-          if [ -f "$WKT_LEGACY" ]; then
-            if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$WKT_LEGACY" && grep -q "public static final String NAME" "$WKT_LEGACY"; then
-              echo "[OK] Worklets legacy module compatibility patch is present"
+          WKT_EXPERIMENTAL="../../../node_modules/react-native-worklets/android/src/experimentalBundling/com/swmansion/worklets/WorkletsModule.java"
+          for WKT_FILE in "$WKT_LEGACY" "$WKT_EXPERIMENTAL"; do
+            if [ -f "$WKT_FILE" ]; then
+              if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$WKT_FILE" \
+                && grep -q "public static final String NAME" "$WKT_FILE" \
+                && grep -q "public String getName()" "$WKT_FILE"; then
+                echo "[OK] Worklets module compatibility patch is present in $(basename "$(dirname "$WKT_FILE")")/$(basename "$WKT_FILE")"
+              else
+                echo "[FAIL] Worklets module compatibility patch missing in $WKT_FILE"
+                ERRORS=$((ERRORS+1))
+              fi
             else
-              echo "[FAIL] Worklets legacy module compatibility patch missing"
-              ERRORS=$((ERRORS+1))
+              echo "[OK] Worklets module file not present; skipping $WKT_FILE"
             fi
-          else
-            echo "[OK] Worklets legacy module file not present; skipping compatibility check"
-          fi
+          done
 
           echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
