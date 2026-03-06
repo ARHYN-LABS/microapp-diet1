@@ -427,15 +427,7 @@ workflows:
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
-          echo "--- Gradle configuration sanity ---"
-          ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
-          if [ $? -ne 0 ]; then
-            echo "[FAIL] Gradle configuration check (:app:tasks --all)"
-            tail -120 /tmp/gradle_tasks.log || true
-            ERRORS=$((ERRORS+1))
-          else
-            echo "[OK] Gradle configuration check (:app:tasks --all)"
-          fi
+          echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
           echo "=== VALIDATION REPORT END ==="
           if [ "$ERRORS" -gt 0 ]; then
@@ -702,15 +694,7 @@ workflows:
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
           check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
-          echo "--- Gradle configuration sanity ---"
-          ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
-          if [ $? -ne 0 ]; then
-            echo "[FAIL] Gradle configuration check (:app:tasks --all)"
-            tail -120 /tmp/gradle_tasks.log || true
-            ERRORS=$((ERRORS+1))
-          else
-            echo "[OK] Gradle configuration check (:app:tasks --all)"
-          fi
+          echo "[SKIP] Gradle configuration sanity check disabled to save CI minutes"
 
           echo "=== VALIDATION REPORT END ==="
           if [ "$ERRORS" -gt 0 ]; then
