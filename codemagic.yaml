@@ -400,6 +400,48 @@ workflows:
           grep -q "add(AppTurboGestureHandlerPackage())" "$MAIN_APP" || { echo "Missing AppTurboGestureHandlerPackage registration"; exit 1; }
           grep -q "isNewArchEnabled: Boolean = false" "$MAIN_APP" || { echo "Expected isNewArchEnabled=false in MainApplication"; exit 1; }
           grep -q "^reactNativeArchitectures=armeabi-v7a,arm64-v8a" apps/mobile/android/gradle.properties || { echo "Expected ARM-only reactNativeArchitectures"; exit 1; }
+      - name: Comprehensive validation report (all checks in one run)
+        script: |
+          cd apps/mobile/android
+          chmod +x gradlew || true
+          ERRORS=0
+
+          check() {
+            if ! eval "$2"; then
+              echo "[FAIL] $1"
+              ERRORS=$((ERRORS+1))
+            else
+              echo "[OK] $1"
+            fi
+          }
+
+          echo "=== VALIDATION REPORT START ==="
+          echo "HEAD: $(git rev-parse HEAD)"
+          echo "Commit: $(git log -1 --oneline)"
+
+          check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
+          check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
+          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
+          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
+          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
+          check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
+          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../node_modules/react-native-reanimated/android/build.gradle"
+
+          echo "--- Gradle configuration sanity ---"
+          ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
+          if [ $? -ne 0 ]; then
+            echo "[FAIL] Gradle configuration check (:app:tasks --all)"
+            tail -120 /tmp/gradle_tasks.log || true
+            ERRORS=$((ERRORS+1))
+          else
+            echo "[OK] Gradle configuration check (:app:tasks --all)"
+          fi
+
+          echo "=== VALIDATION REPORT END ==="
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Total validation failures: $ERRORS"
+            exit 1
+          fi
       - name: Build release APK
         script: |
           cd apps/mobile/android
@@ -626,6 +668,48 @@ workflows:
             sed -i 's/reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a/' gradle.properties
           else
             echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
+          fi
+      - name: Comprehensive validation report (all checks in one run)
+        script: |
+          cd apps/mobile/android
+          chmod +x gradlew || true
+          ERRORS=0
+
+          check() {
+            if ! eval "$2"; then
+              echo "[FAIL] $1"
+              ERRORS=$((ERRORS+1))
+            else
+              echo "[OK] $1"
+            fi
+          }
+
+          echo "=== VALIDATION REPORT START ==="
+          echo "HEAD: $(git rev-parse HEAD)"
+          echo "Commit: $(git log -1 --oneline)"
+
+          check "gradle.properties has newArchEnabled=false" "grep -q '^newArchEnabled=false' gradle.properties"
+          check "gradle.properties has ARM-only architectures" "grep -q '^reactNativeArchitectures=armeabi-v7a,arm64-v8a' gradle.properties"
+          check "MainApplication has AppTurboGestureHandlerPackage" "grep -q 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
+          check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
+          check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
+          check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
+          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../node_modules/react-native-reanimated/android/build.gradle"
+
+          echo "--- Gradle configuration sanity ---"
+          ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
+          if [ $? -ne 0 ]; then
+            echo "[FAIL] Gradle configuration check (:app:tasks --all)"
+            tail -120 /tmp/gradle_tasks.log || true
+            ERRORS=$((ERRORS+1))
+          else
+            echo "[OK] Gradle configuration check (:app:tasks --all)"
+          fi
+
+          echo "=== VALIDATION REPORT END ==="
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Total validation failures: $ERRORS"
+            exit 1
           fi
       - name: Optimize AAB size (strip x86)
         script: |
