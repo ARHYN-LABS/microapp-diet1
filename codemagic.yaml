@@ -425,7 +425,7 @@ workflows:
           check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
           check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../node_modules/react-native-reanimated/android/build.gradle"
+          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
           echo "--- Gradle configuration sanity ---"
           ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
@@ -694,7 +694,7 @@ workflows:
           check "MainApplication has ReanimatedPackage" "grep -q 'add(ReanimatedPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt"
           check "MainApplication does not have duplicate AppTurboGestureHandlerPackage lines" "[ \"$(grep -c 'add(AppTurboGestureHandlerPackage())' app/src/main/java/com/askmobisoft55/whatsinmyfood/MainApplication.kt)\" -le 1 ]"
           check "Autolinking settings patched to rn-cli-config.json" "grep -q 'rn-cli-config.json' settings.gradle"
-          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../node_modules/react-native-reanimated/android/build.gradle"
+          check "Reanimated new-arch assert is patched in node_modules" "grep -q '// patched in CI: preBuild.dependsOn(assertNewArchitectureEnabledTask)' ../../../node_modules/react-native-reanimated/android/build.gradle"
 
           echo "--- Gradle configuration sanity ---"
           ./gradlew :app:tasks --all >/tmp/gradle_tasks.log 2>&1
