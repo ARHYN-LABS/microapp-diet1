@@ -9,7 +9,8 @@ workflows:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
     scripts:
       - name: Install dependencies
-        script: npm ci
+        script: |
+          npm ci || npm install
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -46,7 +47,8 @@ workflows:
 
     scripts:
       - name: Install dependencies
-        script: npm ci
+        script: |
+          npm ci || npm install
       - name: Patch Expo FormData crash in winter runtime
         script: |
           python3 - <<'PY'
@@ -563,7 +565,8 @@ workflows:
 
     scripts:
       - name: Install dependencies
-        script: npm ci
+        script: |
+          npm ci || npm install
       - name: Patch Expo FormData crash in winter runtime
         script: |
           python3 - <<'PY'
