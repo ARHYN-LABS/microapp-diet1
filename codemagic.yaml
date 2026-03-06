@@ -469,7 +469,10 @@ workflows:
           exit 0
       - name: Validate APK ABI contents
         script: |
-          APK=$(find apps/mobile/android/app/build/outputs/apk -type f -name "*.apk" | head -1)
+          APK=$(find apps/mobile/android/app/build/outputs/apk/release -type f -name "*release*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find apps/mobile/android/app/build/outputs/apk/release -type f -name "*.apk" | head -1)
+          fi
           if [ -z "$APK" ]; then
             echo "APK not found under apps/mobile/android/app/build/outputs/apk"
             exit 1
@@ -491,7 +494,7 @@ workflows:
           echo "=== Native .so files for gesture-handler ==="
           find android -name "libgesturehandler*" -o -name "*rngesturehandler*" 2>/dev/null | head -10 || echo "No gesture-handler .so files"
     artifacts:
-      - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+      - apps/mobile/android/app/build/outputs/apk/**/*.apk
   android-release-aab:
     name: Android Release AAB (Play Store)
     max_build_duration: 60
@@ -882,4 +885,4 @@ workflows:
           fi
           exit 0
     artifacts:
-      - apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+      - apps/mobile/android/app/build/outputs/bundle/**/*.aab
