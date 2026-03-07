@@ -50,6 +50,7 @@ workflows:
       - name: Build debug APK
         script: |
           cd apps/mobile/android
+          chmod +x gradlew
           ./gradlew assembleDebug
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
@@ -104,6 +105,7 @@ workflows:
       - name: Build release APK
         script: |
           cd apps/mobile/android
+          chmod +x gradlew
           ./gradlew assembleRelease
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
@@ -168,6 +170,7 @@ workflows:
       - name: Build release APK
         script: |
           cd apps/mobile/android
+          chmod +x gradlew
           ./gradlew assembleRelease
     artifacts:
       - apps/mobile/android/app/build/outputs/apk/release/app-release.apk
