@@ -9,8 +9,9 @@
       "backgroundColor": "#F8FAFC"
     },
     "slug": "whats-in-my-food",
-    "version": "1.0.7",
+    "version": "0.1.0",
     "orientation": "portrait",
+    "sdkVersion": "49.0.0",
     "platforms": [
       "ios",
       "android",
@@ -23,6 +24,7 @@
     },
     "android": {
       "usesCleartextTraffic": true,
+      "networkSecurityConfig": "./network_security_config.xml",
       "permissions": [
         "CAMERA",
         "INTERNET",
@@ -46,8 +48,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#F8FAFC"
       },
-      "package": "com.askmobisoft55.whatsinmyfood",
-      "versionCode": 42
+      "package": "com.askmobisoft55.whatsinmyfood"
     },
     "extra": {
       "apiBase": "${EXPO_PUBLIC_API_BASE}",

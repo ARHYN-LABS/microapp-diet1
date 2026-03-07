@@ -25,7 +25,6 @@ type ProfilePrefs = {
   photoUri?: string | null
   dob?: string | null
   country?: string | null
-  alertEmail?: string
   dietaryOther?: string
   dietary: Record<string, boolean>
   allergies: Record<string, boolean>
@@ -44,7 +43,6 @@ const defaultProfilePrefs: ProfilePrefs = {
   photoUri: null,
   dob: null,
   country: null,
-  alertEmail: "support@safe-plate.ai",
   dietaryOther: "",
   dietary: {},
   allergies: {},

@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react"
-import { View, Text, TextInput, StyleSheet, Pressable, Switch, ScrollView, Image, Modal, FlatList } from "react-native"
+import { View, Text, TextInput, StyleSheet, Pressable, Switch, ScrollView, Image } from "react-native"
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons"
+import { Picker } from "@react-native-picker/picker"
 import Slider from "@react-native-community/slider"
 import * as ImagePicker from "expo-image-picker"
 import {
@@ -314,84 +315,12 @@ const getDefaultCountry = () => {
   return "United States"
 }
 
-function SimpleDropdown({
-  selectedValue,
-  onValueChange,
-  items
-}: {
-  selectedValue: string
-  onValueChange: (value: string) => void
-  items: { label: string; value: string }[]
-}) {
-  const [open, setOpen] = useState(false)
-  const selectedLabel = items.find((i) => i.value === selectedValue)?.label || "Select"
-
-  return (
-    <>
-      <Pressable
-        style={{
-          backgroundColor: theme.colors.panel,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}
-        onPress={() => setOpen(true)}
-      >
-        <Text style={{ color: theme.colors.text, fontSize: 15 }}>{selectedLabel}</Text>
-        <Ionicons name="chevron-down" size={18} color={theme.colors.muted} />
-      </Pressable>
-      <Modal visible={open} transparent animationType="fade">
-        <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 32 }}
-          onPress={() => setOpen(false)}
-        >
-          <View style={{ backgroundColor: theme.colors.panel, borderRadius: 12, maxHeight: 400, overflow: "hidden" }}>
-            <FlatList
-              data={items}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={{
-                    paddingHorizontal: 18,
-                    paddingVertical: 14,
-                    backgroundColor: item.value === selectedValue ? theme.colors.accent2 + "22" : "transparent",
-                    borderBottomWidth: 1,
-                    borderBottomColor: theme.colors.border
-                  }}
-                  onPress={() => {
-                    onValueChange(item.value)
-                    setOpen(false)
-                  }}
-                >
-                  <Text style={{
-                    color: item.value === selectedValue ? theme.colors.accent2 : theme.colors.text,
-                    fontSize: 15,
-                    fontWeight: item.value === selectedValue ? "600" : "400"
-                  }}>
-                    {item.label}
-                  </Text>
-                </Pressable>
-              )}
-            />
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  )
-}
-
 export default function SettingsScreen() {
   const { setIsAuthed } = useContext(AuthContext)
   const [profile, setProfileState] = useState<UserProfile | null>(null)
   const [phoneNumber, setPhoneNumber] = useState("")
   const [profilePrefs, setProfilePrefsState] = useState(() => ({
     photoUri: null as string | null,
-    alertEmail: "support@safe-plate.ai",
     dob: "",
     country: getDefaultCountry(),
     dietaryOther: "",
@@ -431,7 +360,6 @@ export default function SettingsScreen() {
       setProfilePrefsState((prev) => ({
         ...prev,
         ...cachedProfilePrefs,
-        alertEmail: cachedProfilePrefs.alertEmail || prev.alertEmail || "support@safe-plate.ai",
         country: cachedProfilePrefs.country || prev.country,
         dietaryOther: cachedProfilePrefs.dietaryOther || "",
         allergyOther: cachedProfilePrefs.allergyOther ?? "",
@@ -478,7 +406,6 @@ export default function SettingsScreen() {
       setProfilePrefsState((prev) => ({
         ...prev,
         ...sourcePrefs,
-        alertEmail: sourcePrefs.alertEmail || prev.alertEmail || "support@safe-plate.ai",
         country: sourcePrefs.country || prev.country,
         dietaryOther: sourcePrefs.dietaryOther || "",
         allergyOther: sourcePrefs.allergyOther ?? storedHealth.allergyOther ?? "",
@@ -687,27 +614,33 @@ export default function SettingsScreen() {
           />
 
           <Text style={styles.label}>Country</Text>
-          <SimpleDropdown
-            selectedValue={profilePrefs.country ?? getDefaultCountry()}
-            onValueChange={(value) =>
-              setProfilePrefsState((prev) => ({ ...prev, country: value }))
-            }
-            items={countryOptions.map((c) => ({ label: c, value: c }))}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={profilePrefs.country ?? getDefaultCountry()}
+              onValueChange={(value) =>
+                setProfilePrefsState((prev) => ({ ...prev, country: value }))
+              }
+            >
+              {countryOptions.map((country) => (
+                <Picker.Item key={country} label={country} value={country} />
+              ))}
+            </Picker>
+          </View>
 
           <Text style={styles.label}>Gender</Text>
-          <SimpleDropdown
-            selectedValue={profile.gender ?? ""}
-            onValueChange={(value) =>
-              setProfileState({ ...profile, gender: value as UserProfile["gender"] })
-            }
-            items={[
-              { label: "Select", value: "" },
-              { label: "Male", value: "male" },
-              { label: "Female", value: "female" },
-              { label: "Other", value: "other" }
-            ]}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={profile.gender ?? ""}
+              onValueChange={(value) =>
+                setProfileState({ ...profile, gender: value as UserProfile["gender"] })
+              }
+            >
+              <Picker.Item label="Select" value="" />
+              <Picker.Item label="Male" value="male" />
+              <Picker.Item label="Female" value="female" />
+              <Picker.Item label="Other" value="other" />
+            </Picker>
+          </View>
 
           <Text style={styles.label}>Height (cm)</Text>
           <TextInput
@@ -734,19 +667,20 @@ export default function SettingsScreen() {
           />
 
           <Text style={styles.label}>Activity level</Text>
-          <SimpleDropdown
-            selectedValue={profile.activityLevel ?? ""}
-            onValueChange={(value) =>
-              setProfileState({ ...profile, activityLevel: value as UserProfile["activityLevel"] })
-            }
-            items={[
-              { label: "Select", value: "" },
-              { label: "Sedentary", value: "sedentary" },
-              { label: "Light", value: "light" },
-              { label: "Moderate", value: "moderate" },
-              { label: "Active", value: "active" }
-            ]}
-          />
+          <View style={styles.pickerWrap}>
+            <Picker
+              selectedValue={profile.activityLevel ?? ""}
+              onValueChange={(value) =>
+                setProfileState({ ...profile, activityLevel: value as UserProfile["activityLevel"] })
+              }
+            >
+              <Picker.Item label="Select" value="" />
+              <Picker.Item label="Sedentary" value="sedentary" />
+              <Picker.Item label="Light" value="light" />
+              <Picker.Item label="Moderate" value="moderate" />
+              <Picker.Item label="Active" value="active" />
+            </Picker>
+          </View>
         </View>
       )}
 
@@ -816,7 +750,6 @@ export default function SettingsScreen() {
 
       <View style={[styles.card, styles.cardAlerts]}>
         <Text style={styles.sectionTitle}>Alert preferences</Text>
-        <Text style={styles.bodyMuted}>Email alerts recipient: {profilePrefs.alertEmail || "support@safe-plate.ai"}</Text>
         {alertOptions.map((item) => (
           <View key={item.key} style={styles.toggleRow}>
             <Text style={styles.toggleText}>{item.label}</Text>
