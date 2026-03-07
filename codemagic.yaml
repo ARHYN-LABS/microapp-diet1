@@ -255,7 +255,16 @@ workflows:
           PY
       - name: Configure release keystore
         script: |
-          if [ -z "$CM_KEYSTORE_PATH" ]; then echo "Missing CM_KEYSTORE_PATH"; exit 1; fi
+          if [ -z "$CM_KEYSTORE_PATH" ]; then
+            if [ -n "$CM_KEYSTORE_BASE64" ]; then
+              CM_KEYSTORE_PATH="$CM_BUILD_DIR/release.keystore"
+              echo "$CM_KEYSTORE_BASE64" | base64 --decode > "$CM_KEYSTORE_PATH"
+              echo "Decoded keystore to $CM_KEYSTORE_PATH"
+            else
+              echo "Missing CM_KEYSTORE_PATH (or CM_KEYSTORE_BASE64 fallback)"
+              exit 1
+            fi
+          fi
           if [ ! -f "$CM_KEYSTORE_PATH" ]; then echo "CM_KEYSTORE_PATH file not found: $CM_KEYSTORE_PATH"; exit 1; fi
           if [ -z "$CM_KEYSTORE_PASSWORD" ]; then echo "Missing CM_KEYSTORE_PASSWORD"; exit 1; fi
           if [ -z "$CM_KEY_ALIAS" ]; then echo "Missing CM_KEY_ALIAS"; exit 1; fi
