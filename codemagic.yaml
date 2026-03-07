@@ -15,7 +15,10 @@ workflows:
         script: |
           node - <<'NODE'
           const path = require('path');
-          const load = (name) => require(path.resolve('apps/mobile/node_modules', name, 'package.json')).version;
+          const load = (name) => {
+            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            return require(pkg).version;
+          };
           const actual = {
             expo: load('expo'),
             reactNative: load('react-native'),
@@ -85,7 +88,10 @@ workflows:
         script: |
           node - <<'NODE'
           const path = require('path');
-          const load = (name) => require(path.resolve('apps/mobile/node_modules', name, 'package.json')).version;
+          const load = (name) => {
+            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            return require(pkg).version;
+          };
           const actual = {
             expo: load('expo'),
             reactNative: load('react-native'),
@@ -155,7 +161,10 @@ workflows:
         script: |
           node - <<'NODE'
           const path = require('path');
-          const load = (name) => require(path.resolve('apps/mobile/node_modules', name, 'package.json')).version;
+          const load = (name) => {
+            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            return require(pkg).version;
+          };
           const actual = {
             expo: load('expo'),
             reactNative: load('react-native'),
