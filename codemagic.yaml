@@ -7,16 +7,27 @@ workflows:
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
     scripts:
       - name: Install dependencies
         script: |
-          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
-      - name: Validate mobile dependency stack
+          npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Preflight toolchain and stack assertions
         script: |
+          set -e
+          echo "Node: $(node -v)"
+          echo "npm: $(npm -v)"
+          java -version
           node - <<'NODE'
           const path = require('path');
+          const root = process.cwd();
+          const appRoot = path.resolve(root, 'apps/mobile');
           const load = (name) => {
-            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            const pkg = require.resolve(`${name}/package.json`, { paths: [appRoot, root] });
             return require(pkg).version;
           };
           const actual = {
@@ -29,6 +40,9 @@ workflows:
           if (!actual.reactNative.startsWith('0.72.')) throw new Error(`Expected react-native 0.72.x, got ${actual.reactNative}`);
           if (actual.datetimepicker !== '7.2.0') throw new Error(`Expected datetimepicker 7.2.0, got ${actual.datetimepicker}`);
           NODE
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew --version
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -80,16 +94,27 @@ workflows:
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
     scripts:
       - name: Install dependencies
         script: |
-          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
-      - name: Validate mobile dependency stack
+          npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Preflight toolchain and stack assertions
         script: |
+          set -e
+          echo "Node: $(node -v)"
+          echo "npm: $(npm -v)"
+          java -version
           node - <<'NODE'
           const path = require('path');
+          const root = process.cwd();
+          const appRoot = path.resolve(root, 'apps/mobile');
           const load = (name) => {
-            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            const pkg = require.resolve(`${name}/package.json`, { paths: [appRoot, root] });
             return require(pkg).version;
           };
           const actual = {
@@ -102,6 +127,9 @@ workflows:
           if (!actual.reactNative.startsWith('0.72.')) throw new Error(`Expected react-native 0.72.x, got ${actual.reactNative}`);
           if (actual.datetimepicker !== '7.2.0') throw new Error(`Expected datetimepicker 7.2.0, got ${actual.datetimepicker}`);
           NODE
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew --version
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -153,16 +181,27 @@ workflows:
       java: 17
       vars:
         EXPO_PUBLIC_API_BASE: "https://api.safe-plate.ai"
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
     scripts:
       - name: Install dependencies
         script: |
-          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
-      - name: Validate mobile dependency stack
+          npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Preflight toolchain and stack assertions
         script: |
+          set -e
+          echo "Node: $(node -v)"
+          echo "npm: $(npm -v)"
+          java -version
           node - <<'NODE'
           const path = require('path');
+          const root = process.cwd();
+          const appRoot = path.resolve(root, 'apps/mobile');
           const load = (name) => {
-            const pkg = require.resolve(`${name}/package.json`, { paths: [path.resolve('apps/mobile'), process.cwd()] });
+            const pkg = require.resolve(`${name}/package.json`, { paths: [appRoot, root] });
             return require(pkg).version;
           };
           const actual = {
@@ -175,6 +214,9 @@ workflows:
           if (!actual.reactNative.startsWith('0.72.')) throw new Error(`Expected react-native 0.72.x, got ${actual.reactNative}`);
           if (actual.datetimepicker !== '7.2.0') throw new Error(`Expected datetimepicker 7.2.0, got ${actual.datetimepicker}`);
           NODE
+          cd apps/mobile/android
+          chmod +x gradlew
+          ./gradlew --version
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'

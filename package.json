@@ -12,12 +12,9 @@
   "scripts": {
     "dev": "npm run dev --workspaces",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "postinstall": "patch-package || true"
+    "test": "npm run test --workspaces"
   },
   "devDependencies": {
-    "babel-preset-expo": "~14.0.0",
-    "patch-package": "^8.0.0",
     "typescript": "^5.3.3"
   },
   "engines": {
@@ -33,5 +30,9 @@
     "type-detect": "^4.1.0",
     "unpipe": "^1.0.0",
     "utils-merge": "^1.0.1"
+  },
+  "overrides": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   }
 }
