@@ -42,6 +42,53 @@ workflows:
           else:
               print("Reanimated assert dependency already patched or not found")
           PY
+      - name: Patch Reanimated Java compatibility for old-arch compile
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedModule.java")
+          if not p.exists():
+              print("ReanimatedModule.java not found; skipping patch")
+              raise SystemExit(0)
+          text = p.read_text()
+          changed = False
+
+          if "extends NativeReanimatedModuleSpec" in text:
+              text = text.replace(
+                  "extends NativeReanimatedModuleSpec",
+                  "extends com.facebook.react.bridge.ReactContextBaseJavaModule",
+              )
+              changed = True
+
+          if "public static final String NAME" not in text:
+              anchor = "public class ReanimatedModule "
+              idx = text.find(anchor)
+              if idx != -1:
+                  brace = text.find("{", idx)
+                  if brace != -1:
+                      insert = "\n  public static final String NAME = \"ReanimatedModule\";\n"
+                      text = text[: brace + 1] + insert + text[brace + 1 :]
+                      changed = True
+
+          if "public String getName()" not in text:
+              anchor = "public ReanimatedModule(ReactApplicationContext reactContext) {"
+              idx = text.find(anchor)
+              if idx != -1:
+                  insert = (
+                      "@Override\n"
+                      "  public String getName() {\n"
+                      "    return NAME;\n"
+                      "  }\n\n"
+                  )
+                  text = text[:idx] + insert + text[idx:]
+                  changed = True
+
+          if changed:
+              p.write_text(text)
+              print(f"Patched: {p}")
+          else:
+              print("No changes needed for ReanimatedModule.java")
+          PY
       - name: Patch Worklets new-arch assertion for old-arch runtime
         script: |
           python3 - <<'PY'
@@ -239,6 +286,53 @@ workflows:
               print("Patched Reanimated assertNewArchitectureEnabledTask dependency")
           else:
               print("Reanimated assert dependency already patched or not found")
+          PY
+      - name: Patch Reanimated Java compatibility for old-arch compile
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedModule.java")
+          if not p.exists():
+              print("ReanimatedModule.java not found; skipping patch")
+              raise SystemExit(0)
+          text = p.read_text()
+          changed = False
+
+          if "extends NativeReanimatedModuleSpec" in text:
+              text = text.replace(
+                  "extends NativeReanimatedModuleSpec",
+                  "extends com.facebook.react.bridge.ReactContextBaseJavaModule",
+              )
+              changed = True
+
+          if "public static final String NAME" not in text:
+              anchor = "public class ReanimatedModule "
+              idx = text.find(anchor)
+              if idx != -1:
+                  brace = text.find("{", idx)
+                  if brace != -1:
+                      insert = "\n  public static final String NAME = \"ReanimatedModule\";\n"
+                      text = text[: brace + 1] + insert + text[brace + 1 :]
+                      changed = True
+
+          if "public String getName()" not in text:
+              anchor = "public ReanimatedModule(ReactApplicationContext reactContext) {"
+              idx = text.find(anchor)
+              if idx != -1:
+                  insert = (
+                      "@Override\n"
+                      "  public String getName() {\n"
+                      "    return NAME;\n"
+                      "  }\n\n"
+                  )
+                  text = text[:idx] + insert + text[idx:]
+                  changed = True
+
+          if changed:
+              p.write_text(text)
+              print(f"Patched: {p}")
+          else:
+              print("No changes needed for ReanimatedModule.java")
           PY
       - name: Patch Worklets new-arch assertion for old-arch runtime
         script: |
@@ -614,6 +708,20 @@ workflows:
             ERRORS=$((ERRORS+1))
           fi
 
+          REA_MODULE="../../../node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedModule.java"
+          if [ -f "$REA_MODULE" ]; then
+            if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$REA_MODULE" \
+              && grep -q "public static final String NAME" "$REA_MODULE" \
+              && grep -q "public String getName()" "$REA_MODULE"; then
+              echo "[OK] Reanimated Java compatibility patch is present"
+            else
+              echo "[FAIL] Reanimated Java compatibility patch missing"
+              ERRORS=$((ERRORS+1))
+            fi
+          else
+            echo "[OK] Reanimated module file not present; skipping Java compatibility check"
+          fi
+
           WKT_GRADLE="../../../node_modules/react-native-worklets/android/build.gradle"
           if [ ! -f "$WKT_GRADLE" ]; then
             echo "[OK] Worklets build.gradle not present; skipping assert check"
@@ -843,6 +951,53 @@ workflows:
           else:
               print("Reanimated assert dependency already patched or not found")
           PY
+      - name: Patch Reanimated Java compatibility for old-arch compile
+        script: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedModule.java")
+          if not p.exists():
+              print("ReanimatedModule.java not found; skipping patch")
+              raise SystemExit(0)
+          text = p.read_text()
+          changed = False
+
+          if "extends NativeReanimatedModuleSpec" in text:
+              text = text.replace(
+                  "extends NativeReanimatedModuleSpec",
+                  "extends com.facebook.react.bridge.ReactContextBaseJavaModule",
+              )
+              changed = True
+
+          if "public static final String NAME" not in text:
+              anchor = "public class ReanimatedModule "
+              idx = text.find(anchor)
+              if idx != -1:
+                  brace = text.find("{", idx)
+                  if brace != -1:
+                      insert = "\n  public static final String NAME = \"ReanimatedModule\";\n"
+                      text = text[: brace + 1] + insert + text[brace + 1 :]
+                      changed = True
+
+          if "public String getName()" not in text:
+              anchor = "public ReanimatedModule(ReactApplicationContext reactContext) {"
+              idx = text.find(anchor)
+              if idx != -1:
+                  insert = (
+                      "@Override\n"
+                      "  public String getName() {\n"
+                      "    return NAME;\n"
+                      "  }\n\n"
+                  )
+                  text = text[:idx] + insert + text[idx:]
+                  changed = True
+
+          if changed:
+              p.write_text(text)
+              print(f"Patched: {p}")
+          else:
+              print("No changes needed for ReanimatedModule.java")
+          PY
       - name: Patch Worklets new-arch assertion for old-arch runtime
         script: |
           python3 - <<'PY'
@@ -1037,6 +1192,20 @@ workflows:
           else
             echo "[FAIL] Reanimated new-arch assert is still active in node_modules"
             ERRORS=$((ERRORS+1))
+          fi
+
+          REA_MODULE="../../../node_modules/react-native-reanimated/android/src/main/java/com/swmansion/reanimated/ReanimatedModule.java"
+          if [ -f "$REA_MODULE" ]; then
+            if grep -q "extends com.facebook.react.bridge.ReactContextBaseJavaModule" "$REA_MODULE" \
+              && grep -q "public static final String NAME" "$REA_MODULE" \
+              && grep -q "public String getName()" "$REA_MODULE"; then
+              echo "[OK] Reanimated Java compatibility patch is present"
+            else
+              echo "[FAIL] Reanimated Java compatibility patch missing"
+              ERRORS=$((ERRORS+1))
+            fi
+          else
+            echo "[OK] Reanimated module file not present; skipping Java compatibility check"
           fi
 
           WKT_GRADLE="../../../node_modules/react-native-worklets/android/build.gradle"
