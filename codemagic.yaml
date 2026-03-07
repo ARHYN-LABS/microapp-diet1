@@ -31,10 +31,7 @@ workflows:
           npm run build
       - name: Prebuild Android project
         script: |
-          cd apps/mobile
-          export NPM_CONFIG_LEGACY_PEER_DEPS=true
-          export npm_config_legacy_peer_deps=true
-          npx expo prebuild --platform android --clean
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
@@ -88,10 +85,7 @@ workflows:
           npm run build
       - name: Prebuild Android project
         script: |
-          cd apps/mobile
-          export NPM_CONFIG_LEGACY_PEER_DEPS=true
-          export npm_config_legacy_peer_deps=true
-          npx expo prebuild --platform android --clean
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
@@ -145,10 +139,7 @@ workflows:
           npm run build
       - name: Prebuild Android project
         script: |
-          cd apps/mobile
-          export NPM_CONFIG_LEGACY_PEER_DEPS=true
-          export npm_config_legacy_peer_deps=true
-          npx expo prebuild --platform android --clean
+          echo "Using committed android project; skipping expo prebuild --clean"
       - name: Force Gradle version for Expo SDK 49
         script: |
           python3 - <<'PY'
