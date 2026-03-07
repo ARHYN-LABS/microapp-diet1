@@ -32,6 +32,8 @@ workflows:
       - name: Prebuild Android project
         script: |
           cd apps/mobile
+          export NPM_CONFIG_LEGACY_PEER_DEPS=true
+          export npm_config_legacy_peer_deps=true
           npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
@@ -87,6 +89,8 @@ workflows:
       - name: Prebuild Android project
         script: |
           cd apps/mobile
+          export NPM_CONFIG_LEGACY_PEER_DEPS=true
+          export npm_config_legacy_peer_deps=true
           npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
@@ -142,6 +146,8 @@ workflows:
       - name: Prebuild Android project
         script: |
           cd apps/mobile
+          export NPM_CONFIG_LEGACY_PEER_DEPS=true
+          export npm_config_legacy_peer_deps=true
           npx expo prebuild --platform android --clean
       - name: Force Gradle version for Expo SDK 49
         script: |
