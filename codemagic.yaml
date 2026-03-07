@@ -10,7 +10,7 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          npm install
+          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -37,9 +37,14 @@ workflows:
         script: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
           text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          text = re.sub(
+              r"distributionUrl=https\\://services\\.gradle\\.org/distributions/gradle-[^\\s]+",
+              "distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5.1-all.zip",
+              text,
+          )
           wrapper.write_text(text)
           print("Gradle wrapper pinned to 7.5.1")
           PY
@@ -60,7 +65,7 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          npm install
+          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -87,9 +92,14 @@ workflows:
         script: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
           text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          text = re.sub(
+              r"distributionUrl=https\\://services\\.gradle\\.org/distributions/gradle-[^\\s]+",
+              "distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5.1-all.zip",
+              text,
+          )
           wrapper.write_text(text)
           print("Gradle wrapper pinned to 7.5.1")
           PY
@@ -110,7 +120,7 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          npm install
+          npm install --legacy-peer-deps --package-lock=false || npm install --force --package-lock=false
       - name: Patch Expo Gradle compatibility
         script: |
           python3 - <<'PY'
@@ -137,15 +147,21 @@ workflows:
         script: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
           wrapper = Path("apps/mobile/android/gradle/wrapper/gradle-wrapper.properties")
           text = wrapper.read_text()
-          text = text.replace("gradle-8.0.1-all.zip", "gradle-7.5.1-all.zip")
+          text = re.sub(
+              r"distributionUrl=https\\://services\\.gradle\\.org/distributions/gradle-[^\\s]+",
+              "distributionUrl=https\\://services.gradle.org/distributions/gradle-7.5.1-all.zip",
+              text,
+          )
           wrapper.write_text(text)
           print("Gradle wrapper pinned to 7.5.1")
           PY
       - name: Configure release keystore
         script: |
           if [ -z "$CM_KEYSTORE_PATH" ]; then echo "Missing CM_KEYSTORE_PATH"; exit 1; fi
+          if [ ! -f "$CM_KEYSTORE_PATH" ]; then echo "CM_KEYSTORE_PATH file not found: $CM_KEYSTORE_PATH"; exit 1; fi
           if [ -z "$CM_KEYSTORE_PASSWORD" ]; then echo "Missing CM_KEYSTORE_PASSWORD"; exit 1; fi
           if [ -z "$CM_KEY_ALIAS" ]; then echo "Missing CM_KEY_ALIAS"; exit 1; fi
           if [ -z "$CM_KEY_PASSWORD" ]; then echo "Missing CM_KEY_PASSWORD"; exit 1; fi
